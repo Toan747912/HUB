@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { AuditLogService } from '../../audit/audit-log.service';
 import { RequestContextService } from '../../observability/request-context.service';
 import { Role } from '../rbac/role.enum';
-import { getRefreshTokenTtlSeconds } from '../secrets/security.config';
+import { getRefreshTokenTtlSeconds, isSelfAssignedRolesAllowed } from '../secrets/security.config';
 import { BruteForceService } from './brute-force.service';
 import { AppJwtService } from './jwt.service';
 import { PasswordService } from './password.service';
@@ -31,14 +31,37 @@ export class AuthService {
     return this.requestContext?.get()?.traceId ?? 'unknown';
   }
 
-  async register(username: string, password: string, roles: Role[] = ['STUDENT']): Promise<void> {
+  async register(username: string, password: string, requestedRoles: Role[] = ['STUDENT']): Promise<void> {
     this.passwords.validatePolicy(password);
     const existing = await this.users.findByUsername(username);
     if (existing) {
       throw new ForbiddenException({ success: false, error: 'USERNAME_TAKEN', message: 'Username already exists' });
     }
+
+    const selfAssignedRolesAllowed = isSelfAssignedRolesAllowed();
+    const isElevationAttempt = requestedRoles.some((role) => role !== 'STUDENT');
+    const roles: Role[] = selfAssignedRolesAllowed ? requestedRoles : ['STUDENT'];
+
+    if (!selfAssignedRolesAllowed && isElevationAttempt) {
+      await this.auditLog?.recordSecurityEvent({
+        traceId: this.traceId(),
+        userId: null,
+        operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED',
+        resource: `User:${username}`,
+        after: { requestedRoles, grantedRoles: roles }
+      });
+    }
+
     const passwordHash = await this.passwords.hash(password);
-    await this.users.create(username, passwordHash, roles);
+    const created = await this.users.create(username, passwordHash, roles);
+
+    await this.auditLog?.recordSecurityEvent({
+      traceId: this.traceId(),
+      userId: created?._id ?? null,
+      operation: 'USER_REGISTERED',
+      resource: `User:${created?._id ?? username}`,
+      after: { username, roles }
+    });
   }
 
   async login(username: string, password: string): Promise<TokenPair> {

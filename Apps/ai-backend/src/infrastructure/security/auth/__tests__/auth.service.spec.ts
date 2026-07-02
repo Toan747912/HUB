@@ -144,4 +144,50 @@ describe('AuthService', () => {
     await expect(auth.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
     expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'LOGOUT' }));
   });
+
+  // Evidence: configurable registration policy
+  describe('register()', () => {
+    beforeEach(() => {
+      users.findByUsername.mockResolvedValue(null as any);
+      users.create.mockResolvedValue({ _id: 'user-new', username: 'bob', passwordHash: 'x', roles: ['STUDENT'] } as any);
+    });
+
+    it('forces STUDENT and audits the blocked attempt when self-assigned roles are disallowed (default)', async () => {
+      delete process.env['ALLOW_SELF_ASSIGNED_ROLES'];
+
+      await auth.register('bob', 'Str0ng!Passw0rd', ['ADMIN']);
+
+      expect(users.create).toHaveBeenCalledWith('bob', expect.any(String), ['STUDENT']);
+      expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED',
+          after: expect.objectContaining({ requestedRoles: ['ADMIN'], grantedRoles: ['STUDENT'] })
+        })
+      );
+      expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'USER_REGISTERED' }));
+    });
+
+    it('does not audit an escalation-blocked event when no elevated role was requested', async () => {
+      delete process.env['ALLOW_SELF_ASSIGNED_ROLES'];
+
+      await auth.register('bob', 'Str0ng!Passw0rd');
+
+      expect(users.create).toHaveBeenCalledWith('bob', expect.any(String), ['STUDENT']);
+      expect(auditLog.recordSecurityEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED' })
+      );
+    });
+
+    it('honors requested roles when self-assigned roles are explicitly allowed', async () => {
+      process.env['ALLOW_SELF_ASSIGNED_ROLES'] = 'true';
+
+      await auth.register('bob', 'Str0ng!Passw0rd', ['ADMIN']);
+
+      expect(users.create).toHaveBeenCalledWith('bob', expect.any(String), ['ADMIN']);
+      expect(auditLog.recordSecurityEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED' })
+      );
+      expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'USER_REGISTERED' }));
+    });
+  });
 });

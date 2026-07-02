@@ -28,9 +28,23 @@ export class PermissionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest & Request>();
     const roles = request.user?.roles ?? [];
+    const scopedPermissions = request.user?.permissions;
 
-    const allowed = required.every((permission) => rolesHavePermission(roles, permission));
+    // API-key-authenticated requests (JwtAuthGuard sets `permissions`) are scoped
+    // directly by the key's granted permission list; role-based (JWT) requests
+    // continue to resolve permissions via role-permissions.map.ts, unchanged.
+    const allowed = scopedPermissions
+      ? required.every((permission) => scopedPermissions.includes(permission))
+      : required.every((permission) => rolesHavePermission(roles, permission));
+
     if (allowed) {
+      await this.auditLog?.recordSecurityEvent({
+        traceId: this.requestContext?.get()?.traceId ?? request.traceId ?? 'unknown',
+        userId: request.user?.sub ?? null,
+        operation: 'PERMISSION_GRANTED',
+        resource: `${request.method} ${request.route?.path ?? request.originalUrl}`,
+        after: { requiredPermissions: required, roles }
+      });
       return true;
     }
 

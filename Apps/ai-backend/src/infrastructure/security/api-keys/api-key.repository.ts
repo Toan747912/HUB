@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import { Model } from 'mongoose';
+import { Permission } from '../rbac/permission.enum';
 import { ApiKeyDocument } from './api-key.schema';
 
 @Injectable()
@@ -12,8 +13,8 @@ export class ApiKeyRepository {
     return this.model.findOne({ keyHash, revokedAt: null }).lean<ApiKeyDocument>().exec();
   }
 
-  async create(keyHash: string, label: string): Promise<ApiKeyDocument> {
-    const doc = await this.model.create({ _id: randomUUID(), keyHash, label, revokedAt: null });
+  async create(keyHash: string, label: string, permissions: Permission[] = []): Promise<ApiKeyDocument> {
+    const doc = await this.model.create({ _id: randomUUID(), keyHash, label, revokedAt: null, permissions });
     return doc.toObject();
   }
 

@@ -10,7 +10,7 @@ describe('PermissionGuard', () => {
   let auditLog: jest.Mocked<Pick<AuditLogService, 'recordSecurityEvent'>>;
   let guard: PermissionGuard;
 
-  const makeContext = (user?: { sub: string; roles: string[] }): ExecutionContext => {
+  const makeContext = (user?: { sub: string; roles: string[]; permissions?: string[] }): ExecutionContext => {
     const request: Partial<AuthenticatedRequest> = {
       user: user as any,
       method: 'DELETE',
@@ -78,5 +78,45 @@ describe('PermissionGuard', () => {
     const context = makeContext({ sub: 'user-1', roles: ['STUDENT'] });
 
     await expect(bareGuard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('records a PERMISSION_GRANTED audit event on a successful permission check', async () => {
+    reflector.getAllAndOverride.mockReturnValue(['Goal.Read']);
+    const context = makeContext({ sub: 'user-1', roles: ['STUDENT'] });
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1', operation: 'PERMISSION_GRANTED', resource: 'DELETE /goal/:id' })
+    );
+  });
+
+  it('does not audit anything when the route requires no permissions', async () => {
+    reflector.getAllAndOverride.mockReturnValue(undefined);
+    const context = makeContext({ sub: 'user-1', roles: ['STUDENT'] });
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(auditLog.recordSecurityEvent).not.toHaveBeenCalled();
+  });
+
+  // Evidence: scoped API-key permissions
+  it('allows a SYSTEM/API-key request only for permissions present in its scoped permissions array', async () => {
+    reflector.getAllAndOverride.mockReturnValue(['Goal.Read']);
+    const context = makeContext({ sub: 'system', roles: ['SYSTEM'], permissions: ['Goal.Read'] });
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+
+  it('denies a SYSTEM/API-key request for a permission outside its scoped permissions array, even though role is SYSTEM', async () => {
+    reflector.getAllAndOverride.mockReturnValue(['Goal.Archive']);
+    const context = makeContext({ sub: 'system', roles: ['SYSTEM'], permissions: ['Goal.Read'] });
+
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('denies a SYSTEM/API-key request with an empty scoped permissions array (least privilege default)', async () => {
+    reflector.getAllAndOverride.mockReturnValue(['Goal.Read']);
+    const context = makeContext({ sub: 'system', roles: ['SYSTEM'], permissions: [] });
+
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
   });
 });

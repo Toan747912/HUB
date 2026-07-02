@@ -1,4 +1,5 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { ApiKeyService } from '../api-keys/api-key.service';
 import { AppJwtService } from '../auth/jwt.service';
 import { AuthenticatedRequest, JwtAuthGuard } from '../jwt-auth.guard';
@@ -9,6 +10,7 @@ describe('JwtAuthGuard', () => {
   let jwt: AppJwtService;
   let apiKeys: jest.Mocked<Pick<ApiKeyService, 'verify'>>;
   let requestContext: RequestContextService;
+  let reflector: jest.Mocked<Pick<Reflector, 'getAllAndOverride'>>;
   let guard: JwtAuthGuard;
 
   beforeEach(() => {
@@ -16,7 +18,8 @@ describe('JwtAuthGuard', () => {
     jwt = new AppJwtService();
     apiKeys = { verify: jest.fn() };
     requestContext = new RequestContextService();
-    guard = new JwtAuthGuard(jwt, apiKeys as unknown as ApiKeyService, requestContext);
+    reflector = { getAllAndOverride: jest.fn().mockReturnValue(false) };
+    guard = new JwtAuthGuard(jwt, apiKeys as unknown as ApiKeyService, requestContext, reflector as unknown as Reflector);
   });
 
   afterEach(() => {
@@ -26,7 +29,9 @@ describe('JwtAuthGuard', () => {
   const makeContext = (headers: Record<string, string>): { context: ExecutionContext; request: Partial<AuthenticatedRequest> } => {
     const request: Partial<AuthenticatedRequest> = { headers: headers as any };
     const context = {
-      switchToHttp: () => ({ getRequest: () => request })
+      switchToHttp: () => ({ getRequest: () => request }),
+      getHandler: () => ({}) as any,
+      getClass: () => ({}) as any
     } as unknown as ExecutionContext;
     return { context, request };
   };
@@ -72,21 +77,38 @@ describe('JwtAuthGuard', () => {
   });
 
   // Evidence: API key
-  it('accepts a valid API key and attaches a SYSTEM identity', async () => {
-    apiKeys.verify.mockResolvedValue(true);
+  it('accepts a valid API key and attaches a scoped SYSTEM identity', async () => {
+    apiKeys.verify.mockResolvedValue({
+      _id: 'key-1',
+      keyHash: 'x',
+      label: 'ci',
+      createdAt: new Date(),
+      revokedAt: null,
+      permissions: ['Goal.Read']
+    } as any);
     const { context, request } = makeContext({ 'x-api-key': 'valid-raw-key' });
 
     const result = await guard.canActivate(context);
 
     expect(result).toBe(true);
-    expect(request.user).toEqual({ sub: 'system', roles: ['SYSTEM'] });
+    expect(request.user).toEqual({ sub: 'system', roles: ['SYSTEM'], permissions: ['Goal.Read'] });
   });
 
   it('rejects an invalid/unknown API key with 401', async () => {
-    apiKeys.verify.mockResolvedValue(false);
+    apiKeys.verify.mockResolvedValue(null as any);
     const { context } = makeContext({ 'x-api-key': 'bad-key' });
 
     await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('bypasses authentication entirely when the route is marked @Public()', async () => {
+    reflector.getAllAndOverride.mockReturnValue(true);
+    const { context, request } = makeContext({});
+
+    const result = await guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(request.user).toBeUndefined();
   });
 
   it('populates RequestContextService.userId for downstream logs/audit', async () => {

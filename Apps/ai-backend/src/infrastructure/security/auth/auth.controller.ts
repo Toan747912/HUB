@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { Public } from '../rbac/public.decorator';
 import { Role } from '../rbac/role.enum';
 
 @Controller('auth')
@@ -12,6 +13,7 @@ export class AuthController {
 
   // Dev/seed-oriented: no existing user-provisioning path exists yet in this codebase.
   // Production user provisioning (admin-only invite flow, etc.) is out of scope here.
+  @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() body: RegisterDto): Promise<{ success: true }> {
@@ -20,6 +22,7 @@ export class AuthController {
   }
 
   // Tighter than the global default (30 req/min) — brute-force protection.
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -27,11 +30,16 @@ export class AuthController {
     return this.auth.login(body.username, body.password);
   }
 
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() body: RefreshDto) {
     return this.auth.refresh(body.refreshToken);
   }
+
+  // Not @Public(): logout needs a caller identity (a valid access token) so the
+  // global JwtAuthGuard authenticates the request even though revocation itself
+  // is keyed off the refresh token family, not request.user.
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)

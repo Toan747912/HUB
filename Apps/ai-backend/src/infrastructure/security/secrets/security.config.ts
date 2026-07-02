@@ -36,3 +36,12 @@ export function getRequestBodyLimit(): string {
 export function getApiKeyHeaderName(): string {
   return process.env['API_KEY_HEADER'] ?? 'x-api-key';
 }
+
+/**
+ * Off by default: self-service registration always yields STUDENT regardless of the
+ * caller-supplied `roles` field. Enable only for seed/dev environments that need to
+ * provision elevated accounts through the registration endpoint.
+ */
+export function isSelfAssignedRolesAllowed(): boolean {
+  return process.env['ALLOW_SELF_ASSIGNED_ROLES'] === 'true';
+}
