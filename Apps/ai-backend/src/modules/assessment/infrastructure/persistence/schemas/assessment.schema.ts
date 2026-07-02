@@ -66,7 +66,8 @@ export const AssessmentSchema = new Schema(
     status: { type: String, required: true },
     aggregateVersion: { type: Number, required: true, default: 0 },
     latestResult: { type: AssessmentResultSchema, required: false, default: null },
-    history: { type: [AssessmentHistorySchema], required: true, default: [] }
+    history: { type: [AssessmentHistorySchema], required: true, default: [] },
+    invalidatedAt: { type: Date, required: false, default: null }
   },
   {
     _id: false,

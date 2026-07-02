@@ -13,6 +13,7 @@ import { GenerateRecommendationsCommand } from '../commands/generate-recommendat
 import { ApproveRecommendationCommand } from '../commands/approve-recommendation.command';
 import { RejectRecommendationCommand } from '../commands/reject-recommendation.command';
 import { ArchiveRecommendationCommand } from '../commands/archive-recommendation.command';
+import { InvalidateRecommendationCommand } from '../commands/invalidate-recommendation.command';
 import { IRecommendationRepository } from '../contracts/recommendation-repository.contract';
 import { IEventPublisher } from '../contracts/event-publisher.contract';
 import {
@@ -181,6 +182,33 @@ export class RecommendationCommandService {
       return recommendation;
     } catch (error) {
       this.log('ARCHIVE_RECOMMENDATION', command.recommendationId, start, 'FAILURE', error);
+      throw this.mapError(error);
+    }
+  }
+
+  async invalidateRecommendation(command: InvalidateRecommendationCommand): Promise<Recommendation> {
+    const start = Date.now();
+    try {
+      const recommendation = await this.withLock(command.recommendationId, async () => {
+        const r = await this.repository.findById(command.recommendationId);
+        if (!r) throw new RecommendationNotFoundError(command.recommendationId);
+
+        r.invalidate(
+          command.reason,
+          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
+          command.expectedVersion
+        );
+
+        await this.repository.save(r);
+        const events = r.pullEvents();
+        await this.eventPublisher.publishMany(events);
+        return r;
+      });
+
+      this.log('INVALIDATE_RECOMMENDATION', command.recommendationId, start, 'SUCCESS');
+      return recommendation;
+    } catch (error) {
+      this.log('INVALIDATE_RECOMMENDATION', command.recommendationId, start, 'FAILURE', error);
       throw this.mapError(error);
     }
   }

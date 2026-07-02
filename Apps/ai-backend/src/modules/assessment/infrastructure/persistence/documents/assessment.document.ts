@@ -49,6 +49,7 @@ export interface AssessmentDocument {
   aggregateVersion: number;
   latestResult: AssessmentResultDoc | null;
   history: AssessmentHistoryDoc[];
+  invalidatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

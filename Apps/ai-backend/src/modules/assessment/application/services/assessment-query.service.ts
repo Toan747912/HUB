@@ -5,6 +5,7 @@ import { GetAssessmentQuery } from '../queries/get-assessment.query';
 import { GetAssessmentsQuery } from '../queries/get-assessments.query';
 import { GetCompetencyProfileQuery } from '../queries/get-competency-profile.query';
 import { GetKnowledgeGapsQuery } from '../queries/get-knowledge-gaps.query';
+import { GetAssessmentsByRoadmapIdQuery } from '../queries/get-assessments-by-roadmap-id.query';
 
 export class AssessmentQueryService {
   constructor(private readonly repository: IAssessmentRepository) {}
@@ -56,6 +57,18 @@ export class AssessmentQueryService {
       return assessment;
     } catch (error) {
       this.log('GET_KNOWLEDGE_GAPS', query.assessmentId, start, 'FAILURE', error);
+      throw error;
+    }
+  }
+
+  async getAssessmentsByRoadmapId(query: GetAssessmentsByRoadmapIdQuery): Promise<Assessment[]> {
+    const start = Date.now();
+    try {
+      const assessments = await this.repository.findByRoadmapId(query.roadmapId);
+      this.log('GET_ASSESSMENTS_BY_ROADMAP_ID', query.roadmapId, start, 'SUCCESS');
+      return assessments;
+    } catch (error) {
+      this.log('GET_ASSESSMENTS_BY_ROADMAP_ID', query.roadmapId, start, 'FAILURE', error);
       throw error;
     }
   }

@@ -20,7 +20,8 @@ export type AssessmentDomainEvent<TPayload = Record<string, unknown>> = {
     | 'AssessmentCompleted'
     | 'CompetencyUpdated'
     | 'KnowledgeGapDetected'
-    | 'AssessmentArchived';
+    | 'AssessmentArchived'
+    | 'AssessmentInvalidated';
   metadata: AssessmentEventMetadata;
   payload: TPayload;
 };

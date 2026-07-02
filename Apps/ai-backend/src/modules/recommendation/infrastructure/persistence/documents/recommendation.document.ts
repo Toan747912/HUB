@@ -73,6 +73,7 @@ export interface RecommendationDocument {
   reviewSchedules: ReviewScheduleDoc[];
   priorityDecisions: PriorityDecisionDoc[];
   history: RecommendationHistoryDoc[];
+  invalidatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

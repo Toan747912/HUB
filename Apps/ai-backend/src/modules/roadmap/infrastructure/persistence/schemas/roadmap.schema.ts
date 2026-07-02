@@ -88,7 +88,8 @@ export const RoadmapSchema = new Schema(
     estimatedDurationDays: { type: Number, required: true, default: 0 },
     complexity: { type: String, required: true },
     plannerVersion: { type: String, required: true },
-    goalSnapshot: { type: RoadmapGoalSnapshotSchema, required: true }
+    goalSnapshot: { type: RoadmapGoalSnapshotSchema, required: true },
+    invalidatedAt: { type: Date, required: false, default: null }
   },
   {
     _id: false,

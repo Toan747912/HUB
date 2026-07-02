@@ -35,6 +35,10 @@ export type RoadmapRegeneratedPayload = {
   complexity: string;
 };
 
+export type RoadmapInvalidatedPayload = {
+  reason: string;
+};
+
 export const roadmapCreatedEvent = (
   metadata: RoadmapEventMetadata,
   payload: RoadmapCreatedPayload
@@ -85,6 +89,15 @@ export const roadmapRegeneratedEvent = (
   payload: RoadmapRegeneratedPayload
 ): RoadmapDomainEvent<RoadmapRegeneratedPayload> => ({
   type: 'RoadmapRegenerated',
+  metadata,
+  payload
+});
+
+export const roadmapInvalidatedEvent = (
+  metadata: RoadmapEventMetadata,
+  payload: RoadmapInvalidatedPayload
+): RoadmapDomainEvent<RoadmapInvalidatedPayload> => ({
+  type: 'RoadmapInvalidated',
   metadata,
   payload
 });

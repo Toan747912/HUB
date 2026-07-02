@@ -25,6 +25,10 @@ export type LearningStrategyChangedPayload = {
   strategies: { skillArea: string; strategy: string; rationale: string }[];
 };
 
+export type RecommendationInvalidatedPayload = {
+  reason: string;
+};
+
 export const recommendationGeneratedEvent = (
   metadata: RecommendationEventMetadata,
   payload: RecommendationGeneratedPayload
@@ -66,6 +70,15 @@ export const learningStrategyChangedEvent = (
   payload: LearningStrategyChangedPayload
 ): RecommendationDomainEvent<LearningStrategyChangedPayload> => ({
   type: 'LearningStrategyChanged',
+  metadata,
+  payload
+});
+
+export const recommendationInvalidatedEvent = (
+  metadata: RecommendationEventMetadata,
+  payload: RecommendationInvalidatedPayload
+): RecommendationDomainEvent<RecommendationInvalidatedPayload> => ({
+  type: 'RecommendationInvalidated',
   metadata,
   payload
 });

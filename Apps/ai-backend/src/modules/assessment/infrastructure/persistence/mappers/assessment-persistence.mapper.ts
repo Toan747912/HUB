@@ -46,6 +46,7 @@ export class AssessmentPersistenceMapper {
         gapCount: h.gapCount,
         createdAt: h.createdAt
       })),
+      invalidatedAt: assessment.getInvalidatedAt(),
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -63,6 +64,7 @@ export class AssessmentPersistenceMapper {
     (assessment as any).status = AssessmentStatus.create(doc.status);
     (assessment as any).aggregateVersion = doc.aggregateVersion;
     (assessment as any).pendingEvents = [];
+    (assessment as any).invalidatedAt = doc.invalidatedAt ?? null;
 
     (assessment as any).latestResult = doc.latestResult
       ? new AssessmentResult(

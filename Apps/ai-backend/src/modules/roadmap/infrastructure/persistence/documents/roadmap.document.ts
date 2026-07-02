@@ -68,6 +68,7 @@ export interface RoadmapDocument {
   complexity: string;
   plannerVersion: string;
   goalSnapshot: RoadmapGoalSnapshotDoc;
+  invalidatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

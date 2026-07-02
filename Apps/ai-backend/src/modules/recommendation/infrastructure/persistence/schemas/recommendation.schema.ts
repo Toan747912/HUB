@@ -96,7 +96,8 @@ export const RecommendationSchema = new Schema(
     learningStrategies: { type: [LearningStrategyAssignmentSchema], required: true, default: [] },
     reviewSchedules: { type: [ReviewScheduleSchema], required: true, default: [] },
     priorityDecisions: { type: [PriorityDecisionSchema], required: true, default: [] },
-    history: { type: [RecommendationHistorySchema], required: true, default: [] }
+    history: { type: [RecommendationHistorySchema], required: true, default: [] },
+    invalidatedAt: { type: Date, required: false, default: null }
   },
   {
     _id: false,

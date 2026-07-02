@@ -65,6 +65,7 @@ export class RoadmapPersistenceMapper {
       complexity: roadmap.getComplexity(),
       plannerVersion: roadmap.getPlannerVersion(),
       goalSnapshot,
+      invalidatedAt: roadmap.getInvalidatedAt(),
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -85,6 +86,7 @@ export class RoadmapPersistenceMapper {
     (roadmap as any).complexity = doc.complexity;
     (roadmap as any).plannerVersion = doc.plannerVersion;
     (roadmap as any).goalSnapshot = doc.goalSnapshot;
+    (roadmap as any).invalidatedAt = doc.invalidatedAt ?? null;
 
     (roadmap as any).phases = doc.phases.map(
       (phase) =>

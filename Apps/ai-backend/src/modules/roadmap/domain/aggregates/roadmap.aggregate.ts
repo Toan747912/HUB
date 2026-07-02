@@ -9,6 +9,7 @@ import {
   roadmapArchivedEvent,
   roadmapCompletedEvent,
   roadmapCreatedEvent,
+  roadmapInvalidatedEvent,
   roadmapPublishedEvent,
   roadmapRegeneratedEvent,
   roadmapUpdatedEvent
@@ -45,6 +46,7 @@ export class Roadmap {
   private complexity = 'LOW';
   private plannerVersion = '';
   private goalSnapshot!: PlanningInput;
+  private invalidatedAt: Date | null = null;
   private pendingEvents: RoadmapDomainEvent[] = [];
 
   private constructor(
@@ -120,6 +122,10 @@ export class Roadmap {
     return this.goalSnapshot;
   }
 
+  getInvalidatedAt(): Date | null {
+    return this.invalidatedAt;
+  }
+
   pullEvents(): RoadmapDomainEvent[] {
     const events = [...this.pendingEvents];
     this.pendingEvents = [];
@@ -175,6 +181,18 @@ export class Roadmap {
         complexity: this.complexity
       })
     );
+  }
+
+  // Orthogonal staleness flag: independent of `status`'s lifecycle state
+  // machine. Signals "something upstream changed, this may need to be
+  // regenerated" without deciding what regeneration means or forcing a
+  // lifecycle transition. Intentionally not gated by assertNotTerminalMutation
+  // — an archived/completed roadmap can still be flagged stale.
+  invalidate(reason: string, context: EventContext, expectedVersion?: number): void {
+    this.assertConcurrency(expectedVersion);
+    this.bumpVersion();
+    this.invalidatedAt = new Date();
+    this.recordEvent(roadmapInvalidatedEvent(this.buildMetadata(context), { reason }));
   }
 
   completeTask(taskId: TaskId, context: EventContext, expectedVersion?: number): void {

@@ -27,6 +27,10 @@ export type AssessmentArchivedPayload = {
   previousStatus: string;
 };
 
+export type AssessmentInvalidatedPayload = {
+  reason: string;
+};
+
 export const assessmentCreatedEvent = (
   metadata: AssessmentEventMetadata,
   payload: AssessmentCreatedPayload
@@ -68,6 +72,15 @@ export const assessmentArchivedEvent = (
   payload: AssessmentArchivedPayload
 ): AssessmentDomainEvent<AssessmentArchivedPayload> => ({
   type: 'AssessmentArchived',
+  metadata,
+  payload
+});
+
+export const assessmentInvalidatedEvent = (
+  metadata: AssessmentEventMetadata,
+  payload: AssessmentInvalidatedPayload
+): AssessmentDomainEvent<AssessmentInvalidatedPayload> => ({
+  type: 'AssessmentInvalidated',
   metadata,
   payload
 });

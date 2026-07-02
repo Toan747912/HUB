@@ -69,6 +69,7 @@ export class RecommendationPersistenceMapper {
         averageConfidence: h.averageConfidence,
         createdAt: h.createdAt
       })),
+      invalidatedAt: recommendation.getInvalidatedAt(),
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -88,6 +89,7 @@ export class RecommendationPersistenceMapper {
     (recommendation as any).aggregateVersion = doc.aggregateVersion;
     (recommendation as any).engineVersion = doc.engineVersion;
     (recommendation as any).pendingEvents = [];
+    (recommendation as any).invalidatedAt = doc.invalidatedAt ?? null;
 
     (recommendation as any).items = doc.items.map(
       (i) =>

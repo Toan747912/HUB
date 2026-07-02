@@ -13,6 +13,12 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   private queue: Queue<DomainEvent> | null = null;
   private dlq: Queue<DomainEvent> | null = null;
   private worker: Worker<DomainEvent> | null = null;
+  // In-process fan-out for every relayed event, invoked from inside the
+  // single BullMQ Worker's job handler (see `process`). Consumers such as
+  // the platform-orchestration module register here instead of opening a
+  // second BullMQ `Worker` on GOAL_EVENTS_QUEUE — two workers on the same
+  // queue name would compete for jobs rather than both seeing every job.
+  private readonly eventHandlers: Array<(event: DomainEvent) => Promise<void> | void> = [];
 
   constructor(
     private readonly circuitBreaker: RedisCircuitBreakerService,
@@ -56,6 +62,17 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
   isReady(): boolean {
     return this.queue !== null;
+  }
+
+  /**
+   * Registers an additional in-process consumer that runs for every event
+   * processed off GOAL_EVENTS_QUEUE by this service's single Worker. Handler
+   * errors propagate and fail the job (triggering BullMQ's existing
+   * retry/backoff and eventual dead-letter behavior), so a handler should be
+   * idempotent under at-least-once delivery.
+   */
+  registerHandler(handler: (event: DomainEvent) => Promise<void> | void): void {
+    this.eventHandlers.push(handler);
   }
 
   async enqueue(event: DomainEvent): Promise<void> {
@@ -111,11 +128,18 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
     try {
       this.log('job_processing', event, { latencyMs: Date.now() - start });
+      await this.runHandlers(event);
       await this.circuitBreaker.onSuccess(jobKey);
       this.metrics?.incrementBullmqJob('processed');
     } catch (error) {
       await this.circuitBreaker.onFailure(jobKey);
       throw error;
+    }
+  }
+
+  private async runHandlers(event: DomainEvent): Promise<void> {
+    for (const handler of this.eventHandlers) {
+      await handler(event);
     }
   }
 

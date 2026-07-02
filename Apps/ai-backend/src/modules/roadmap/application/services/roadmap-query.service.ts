@@ -5,6 +5,7 @@ import { GetRoadmapQuery } from '../queries/get-roadmap.query';
 import { GetRoadmapsQuery } from '../queries/get-roadmaps.query';
 import { GetRoadmapHistoryQuery } from '../queries/get-roadmap-history.query';
 import { GetRoadmapProgressQuery } from '../queries/get-roadmap-progress.query';
+import { GetRoadmapsByGoalIdQuery } from '../queries/get-roadmaps-by-goal-id.query';
 
 export class RoadmapQueryService {
   constructor(private readonly repository: IRoadmapRepository) {}
@@ -56,6 +57,18 @@ export class RoadmapQueryService {
       return roadmap;
     } catch (error) {
       this.log('GET_ROADMAP_PROGRESS', query.roadmapId, start, 'FAILURE', error);
+      throw error;
+    }
+  }
+
+  async getRoadmapsByGoalId(query: GetRoadmapsByGoalIdQuery): Promise<Roadmap[]> {
+    const start = Date.now();
+    try {
+      const roadmaps = await this.repository.findByGoalId(query.goalId);
+      this.log('GET_ROADMAPS_BY_GOAL_ID', query.goalId, start, 'SUCCESS');
+      return roadmaps;
+    } catch (error) {
+      this.log('GET_ROADMAPS_BY_GOAL_ID', query.goalId, start, 'FAILURE', error);
       throw error;
     }
   }

@@ -19,6 +19,7 @@ import {
   recommendationApprovedEvent,
   recommendationArchivedEvent,
   recommendationGeneratedEvent,
+  recommendationInvalidatedEvent,
   recommendationRejectedEvent
 } from '../events/recommendation-events';
 import { RecommendationDomainEvent, RecommendationEventMetadata } from '../events/recommendation-event-metadata';
@@ -51,6 +52,7 @@ export class Recommendation {
   private priorityDecisions: PriorityDecision[] = [];
   private engineVersion = '';
   private history: RecommendationHistory[] = [];
+  private invalidatedAt: Date | null = null;
   private pendingEvents: RecommendationDomainEvent[] = [];
 
   private constructor(
@@ -176,6 +178,10 @@ export class Recommendation {
     return [...this.history];
   }
 
+  getInvalidatedAt(): Date | null {
+    return this.invalidatedAt;
+  }
+
   pullEvents(): RecommendationDomainEvent[] {
     const events = [...this.pendingEvents];
     this.pendingEvents = [];
@@ -210,6 +216,17 @@ export class Recommendation {
     this.status = RecommendationStatus.create('ARCHIVED');
     this.appendHistory('ARCHIVED');
     this.recordEvent(recommendationArchivedEvent(this.buildMetadata(context), { previousStatus }));
+  }
+
+  // Orthogonal staleness flag: independent of `status`'s lifecycle state
+  // machine. Signals "something upstream changed, this may need to be
+  // regenerated" without deciding what regeneration means or forcing a
+  // lifecycle transition.
+  invalidate(reason: string, context: EventContext, expectedVersion?: number): void {
+    this.assertConcurrency(expectedVersion);
+    this.bumpVersion();
+    this.invalidatedAt = new Date();
+    this.recordEvent(recommendationInvalidatedEvent(this.buildMetadata(context), { reason }));
   }
 
   private appendHistory(reason: 'GENERATED' | 'APPROVED' | 'REJECTED' | 'ARCHIVED', averageConfidenceOverride?: number): void {

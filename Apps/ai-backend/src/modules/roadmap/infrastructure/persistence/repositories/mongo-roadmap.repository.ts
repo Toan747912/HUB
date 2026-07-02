@@ -66,6 +66,20 @@ export class MongoRoadmapRepository implements IRoadmapRepository {
     });
   }
 
+  async findByGoalId(goalId: string): Promise<Roadmap[]> {
+    return this.instrumented('findByGoalId', goalId, async () => {
+      const start = Date.now();
+      try {
+        const docs = await this.model.find({ goalId }).lean<RoadmapDocument[]>().exec();
+        this.log('findByGoalId', goalId, start, 'SUCCESS');
+        return docs.map((d) => RoadmapPersistenceMapper.toDomain(d));
+      } catch (error) {
+        this.log('findByGoalId', goalId, start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.instrumented('delete', id, async () => {
       const start = Date.now();

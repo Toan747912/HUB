@@ -7,6 +7,7 @@ import { CreateAssessmentCommand } from '../commands/create-assessment.command';
 import { RunAssessmentCommand } from '../commands/run-assessment.command';
 import { ApproveAssessmentCommand } from '../commands/approve-assessment.command';
 import { ArchiveAssessmentCommand } from '../commands/archive-assessment.command';
+import { InvalidateAssessmentCommand } from '../commands/invalidate-assessment.command';
 import { IAssessmentRepository } from '../contracts/assessment-repository.contract';
 import { IEventPublisher } from '../contracts/event-publisher.contract';
 import {
@@ -161,6 +162,33 @@ export class AssessmentCommandService {
       return assessment;
     } catch (error) {
       this.log('ARCHIVE_ASSESSMENT', command.assessmentId, start, 'FAILURE', error);
+      throw this.mapError(error);
+    }
+  }
+
+  async invalidateAssessment(command: InvalidateAssessmentCommand): Promise<Assessment> {
+    const start = Date.now();
+    try {
+      const assessment = await this.withLock(command.assessmentId, async () => {
+        const a = await this.repository.findById(command.assessmentId);
+        if (!a) throw new AssessmentNotFoundError(command.assessmentId);
+
+        a.invalidate(
+          command.reason,
+          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
+          command.expectedVersion
+        );
+
+        await this.repository.save(a);
+        const events = a.pullEvents();
+        await this.eventPublisher.publishMany(events);
+        return a;
+      });
+
+      this.log('INVALIDATE_ASSESSMENT', command.assessmentId, start, 'SUCCESS');
+      return assessment;
+    } catch (error) {
+      this.log('INVALIDATE_ASSESSMENT', command.assessmentId, start, 'FAILURE', error);
       throw this.mapError(error);
     }
   }

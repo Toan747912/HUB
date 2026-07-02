@@ -9,6 +9,7 @@ import { ArchiveRoadmapCommand } from '../commands/archive-roadmap.command';
 import { PublishRoadmapCommand } from '../commands/publish-roadmap.command';
 import { RegenerateRoadmapCommand } from '../commands/regenerate-roadmap.command';
 import { CompleteRoadmapTaskCommand } from '../commands/complete-roadmap-task.command';
+import { InvalidateRoadmapCommand } from '../commands/invalidate-roadmap.command';
 import { IRoadmapRepository } from '../contracts/roadmap-repository.contract';
 import { IEventPublisher } from '../contracts/event-publisher.contract';
 import {
@@ -230,6 +231,33 @@ export class RoadmapCommandService {
       return roadmap;
     } catch (error) {
       this.log('COMPLETE_ROADMAP_TASK', command.roadmapId, start, 'FAILURE', error);
+      throw this.mapError(error);
+    }
+  }
+
+  async invalidateRoadmap(command: InvalidateRoadmapCommand): Promise<Roadmap> {
+    const start = Date.now();
+    try {
+      const roadmap = await this.withLock(command.roadmapId, async () => {
+        const r = await this.repository.findById(command.roadmapId);
+        if (!r) throw new RoadmapNotFoundError(command.roadmapId);
+
+        r.invalidate(
+          command.reason,
+          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
+          command.expectedVersion
+        );
+
+        await this.repository.save(r);
+        const events = r.pullEvents();
+        await this.eventPublisher.publishMany(events);
+        return r;
+      });
+
+      this.log('INVALIDATE_ROADMAP', command.roadmapId, start, 'SUCCESS');
+      return roadmap;
+    } catch (error) {
+      this.log('INVALIDATE_ROADMAP', command.roadmapId, start, 'FAILURE', error);
       throw this.mapError(error);
     }
   }

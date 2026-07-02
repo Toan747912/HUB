@@ -4,6 +4,7 @@ export interface IRecommendationRepository {
   save(recommendation: Recommendation): Promise<void>;
   findById(id: string): Promise<Recommendation | null>;
   findAll(learnerId?: string): Promise<Recommendation[]>;
+  findByAssessmentId(assessmentId: string): Promise<Recommendation[]>;
   delete(id: string): Promise<void>;
 }
 

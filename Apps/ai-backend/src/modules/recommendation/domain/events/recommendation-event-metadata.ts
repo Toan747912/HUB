@@ -21,7 +21,8 @@ export type RecommendationDomainEvent<TPayload = Record<string, unknown>> = {
     | 'RecommendationApproved'
     | 'RecommendationRejected'
     | 'RecommendationArchived'
-    | 'LearningStrategyChanged';
+    | 'LearningStrategyChanged'
+    | 'RecommendationInvalidated';
   metadata: RecommendationEventMetadata;
   payload: TPayload;
 };

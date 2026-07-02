@@ -20,7 +20,8 @@ export type RoadmapDomainEvent<TPayload = Record<string, unknown>> = {
     | 'RoadmapPublished'
     | 'RoadmapArchived'
     | 'RoadmapCompleted'
-    | 'RoadmapRegenerated';
+    | 'RoadmapRegenerated'
+    | 'RoadmapInvalidated';
   metadata: RoadmapEventMetadata;
   payload: TPayload;
 };

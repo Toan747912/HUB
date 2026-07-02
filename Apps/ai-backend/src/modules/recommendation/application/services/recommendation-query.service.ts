@@ -6,6 +6,7 @@ import { GetRecommendationQuery } from '../queries/get-recommendation.query';
 import { GetRecommendationsQuery } from '../queries/get-recommendations.query';
 import { GetRecommendationHistoryQuery } from '../queries/get-recommendation-history.query';
 import { GetLearningStrategiesQuery } from '../queries/get-learning-strategies.query';
+import { GetRecommendationsByAssessmentIdQuery } from '../queries/get-recommendations-by-assessment-id.query';
 
 export class RecommendationQueryService {
   constructor(private readonly repository: IRecommendationRepository) {}
@@ -52,6 +53,18 @@ export class RecommendationQueryService {
   // catalog (not tied to a specific Recommendation aggregate).
   getLearningStrategies(_query: GetLearningStrategiesQuery): LearningStrategyCatalogEntry[] {
     return LEARNING_STRATEGY_CATALOG;
+  }
+
+  async getRecommendationsByAssessmentId(query: GetRecommendationsByAssessmentIdQuery): Promise<Recommendation[]> {
+    const start = Date.now();
+    try {
+      const recommendations = await this.repository.findByAssessmentId(query.assessmentId);
+      this.log('GET_RECOMMENDATIONS_BY_ASSESSMENT_ID', query.assessmentId, start, 'SUCCESS');
+      return recommendations;
+    } catch (error) {
+      this.log('GET_RECOMMENDATIONS_BY_ASSESSMENT_ID', query.assessmentId, start, 'FAILURE', error);
+      throw error;
+    }
   }
 
   private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {

@@ -66,6 +66,20 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
     });
   }
 
+  async findByRoadmapId(roadmapId: string): Promise<Assessment[]> {
+    return this.instrumented('findByRoadmapId', roadmapId, async () => {
+      const start = Date.now();
+      try {
+        const docs = await this.model.find({ roadmapId }).lean<AssessmentDocument[]>().exec();
+        this.log('findByRoadmapId', roadmapId, start, 'SUCCESS');
+        return docs.map((d) => AssessmentPersistenceMapper.toDomain(d));
+      } catch (error) {
+        this.log('findByRoadmapId', roadmapId, start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.instrumented('delete', id, async () => {
       const start = Date.now();

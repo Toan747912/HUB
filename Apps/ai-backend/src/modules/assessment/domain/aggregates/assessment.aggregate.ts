@@ -9,6 +9,7 @@ import {
   assessmentArchivedEvent,
   assessmentCompletedEvent,
   assessmentCreatedEvent,
+  assessmentInvalidatedEvent,
   competencyUpdatedEvent,
   knowledgeGapDetectedEvent
 } from '../events/assessment-events';
@@ -37,6 +38,7 @@ export class Assessment {
   private status: AssessmentStatus = AssessmentStatus.draft();
   private latestResult: AssessmentResult | null = null;
   private history: AssessmentHistory[] = [];
+  private invalidatedAt: Date | null = null;
   private pendingEvents: AssessmentDomainEvent[] = [];
 
   private constructor(
@@ -93,6 +95,10 @@ export class Assessment {
 
   getHistory(): AssessmentHistory[] {
     return [...this.history];
+  }
+
+  getInvalidatedAt(): Date | null {
+    return this.invalidatedAt;
   }
 
   pullEvents(): AssessmentDomainEvent[] {
@@ -174,6 +180,18 @@ export class Assessment {
     this.status = AssessmentStatus.create('ARCHIVED');
     this.appendHistory('ARCHIVED');
     this.recordEvent(assessmentArchivedEvent(this.buildMetadata(context), { previousStatus }));
+  }
+
+  // Orthogonal staleness flag: independent of `status`'s lifecycle state
+  // machine. Signals "something upstream changed, this may need to be
+  // regenerated" without deciding what regeneration means or forcing a
+  // lifecycle transition. Intentionally not gated by the "locked for run"
+  // check — an approved/archived assessment can still be flagged stale.
+  invalidate(reason: string, context: EventContext, expectedVersion?: number): void {
+    this.assertConcurrency(expectedVersion);
+    this.bumpVersion();
+    this.invalidatedAt = new Date();
+    this.recordEvent(assessmentInvalidatedEvent(this.buildMetadata(context), { reason }));
   }
 
   private appendHistory(reason: 'CREATED' | 'RUN' | 'APPROVED' | 'ARCHIVED'): void {

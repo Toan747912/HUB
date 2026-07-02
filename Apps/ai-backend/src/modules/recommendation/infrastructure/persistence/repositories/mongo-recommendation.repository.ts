@@ -66,6 +66,20 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
     });
   }
 
+  async findByAssessmentId(assessmentId: string): Promise<Recommendation[]> {
+    return this.instrumented('findByAssessmentId', assessmentId, async () => {
+      const start = Date.now();
+      try {
+        const docs = await this.model.find({ assessmentId }).lean<RecommendationDocument[]>().exec();
+        this.log('findByAssessmentId', assessmentId, start, 'SUCCESS');
+        return docs.map((d) => RecommendationPersistenceMapper.toDomain(d));
+      } catch (error) {
+        this.log('findByAssessmentId', assessmentId, start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.instrumented('delete', id, async () => {
       const start = Date.now();
