@@ -1,7 +1,7 @@
 import { GoalId, LearnerId } from '../../../../../shared/domain/identifiers';
 import { Goal } from '../../../domain/aggregates/goal.aggregate';
 import { GoalDifficulty } from '../../../domain/value-objects/goal-difficulty.vo';
-import { GoalPriority } from '../../../domain/value-objects/goal-priority.vo';
+import { Priority } from '../../../../../shared/domain/vocabulary/priority.vo';
 import { GoalType } from '../../../domain/value-objects/goal-type.vo';
 import { TargetDate } from '../../../domain/value-objects/target-date.vo';
 import { IGoalRepository } from '../../contracts/goal-repository.contract';
@@ -18,7 +18,7 @@ const makeGoal = (): Goal => {
       description: 'Deep TS knowledge',
       type: GoalType.create('SKILL'),
       difficulty: GoalDifficulty.create('INTERMEDIATE'),
-      priority: GoalPriority.create('HIGH'),
+      priority: Priority.create('HIGH'),
       targetDate: TargetDate.create('2027-01-01')
     },
     { traceId: 't', correlationId: 'c', causationId: 'ca' }

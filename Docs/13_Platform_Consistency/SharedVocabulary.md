@@ -1,7 +1,7 @@
 # Shared Platform Vocabulary
 
-**Batch:** WP-06B — Platform Consistency Review
-**Purpose:** Define the canonical identifier and value vocabulary the platform *should* converge on. This is a proposal for Founder approval, not yet a Decision — see `ArchitectureDecisionRecords.md`.
+**Batch:** WP-06B — Platform Consistency Review (original proposal); updated by **WP-06C Phase 6 — Canonical Vocabulary (Workstream C)** with the as-built state.
+**Purpose:** Define the canonical identifier and value vocabulary the platform converges on. The Value vocabulary section below now reflects what has actually been implemented under `Apps/ai-backend/src/shared/domain/vocabulary/`, not just a proposal — see `ArchitectureDecisionRecords.md` for the identifier-vocabulary decisions (still pending/tracked separately).
 
 ## Identifier vocabulary
 
@@ -16,13 +16,25 @@
 | `SkillId` / `CompetencyId` | **does not exist** — see `skillArea` free text and `CompetencyLevelValue` below | one canonical entity + ID, replacing both `skillArea` string and any ad hoc competency references | knowledge (proposed single owner) |
 | `RoadmapPhaseId` | not found as a distinct entity — roadmap nodes are referenced ad hoc | branded ID value object if roadmap phases are to be individually addressable (used today only inside `roadmap.aggregate.ts` internals) | roadmap |
 
-## Value vocabulary (enums that should be shared, currently duplicated)
+## Value vocabulary — as-built (WP-06C Phase 6)
 
-| Canonical name | Current instances | Conflict |
-|---|---|---|
-| `Priority` | `GoalPriorityValue`, `RecommendationPriorityValue` | Identical value sets (`LOW/MEDIUM/HIGH/CRITICAL`), declared twice — should be one shared value object. |
-| `Difficulty` (proposed unifying name) | `GoalDifficultyValue` (`BEGINNER..EXPERT`), `RoadmapComplexityValue` (`LOW..VERY_HIGH`) | Different scales, unclear if same axis — needs an explicit decision on whether these are the same concept before merging. |
-| `CompetencyLevel` | `CompetencyLevelValue` (assessment module only) vs `KnowledgeNodeMastery` (doc concept, `CoreDomainMap.md:51`) | Two 4-5 level scales for what docs describe as the same "how well is this known" concept — never reconciled. |
+`Apps/ai-backend/src/shared/domain/vocabulary/` is the canonical package for platform-level value objects. Every module listed below imports its value object from this package instead of declaring a module-local duplicate.
+
+| Canonical name | File | Consolidates / replaces | Modules referencing it |
+|---|---|---|---|
+| `Priority` (`PriorityValue`) | `shared/domain/vocabulary/priority.vo.ts` | `GoalPriority`/`GoalPriorityValue` (goal, deleted) and `RecommendationPriority`/`RecommendationPriorityValue` (recommendation, deleted) — identical `LOW/MEDIUM/HIGH/CRITICAL` sets. Kept `RecommendationPriority`'s `fromScore()` helper since it was the more complete of the two APIs. | goal, recommendation |
+| `Confidence` | `shared/domain/vocabulary/confidence.vo.ts` | `ConfidenceScore` (assessment, deleted) and `RecommendationConfidence` (recommendation, deleted) — identical 0-100 numeric value objects. | assessment, recommendation |
+| `CompetencyLevel` (`CompetencyLevelValue`) | `shared/domain/vocabulary/competency-level.vo.ts` | Relocated as-is from `assessment/domain/value-objects/competency-level.vo.ts` (no other module had a duplicate definition to merge). Positioned here so a future module (e.g. a Learning Session engine) can reference the same 5-level `NOVICE..EXPERT` scale instead of redefining it. | assessment today; available platform-wide |
+| `LearningStrategy` (`LearningStrategyValue`) | `shared/domain/vocabulary/learning-strategy.vo.ts` | Relocated as-is from `recommendation/domain/value-objects/learning-strategy.vo.ts` (no duplicate existed). Same rationale as `CompetencyLevel`: positioned as a platform-level definition for future reuse. | recommendation today; available platform-wide |
+
+### Deliberately kept separate (not merged)
+
+These pairs look superficially similar but represent genuinely different concepts, or are not simple value objects, and were kept apart on purpose so this isn't mistaken for an oversight later:
+
+- **`GoalDifficultyValue`** (`goal/domain/value-objects/goal-difficulty.vo.ts`, `BEGINNER..EXPERT`) vs **`RoadmapComplexityValue`** (`roadmap/domain/value-objects/roadmap-complexity.vo.ts`, `LOW..VERY_HIGH`) — `GoalDifficulty` rates how hard a *learner's goal* is to achieve; `RoadmapComplexity` rates how complex a *generated plan* is to execute. Different scales, different subjects, different owning aggregates. Left untouched in both location and content.
+- **`GoalProgress`** (`goal/domain/entities/goal-progress.entity.ts`) vs **`RoadmapProgress`** (`roadmap/domain/entities/roadmap-progress.entity.ts`) — structurally similar (`completionRatio` + an ID list + `updatedAt`), but the ID lists track different things: `reachedMilestoneIds` (goal milestones) vs `completedTaskIds` (roadmap tasks), each validated by its own module-specific domain error (`GoalDomainError` vs `RoadmapDomainError`). Both are entities, not simple value objects, and each is scoped to its own aggregate's lifecycle. Consistent with the Difficulty/Complexity precedent above, these were kept as two separate types rather than forced into one shared "Progress" abstraction that would blur which milestones/tasks a given ratio refers to.
+- **`KnowledgeGap`** (`assessment/domain/entities/knowledge-gap.entity.ts`) — audited and confirmed to be a domain **entity** (has an `id`, `skillId`, `weight`, `reason`), not a simple value object like the terms above. Left in `assessment` rather than force-relocated into the vocabulary package, which is scoped to value objects.
+- **`Readiness`** — searched the codebase (`grep -rn -i readiness src`); no dedicated `Readiness` value-object class exists anywhere. `readiness` appears only as a plain `ReadinessLevel = 'READY' | 'AT_RISK' | 'NOT_READY'` string field inside the assessment module's engine types/entities, passed as a plain `string` across the assessment → recommendation boundary (never as a shared class). There is no code-level "Readiness" concept to consolidate; introducing one now would be a new business capability, which is out of scope for this phase.
 
 ## `skillArea` — highest-priority undefined concept
 

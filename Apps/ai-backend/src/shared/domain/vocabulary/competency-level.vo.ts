@@ -4,6 +4,12 @@ const ALLOWED_LEVELS: CompetencyLevelValue[] = ['NOVICE', 'DEVELOPING', 'PROFICI
 
 const ORDER: CompetencyLevelValue[] = ['NOVICE', 'DEVELOPING', 'PROFICIENT', 'ADVANCED', 'EXPERT'];
 
+/**
+ * Canonical competency-level vocabulary. Currently referenced only by the
+ * assessment module, but positioned here as a platform-level definition so
+ * future modules (e.g. a Learning Session module) can reference the same
+ * definition rather than redefining it.
+ */
 export class CompetencyLevel {
   private constructor(private readonly value: CompetencyLevelValue) {}
 

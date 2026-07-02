@@ -5,7 +5,7 @@ import { Model, disconnect } from 'mongoose';
 import { randomUUID } from 'crypto';
 import { Goal } from '../../../../domain/aggregates/goal.aggregate';
 import { GoalDifficulty } from '../../../../domain/value-objects/goal-difficulty.vo';
-import { GoalPriority } from '../../../../domain/value-objects/goal-priority.vo';
+import { Priority } from '../../../../../../shared/domain/vocabulary/priority.vo';
 import { GoalType } from '../../../../domain/value-objects/goal-type.vo';
 import { TargetDate } from '../../../../domain/value-objects/target-date.vo';
 import { GoalMilestone } from '../../../../domain/entities/goal-milestone.entity';
@@ -23,7 +23,7 @@ const makeGoal = (overrides: Partial<{ goalId: string; learnerId: string }> = {}
       description: 'Deep TS knowledge',
       type: GoalType.create('SKILL'),
       difficulty: GoalDifficulty.create('INTERMEDIATE'),
-      priority: GoalPriority.create('HIGH'),
+      priority: Priority.create('HIGH'),
       targetDate: TargetDate.create('2027-01-01')
     },
     { traceId: 'test-trace', correlationId: 'test-corr', causationId: 'test-cause' }

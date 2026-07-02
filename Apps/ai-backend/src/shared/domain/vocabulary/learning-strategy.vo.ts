@@ -11,6 +11,11 @@ const ALLOWED_STRATEGIES: LearningStrategyValue[] = [
   'RECOVERY'
 ];
 
+/**
+ * Canonical learning-strategy vocabulary. Currently referenced only by the
+ * recommendation module, but positioned here as a platform-level definition
+ * so future modules can reference the same definition.
+ */
 export class LearningStrategy {
   private constructor(private readonly value: LearningStrategyValue) {}
 

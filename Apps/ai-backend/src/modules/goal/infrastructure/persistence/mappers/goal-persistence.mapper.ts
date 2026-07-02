@@ -5,7 +5,7 @@ import { GoalMilestone } from '../../../domain/entities/goal-milestone.entity';
 import { GoalProgress } from '../../../domain/entities/goal-progress.entity';
 import { GoalVersion } from '../../../domain/entities/goal-version.entity';
 import { GoalDifficulty } from '../../../domain/value-objects/goal-difficulty.vo';
-import { GoalPriority } from '../../../domain/value-objects/goal-priority.vo';
+import { Priority } from '../../../../../shared/domain/vocabulary/priority.vo';
 import { GoalStatus } from '../../../domain/value-objects/goal-status.vo';
 import { GoalType } from '../../../domain/value-objects/goal-type.vo';
 import { TargetDate } from '../../../domain/value-objects/target-date.vo';
@@ -78,7 +78,7 @@ export class GoalPersistenceMapper {
           v.description,
           GoalType.create(v.type),
           GoalDifficulty.create(v.difficulty),
-          GoalPriority.create(v.priority),
+          Priority.create(v.priority),
           TargetDate.create(v.targetDate),
           v.createdAt
         )

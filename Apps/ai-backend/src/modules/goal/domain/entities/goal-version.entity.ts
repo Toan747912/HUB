@@ -1,5 +1,5 @@
 import { GoalDifficulty } from '../value-objects/goal-difficulty.vo';
-import { GoalPriority } from '../value-objects/goal-priority.vo';
+import { Priority } from '../../../../shared/domain/vocabulary/priority.vo';
 import { GoalType } from '../value-objects/goal-type.vo';
 import { TargetDate } from '../value-objects/target-date.vo';
 
@@ -10,7 +10,7 @@ export class GoalVersion {
     public readonly description: string,
     public readonly type: GoalType,
     public readonly difficulty: GoalDifficulty,
-    public readonly priority: GoalPriority,
+    public readonly priority: Priority,
     public readonly targetDate: TargetDate,
     public readonly createdAt: Date = new Date()
   ) {}

@@ -1,4 +1,4 @@
-import { CompetencyLevel } from '../value-objects/competency-level.vo';
+import { CompetencyLevel } from '../../../../shared/domain/vocabulary/competency-level.vo';
 import { KnowledgeWeight } from '../value-objects/knowledge-weight.vo';
 import {
   AssessmentComputation,

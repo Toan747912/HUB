@@ -1,5 +1,5 @@
-import { LearningStrategyValue } from '../value-objects/learning-strategy.vo';
-import { RecommendationPriority } from '../value-objects/recommendation-priority.vo';
+import { LearningStrategyValue } from '../../../../shared/domain/vocabulary/learning-strategy.vo';
+import { Priority } from '../../../../shared/domain/vocabulary/priority.vo';
 import {
   LearningStrategyResult,
   PriorityDecisionResult,
@@ -330,7 +330,7 @@ export class RecommendationEngine {
       skillId: bucket.skillId === '__roadmap__' ? null : bucket.skillId,
       taskId: null,
       strategy: null,
-      priority: RecommendationPriority.fromScore(scores.priorityScore).getValue(),
+      priority: Priority.fromScore(scores.priorityScore).getValue(),
       scores,
       reason,
       affectedGoalId: input.goalId,

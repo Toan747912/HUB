@@ -4,7 +4,7 @@ import { GoalConstraint } from '../../domain/entities/goal-constraint.entity';
 import { GoalMilestone } from '../../domain/entities/goal-milestone.entity';
 import { GoalDomainError } from '../../domain/errors/goal-domain.error';
 import { GoalDifficulty } from '../../domain/value-objects/goal-difficulty.vo';
-import { GoalPriority } from '../../domain/value-objects/goal-priority.vo';
+import { Priority } from '../../../../shared/domain/vocabulary/priority.vo';
 import { GoalType } from '../../domain/value-objects/goal-type.vo';
 import { TargetDate } from '../../domain/value-objects/target-date.vo';
 import { CreateGoalCommand } from '../commands/create-goal.command';
@@ -56,7 +56,7 @@ export class GoalCommandService {
           description: command.description,
           type: GoalType.create(command.type as any),
           difficulty: GoalDifficulty.create(command.difficulty as any),
-          priority: GoalPriority.create(command.priority as any),
+          priority: Priority.create(command.priority as any),
           targetDate: TargetDate.create(command.targetDate)
         },
         {
@@ -90,7 +90,7 @@ export class GoalCommandService {
           command.description,
           GoalType.create(command.type as any),
           GoalDifficulty.create(command.difficulty as any),
-          GoalPriority.create(command.priority as any),
+          Priority.create(command.priority as any),
           TargetDate.create(command.targetDate),
           {
             traceId: command.traceId,

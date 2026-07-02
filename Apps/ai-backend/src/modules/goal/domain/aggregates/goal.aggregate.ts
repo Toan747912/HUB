@@ -10,7 +10,7 @@ import { GoalDomainError } from '../errors/goal-domain.error';
 import { ensureValidLifecycleTransition } from '../invariants/goal-lifecycle.invariant';
 import { ensureExpectedVersion } from '../invariants/goal-version.invariant';
 import { GoalDifficulty } from '../value-objects/goal-difficulty.vo';
-import { GoalPriority } from '../value-objects/goal-priority.vo';
+import { Priority } from '../../../../shared/domain/vocabulary/priority.vo';
 import { GoalStatus, GoalStatusValue } from '../value-objects/goal-status.vo';
 import { GoalType } from '../value-objects/goal-type.vo';
 import { TargetDate } from '../value-objects/target-date.vo';
@@ -28,7 +28,7 @@ type GoalCreateProps = {
   description: string;
   type: GoalType;
   difficulty: GoalDifficulty;
-  priority: GoalPriority;
+  priority: Priority;
   targetDate: TargetDate;
 };
 
@@ -134,7 +134,7 @@ export class Goal {
     description: string,
     type: GoalType,
     difficulty: GoalDifficulty,
-    priority: GoalPriority,
+    priority: Priority,
     targetDate: TargetDate,
     context: EventContext,
     expectedVersion?: number
@@ -240,7 +240,7 @@ export class Goal {
     description: string,
     type: GoalType,
     difficulty: GoalDifficulty,
-    priority: GoalPriority,
+    priority: Priority,
     targetDate: TargetDate
   ): void {
     this.bumpVersion();

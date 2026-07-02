@@ -1,4 +1,4 @@
-import { LearningStrategyValue } from '../value-objects/learning-strategy.vo';
+import { LearningStrategyValue } from '../../../../shared/domain/vocabulary/learning-strategy.vo';
 
 export type LearningStrategyCatalogEntry = {
   strategy: LearningStrategyValue;
