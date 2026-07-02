@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { GoalId, LearnerId, MilestoneId } from '../../../../shared/domain/identifiers';
 import { GoalConstraint } from '../entities/goal-constraint.entity';
 import { GoalMilestone } from '../entities/goal-milestone.entity';
 import { GoalProgress } from '../entities/goal-progress.entity';
@@ -21,8 +22,8 @@ type EventContext = {
 };
 
 type GoalCreateProps = {
-  goalId: string;
-  learnerId: string;
+  goalId: GoalId;
+  learnerId: LearnerId;
   title: string;
   description: string;
   type: GoalType;
@@ -40,14 +41,14 @@ export class Goal {
   private progress: GoalProgress = new GoalProgress(0, []);
   private pendingEvents: GoalDomainEvent[] = [];
 
-  private constructor(private readonly goalId: string, private readonly learnerId: string) {}
+  private constructor(private readonly goalId: GoalId, private readonly learnerId: LearnerId) {}
 
   static create(props: GoalCreateProps, context: EventContext): Goal {
     const aggregate = new Goal(props.goalId, props.learnerId);
     aggregate.appendVersion(props.title, props.description, props.type, props.difficulty, props.priority, props.targetDate);
     aggregate.recordEvent(
       goalCreatedEvent(aggregate.buildMetadata(context), {
-        learnerId: props.learnerId,
+        learnerId: props.learnerId.toString(),
         status: aggregate.status.getValue(),
         title: props.title
       })
@@ -55,7 +56,7 @@ export class Goal {
     return aggregate;
   }
 
-  getId(): string {
+  getId(): GoalId {
     return this.goalId;
   }
 
@@ -193,12 +194,12 @@ export class Goal {
     this.milestones = [...this.milestones, milestone];
   }
 
-  reachMilestone(milestoneId: string, context: EventContext, expectedVersion?: number): void {
+  reachMilestone(milestoneId: MilestoneId, context: EventContext, expectedVersion?: number): void {
     this.assertConcurrency(expectedVersion);
     this.assertNotTerminalMutation();
-    const index = this.milestones.findIndex((m) => m.id === milestoneId);
+    const index = this.milestones.findIndex((m) => m.id.equals(milestoneId));
     if (index < 0) {
-      throw new GoalDomainError('GOAL_MILESTONE_NOT_FOUND', `Milestone ${milestoneId} not found`);
+      throw new GoalDomainError('GOAL_MILESTONE_NOT_FOUND', `Milestone ${milestoneId.toString()} not found`);
     }
 
     const current = this.milestones[index];
@@ -207,13 +208,13 @@ export class Goal {
       const updated = current.markReached();
       this.milestones = [...this.milestones.slice(0, index), updated, ...this.milestones.slice(index + 1)];
 
-      const reachedMilestones = this.milestones.filter((m) => m.reached).map((m) => m.id);
+      const reachedMilestones = this.milestones.filter((m) => m.reached).map((m) => m.id.toString());
       const completionRatio = this.milestones.length === 0 ? 0 : Math.round((reachedMilestones.length / this.milestones.length) * 100);
       this.progress = this.progress.update(completionRatio, reachedMilestones);
 
       this.recordEvent(
         goalMilestoneReachedEvent(this.buildMetadata(context), {
-          milestoneId,
+          milestoneId: milestoneId.toString(),
           completionRatio
         })
       );

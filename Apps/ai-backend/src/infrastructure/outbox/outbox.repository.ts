@@ -24,7 +24,7 @@ export class OutboxRepository {
     const docs = events.map((event) => ({
       _id: event.metadata.eventId,
       eventId: event.metadata.eventId,
-      aggregateId: event.metadata.aggregateId,
+      aggregateId: event.metadata.aggregateId.toString(),
       aggregateVersion: event.metadata.aggregateVersion,
       eventType: event.type,
       payload: event.payload,

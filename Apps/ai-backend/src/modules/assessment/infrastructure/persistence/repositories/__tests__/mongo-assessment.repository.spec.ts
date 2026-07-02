@@ -8,6 +8,7 @@ import { AssessmentInput } from '../../../../domain/engine/assessment-engine.typ
 import { AssessmentDocument } from '../../documents/assessment.document';
 import { AssessmentSchema } from '../../schemas/assessment.schema';
 import { MongoAssessmentRepository } from '../mongo-assessment.repository';
+import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../../shared/domain/identifiers';
 
 const engine = new AssessmentEngine();
 const context = { traceId: 't', correlationId: 'c', causationId: 'ca' };
@@ -25,10 +26,10 @@ const baseInput: AssessmentInput = {
 const makeAssessment = (overrides: Partial<{ assessmentId: string; learnerId: string }> = {}): Assessment =>
   Assessment.create(
     {
-      assessmentId: overrides.assessmentId ?? 'assessment-1',
-      goalId: 'goal-1',
-      roadmapId: 'roadmap-1',
-      learnerId: overrides.learnerId ?? 'learner-1'
+      assessmentId: AssessmentId.create(overrides.assessmentId ?? 'assessment-1'),
+      goalId: GoalId.create('goal-1'),
+      roadmapId: RoadmapId.create('roadmap-1'),
+      learnerId: LearnerId.create(overrides.learnerId ?? 'learner-1')
     },
     context
   );
@@ -129,7 +130,7 @@ describe('MongoAssessmentRepository — integration', () => {
 
     const forLearnerA = await repository.findAll('learner-a');
     expect(forLearnerA).toHaveLength(1);
-    expect(forLearnerA[0].getId()).toBe('assessment-a');
+    expect(forLearnerA[0].getId().toString()).toBe('assessment-a');
 
     const all = await repository.findAll();
     expect(all).toHaveLength(2);

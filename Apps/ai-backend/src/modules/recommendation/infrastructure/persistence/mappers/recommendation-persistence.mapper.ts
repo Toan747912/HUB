@@ -1,3 +1,11 @@
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RecommendationId,
+  RoadmapId,
+  TaskId
+} from '../../../../../shared/domain/identifiers';
 import { Recommendation } from '../../../domain/aggregates/recommendation.aggregate';
 import { RecommendationItem } from '../../../domain/entities/recommendation-item.entity';
 import { RecommendationReason } from '../../../domain/entities/recommendation-reason.entity';
@@ -12,11 +20,11 @@ import { RecommendationDocument } from '../documents/recommendation.document';
 export class RecommendationPersistenceMapper {
   static toDocument(recommendation: Recommendation): RecommendationDocument {
     return {
-      _id: recommendation.getId(),
-      goalId: recommendation.getGoalId(),
-      roadmapId: recommendation.getRoadmapId(),
-      assessmentId: recommendation.getAssessmentId(),
-      learnerId: recommendation.getLearnerId(),
+      _id: recommendation.getId().toString(),
+      goalId: recommendation.getGoalId().toString(),
+      roadmapId: recommendation.getRoadmapId().toString(),
+      assessmentId: recommendation.getAssessmentId().toString(),
+      learnerId: recommendation.getLearnerId().toString(),
       status: recommendation.getStatus(),
       aggregateVersion: recommendation.getAggregateVersion(),
       engineVersion: recommendation.getEngineVersion(),
@@ -24,14 +32,14 @@ export class RecommendationPersistenceMapper {
         id: i.id,
         type: i.type,
         skillArea: i.skillArea,
-        taskId: i.taskId,
+        taskId: i.taskId ? i.taskId.toString() : null,
         strategy: i.strategy,
         priority: i.priority,
         scores: { ...i.scores },
         reason: { summary: i.reason.summary, evidence: [...i.reason.evidence] },
-        affectedGoalId: i.affectedGoalId,
-        affectedRoadmapId: i.affectedRoadmapId,
-        affectedAssessmentId: i.affectedAssessmentId,
+        affectedGoalId: i.affectedGoalId.toString(),
+        affectedRoadmapId: i.affectedRoadmapId.toString(),
+        affectedAssessmentId: i.affectedAssessmentId.toString(),
         logicalResourceRef: i.logicalResourceRef
       })),
       learningStrategies: recommendation.getLearningStrategies().map((s) => ({
@@ -71,11 +79,11 @@ export class RecommendationPersistenceMapper {
   static toDomain(doc: RecommendationDocument): Recommendation {
     const recommendation = Object.create(Recommendation.prototype) as Recommendation;
 
-    (recommendation as any).recommendationId = doc._id;
-    (recommendation as any).goalId = doc.goalId;
-    (recommendation as any).roadmapId = doc.roadmapId;
-    (recommendation as any).assessmentId = doc.assessmentId;
-    (recommendation as any).learnerId = doc.learnerId;
+    (recommendation as any).recommendationId = RecommendationId.create(doc._id);
+    (recommendation as any).goalId = GoalId.create(doc.goalId);
+    (recommendation as any).roadmapId = RoadmapId.create(doc.roadmapId);
+    (recommendation as any).assessmentId = AssessmentId.create(doc.assessmentId);
+    (recommendation as any).learnerId = LearnerId.create(doc.learnerId);
     (recommendation as any).status = RecommendationStatus.create(doc.status);
     (recommendation as any).aggregateVersion = doc.aggregateVersion;
     (recommendation as any).engineVersion = doc.engineVersion;
@@ -87,7 +95,7 @@ export class RecommendationPersistenceMapper {
           i.id,
           i.type,
           i.skillArea,
-          i.taskId,
+          i.taskId ? TaskId.create(i.taskId) : null,
           i.strategy,
           i.priority,
           new RecommendationScores(
@@ -100,9 +108,9 @@ export class RecommendationPersistenceMapper {
             i.scores.overallScore
           ),
           new RecommendationReason(i.reason.summary, i.reason.evidence),
-          i.affectedGoalId,
-          i.affectedRoadmapId,
-          i.affectedAssessmentId,
+          GoalId.create(i.affectedGoalId),
+          RoadmapId.create(i.affectedRoadmapId),
+          AssessmentId.create(i.affectedAssessmentId),
           i.logicalResourceRef
         )
     );

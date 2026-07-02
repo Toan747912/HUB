@@ -1,9 +1,11 @@
+import { TaskId } from '../../../../shared/domain/identifiers';
+
 export class RoadmapTask {
   constructor(
-    public readonly id: string,
+    public readonly id: TaskId,
     public readonly title: string,
     public readonly order: number,
-    public readonly dependsOn: string[],
+    public readonly dependsOn: TaskId[],
     public readonly estimatedDurationDays: number,
     public readonly complexity: string,
     public readonly completed: boolean = false,

@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { GoalId, LearnerId, MilestoneId, PhaseId, RoadmapId, TaskId } from '../../../../shared/domain/identifiers';
 import { RoadmapPhase } from '../entities/roadmap-phase.entity';
 import { RoadmapMilestone } from '../entities/roadmap-milestone.entity';
 import { RoadmapTask } from '../entities/roadmap-task.entity';
@@ -27,9 +28,9 @@ type EventContext = {
 };
 
 type RoadmapCreateProps = {
-  roadmapId: string;
-  goalId: string;
-  learnerId: string;
+  roadmapId: RoadmapId;
+  goalId: GoalId;
+  learnerId: LearnerId;
   goalSnapshot: PlanningInput;
   plan: PlanningResult;
 };
@@ -47,9 +48,9 @@ export class Roadmap {
   private pendingEvents: RoadmapDomainEvent[] = [];
 
   private constructor(
-    private readonly roadmapId: string,
-    private readonly goalId: string,
-    private readonly learnerId: string
+    private readonly roadmapId: RoadmapId,
+    private readonly goalId: GoalId,
+    private readonly learnerId: LearnerId
   ) {}
 
   static create(props: RoadmapCreateProps, context: EventContext): Roadmap {
@@ -63,8 +64,8 @@ export class Roadmap {
 
     aggregate.recordEvent(
       roadmapCreatedEvent(aggregate.buildMetadata(context), {
-        goalId: props.goalId,
-        learnerId: props.learnerId,
+        goalId: props.goalId.toString(),
+        learnerId: props.learnerId.toString(),
         status: aggregate.status.getValue(),
         phaseCount: phases.length,
         estimatedDurationDays: aggregate.estimatedDurationDays,
@@ -75,11 +76,11 @@ export class Roadmap {
     return aggregate;
   }
 
-  getId(): string {
+  getId(): RoadmapId {
     return this.roadmapId;
   }
 
-  getGoalId(): string {
+  getGoalId(): GoalId {
     return this.goalId;
   }
 
@@ -176,7 +177,7 @@ export class Roadmap {
     );
   }
 
-  completeTask(taskId: string, context: EventContext, expectedVersion?: number): void {
+  completeTask(taskId: TaskId, context: EventContext, expectedVersion?: number): void {
     this.assertConcurrency(expectedVersion);
     this.assertNotTerminalMutation();
 
@@ -186,7 +187,7 @@ export class Roadmap {
       const updatedMilestones = phase.milestones.map((milestone) => {
         const updatedTasks = milestone.tasks.map((task) => {
           totalTasks += 1;
-          if (task.id === taskId) {
+          if (task.id.equals(taskId)) {
             found = true;
             return task.completed ? task : task.markCompleted();
           }
@@ -198,14 +199,14 @@ export class Roadmap {
     });
 
     if (!found) {
-      throw new RoadmapDomainError('ROADMAP_TASK_NOT_FOUND', `Task ${taskId} not found`);
+      throw new RoadmapDomainError('ROADMAP_TASK_NOT_FOUND', `Task ${taskId.toString()} not found`);
     }
 
     this.bumpVersion();
     this.phases = updatedPhases;
 
     const completedTaskIds = this.phases.flatMap((phase) =>
-      phase.milestones.flatMap((milestone) => milestone.tasks.filter((task) => task.completed).map((task) => task.id))
+      phase.milestones.flatMap((milestone) => milestone.tasks.filter((task) => task.completed).map((task) => task.id.toString()))
     );
     const completionRatio = totalTasks === 0 ? 0 : Math.round((completedTaskIds.length / totalTasks) * 100);
     this.progress = this.progress.update(completionRatio, completedTaskIds);
@@ -286,17 +287,25 @@ function toPhaseEntities(plan: PlanningResult): RoadmapPhase[] {
   return plan.phases.map(
     (phase) =>
       new RoadmapPhase(
-        phase.id,
+        PhaseId.create(phase.id),
         phase.title,
         phase.order,
         phase.milestones.map(
           (milestone) =>
             new RoadmapMilestone(
-              milestone.id,
+              MilestoneId.create(milestone.id),
               milestone.title,
               milestone.order,
               milestone.tasks.map(
-                (task) => new RoadmapTask(task.id, task.title, task.order, task.dependsOn, task.estimatedDurationDays, task.complexity)
+                (task) =>
+                  new RoadmapTask(
+                    TaskId.create(task.id),
+                    task.title,
+                    task.order,
+                    task.dependsOn.map((id) => TaskId.create(id)),
+                    task.estimatedDurationDays,
+                    task.complexity
+                  )
               )
             )
         )

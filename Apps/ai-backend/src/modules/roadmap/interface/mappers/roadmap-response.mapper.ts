@@ -12,25 +12,25 @@ export class RoadmapResponseMapper {
   toResponse(roadmap: Roadmap): RoadmapResponseDto {
     const progress = roadmap.getProgress();
     return {
-      roadmapId: roadmap.getId(),
-      goalId: roadmap.getGoalId(),
+      roadmapId: roadmap.getId().toString(),
+      goalId: roadmap.getGoalId().toString(),
       learnerId: roadmap.getGoalSnapshot().learnerId,
       status: roadmap.getStatus(),
       version: roadmap.getAggregateVersion(),
       phases: roadmap.getPhases().map((phase) => ({
-        id: phase.id,
+        id: phase.id.toString(),
         title: phase.title,
         order: phase.order,
         milestones: phase.milestones.map((milestone) => ({
-          id: milestone.id,
+          id: milestone.id.toString(),
           title: milestone.title,
           order: milestone.order,
           reached: milestone.reached,
           tasks: milestone.tasks.map((task) => ({
-            id: task.id,
+            id: task.id.toString(),
             title: task.title,
             order: task.order,
-            dependsOn: task.dependsOn,
+            dependsOn: task.dependsOn.map((id) => id.toString()),
             estimatedDurationDays: task.estimatedDurationDays,
             complexity: task.complexity,
             completed: task.completed
@@ -55,7 +55,7 @@ export class RoadmapResponseMapper {
   toProgress(roadmap: Roadmap): RoadmapProgressResponseDto {
     const progress = roadmap.getProgress();
     return {
-      roadmapId: roadmap.getId(),
+      roadmapId: roadmap.getId().toString(),
       status: roadmap.getStatus(),
       completionRatio: progress.completionRatio,
       completedTaskIds: [...progress.completedTaskIds]
@@ -64,7 +64,7 @@ export class RoadmapResponseMapper {
 
   toHistory(roadmap: Roadmap): RoadmapHistoryResponseDto {
     return {
-      roadmapId: roadmap.getId(),
+      roadmapId: roadmap.getId().toString(),
       revisions: roadmap.getRevisions().map((revision) => ({
         version: revision.version,
         reason: revision.reason,

@@ -16,7 +16,7 @@ export class MongoRoadmapRepository implements IRoadmapRepository {
   ) {}
 
   async save(roadmap: Roadmap): Promise<void> {
-    await this.instrumented('save', roadmap.getId(), async () => {
+    await this.instrumented('save', roadmap.getId().toString(), async () => {
       const start = Date.now();
       const doc = RoadmapPersistenceMapper.toDocument(roadmap);
       const { _id, createdAt, ...mutableFields } = doc;
@@ -29,9 +29,9 @@ export class MongoRoadmapRepository implements IRoadmapRepository {
           },
           { upsert: true, returnDocument: 'after' }
         );
-        this.log('save', roadmap.getId(), start, 'SUCCESS');
+        this.log('save', roadmap.getId().toString(), start, 'SUCCESS');
       } catch (error) {
-        this.log('save', roadmap.getId(), start, 'FAILURE', error);
+        this.log('save', roadmap.getId().toString(), start, 'FAILURE', error);
         throw error;
       }
     });

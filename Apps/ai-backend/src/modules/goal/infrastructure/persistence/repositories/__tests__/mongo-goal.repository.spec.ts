@@ -12,12 +12,13 @@ import { GoalMilestone } from '../../../../domain/entities/goal-milestone.entity
 import { GoalDocument } from '../../documents/goal.document';
 import { GoalSchema } from '../../schemas/goal.schema';
 import { MongoGoalRepository } from '../mongo-goal.repository';
+import { GoalId, LearnerId, MilestoneId } from '../../../../../../shared/domain/identifiers';
 
 const makeGoal = (overrides: Partial<{ goalId: string; learnerId: string }> = {}): Goal =>
   Goal.create(
     {
-      goalId: overrides.goalId ?? randomUUID(),
-      learnerId: overrides.learnerId ?? 'learner-1',
+      goalId: GoalId.create(overrides.goalId ?? randomUUID()),
+      learnerId: LearnerId.create(overrides.learnerId ?? 'learner-1'),
       title: 'Master TypeScript',
       description: 'Deep TS knowledge',
       type: GoalType.create('SKILL'),
@@ -78,7 +79,7 @@ describe('MongoGoalRepository — integration', () => {
     const found = await repository.findById('goal-t01');
 
     expect(found).not.toBeNull();
-    expect(found!.getId()).toBe('goal-t01');
+    expect(found!.getId().toString()).toBe('goal-t01');
     expect(found!.getStatus()).toBe('DRAFT');
     expect(found!.getAggregateVersion()).toBe(1);
   });
@@ -138,7 +139,7 @@ describe('MongoGoalRepository — integration', () => {
     const goalId = 'goal-t06';
     const goal = makeGoal({ goalId, learnerId: 'learner-99' });
 
-    const milestone = new GoalMilestone(randomUUID(), 'Complete module 1');
+    const milestone = new GoalMilestone(MilestoneId.create(randomUUID()), 'Complete module 1');
     goal.addMilestone(milestone, goal.getAggregateVersion());
 
     goal.transitionTo('ACTIVE', { traceId: 't', correlationId: 'c', causationId: 'ca' }, goal.getAggregateVersion());
@@ -148,8 +149,8 @@ describe('MongoGoalRepository — integration', () => {
     const loaded = await repository.findById(goalId);
 
     expect(loaded).not.toBeNull();
-    expect(loaded!.getId()).toBe(goalId);
-    expect((loaded as any).learnerId).toBe('learner-99');
+    expect(loaded!.getId().toString()).toBe(goalId);
+    expect((loaded as any).learnerId.toString()).toBe('learner-99');
     expect(loaded!.getStatus()).toBe('ACTIVE');
     expect(loaded!.getMilestones()).toHaveLength(1);
     expect(loaded!.getMilestones()[0].title).toBe('Complete module 1');
@@ -171,7 +172,7 @@ describe('MongoGoalRepository — integration', () => {
 
     const all = await repository.findAll();
     expect(all).toHaveLength(3);
-    const ids = all.map((g) => g.getId()).sort();
+    const ids = all.map((g) => g.getId().toString()).sort();
     expect(ids).toEqual(['goal-a', 'goal-b', 'goal-c']);
   });
 

@@ -42,9 +42,11 @@ describe('OutboxRelayService', () => {
     expect(queue.enqueue).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'GoalCreated',
-        metadata: expect.objectContaining({ eventId: 'evt-1', aggregateId: 'goal-1' })
+        metadata: expect.objectContaining({ eventId: 'evt-1' })
       })
     );
+    const [firstCall] = queue.enqueue.mock.calls[0];
+    expect(firstCall.metadata.aggregateId.toString()).toBe('goal-1');
     expect(outbox.markPublished).toHaveBeenCalledWith('evt-1');
     expect(outbox.markPublished).toHaveBeenCalledWith('evt-2');
   });

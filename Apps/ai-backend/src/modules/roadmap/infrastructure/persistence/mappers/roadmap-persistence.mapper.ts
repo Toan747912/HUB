@@ -1,3 +1,4 @@
+import { GoalId, LearnerId, MilestoneId, PhaseId, RoadmapId, TaskId } from '../../../../../shared/domain/identifiers';
 import { Roadmap } from '../../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPhase } from '../../../domain/entities/roadmap-phase.entity';
 import { RoadmapMilestone } from '../../../domain/entities/roadmap-milestone.entity';
@@ -10,20 +11,20 @@ import { RoadmapDocument } from '../documents/roadmap.document';
 export class RoadmapPersistenceMapper {
   static toDocument(roadmap: Roadmap): RoadmapDocument {
     const phases = roadmap.getPhases().map((phase) => ({
-      id: phase.id,
+      id: phase.id.toString(),
       title: phase.title,
       order: phase.order,
       milestones: phase.milestones.map((milestone) => ({
-        id: milestone.id,
+        id: milestone.id.toString(),
         title: milestone.title,
         order: milestone.order,
         reached: milestone.reached,
         reachedAt: milestone.reachedAt,
         tasks: milestone.tasks.map((task) => ({
-          id: task.id,
+          id: task.id.toString(),
           title: task.title,
           order: task.order,
-          dependsOn: task.dependsOn,
+          dependsOn: task.dependsOn.map((id) => id.toString()),
           estimatedDurationDays: task.estimatedDurationDays,
           complexity: task.complexity,
           completed: task.completed,
@@ -48,8 +49,8 @@ export class RoadmapPersistenceMapper {
     const goalSnapshot = roadmap.getGoalSnapshot();
 
     return {
-      _id: roadmap.getId(),
-      goalId: roadmap.getGoalId(),
+      _id: roadmap.getId().toString(),
+      goalId: roadmap.getGoalId().toString(),
       learnerId: goalSnapshot.learnerId,
       status: roadmap.getStatus(),
       aggregateVersion: roadmap.getAggregateVersion(),
@@ -74,9 +75,9 @@ export class RoadmapPersistenceMapper {
   static toDomain(doc: RoadmapDocument): Roadmap {
     const roadmap = Object.create(Roadmap.prototype) as Roadmap;
 
-    (roadmap as any).roadmapId = doc._id;
-    (roadmap as any).goalId = doc.goalId;
-    (roadmap as any).learnerId = doc.learnerId;
+    (roadmap as any).roadmapId = RoadmapId.create(doc._id);
+    (roadmap as any).goalId = GoalId.create(doc.goalId);
+    (roadmap as any).learnerId = LearnerId.create(doc.learnerId);
     (roadmap as any).status = RoadmapStatus.create(doc.status);
     (roadmap as any).aggregateVersion = doc.aggregateVersion;
     (roadmap as any).pendingEvents = [];
@@ -88,22 +89,22 @@ export class RoadmapPersistenceMapper {
     (roadmap as any).phases = doc.phases.map(
       (phase) =>
         new RoadmapPhase(
-          phase.id,
+          PhaseId.create(phase.id),
           phase.title,
           phase.order,
           phase.milestones.map(
             (milestone) =>
               new RoadmapMilestone(
-                milestone.id,
+                MilestoneId.create(milestone.id),
                 milestone.title,
                 milestone.order,
                 milestone.tasks.map(
                   (task) =>
                     new RoadmapTask(
-                      task.id,
+                      TaskId.create(task.id),
                       task.title,
                       task.order,
-                      task.dependsOn,
+                      task.dependsOn.map((id) => TaskId.create(id)),
                       task.estimatedDurationDays,
                       task.complexity,
                       task.completed,

@@ -16,7 +16,7 @@ export class MongoGoalRepository implements IGoalRepository {
   ) {}
 
   async save(goal: Goal): Promise<void> {
-    await this.instrumented('save', goal.getId(), async () => {
+    await this.instrumented('save', goal.getId().toString(), async () => {
       const start = Date.now();
       const doc = GoalPersistenceMapper.toDocument(goal);
       // Exclude _id (immutable) and createdAt (set-on-insert only) from $set.
@@ -30,9 +30,9 @@ export class MongoGoalRepository implements IGoalRepository {
           },
           { upsert: true, returnDocument: 'after' }
         );
-        this.log('save', goal.getId(), start, 'SUCCESS');
+        this.log('save', goal.getId().toString(), start, 'SUCCESS');
       } catch (error) {
-        this.log('save', goal.getId(), start, 'FAILURE', error);
+        this.log('save', goal.getId().toString(), start, 'FAILURE', error);
         throw error;
       }
     });

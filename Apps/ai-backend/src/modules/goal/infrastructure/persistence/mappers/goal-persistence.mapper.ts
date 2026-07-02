@@ -1,3 +1,4 @@
+import { GoalId, LearnerId, MilestoneId } from '../../../../../shared/domain/identifiers';
 import { Goal } from '../../../domain/aggregates/goal.aggregate';
 import { GoalConstraint } from '../../../domain/entities/goal-constraint.entity';
 import { GoalMilestone } from '../../../domain/entities/goal-milestone.entity';
@@ -32,7 +33,7 @@ export class GoalPersistenceMapper {
     }));
 
     const milestones = goal.getMilestones().map((m) => ({
-      id: m.id,
+      id: m.id.toString(),
       title: m.title,
       reached: m.reached,
       reachedAt: m.reachedAt
@@ -41,8 +42,8 @@ export class GoalPersistenceMapper {
     const progress = goal.getProgress();
 
     return {
-      _id: goal.getId(),
-      learnerId: (goal as any).learnerId as string,
+      _id: goal.getId().toString(),
+      learnerId: ((goal as any).learnerId as LearnerId).toString(),
       status: goal.getStatus(),
       aggregateVersion: goal.getAggregateVersion(),
       versions,
@@ -63,8 +64,8 @@ export class GoalPersistenceMapper {
   static toDomain(doc: GoalDocument): Goal {
     const goal = Object.create(Goal.prototype) as Goal;
 
-    (goal as any).goalId = doc._id;
-    (goal as any).learnerId = doc.learnerId;
+    (goal as any).goalId = GoalId.create(doc._id);
+    (goal as any).learnerId = LearnerId.create(doc.learnerId);
     (goal as any).status = GoalStatus.create(doc.status);
     (goal as any).aggregateVersion = doc.aggregateVersion;
     (goal as any).pendingEvents = [];
@@ -88,7 +89,7 @@ export class GoalPersistenceMapper {
     );
 
     (goal as any).milestones = doc.milestones.map(
-      (m) => new GoalMilestone(m.id, m.title, m.reached, m.reachedAt)
+      (m) => new GoalMilestone(MilestoneId.create(m.id), m.title, m.reached, m.reachedAt)
     );
 
     (goal as any).progress = new GoalProgress(

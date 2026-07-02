@@ -1,3 +1,4 @@
+import { GoalId, LearnerId, RoadmapId, TaskId } from '../../../../shared/domain/identifiers';
 import { Roadmap } from '../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../domain/engine/roadmap-planning.engine';
 import { PlanningInput } from '../../domain/engine/roadmap-planning.types';
@@ -74,9 +75,9 @@ export class RoadmapCommandService {
 
       const roadmap = Roadmap.create(
         {
-          roadmapId: command.roadmapId,
-          goalId: command.goalId,
-          learnerId: command.learnerId,
+          roadmapId: RoadmapId.create(command.roadmapId),
+          goalId: GoalId.create(command.goalId),
+          learnerId: LearnerId.create(command.learnerId),
           goalSnapshot,
           plan
         },
@@ -214,7 +215,7 @@ export class RoadmapCommandService {
         if (!r) throw new RoadmapNotFoundError(command.roadmapId);
 
         r.completeTask(
-          command.taskId,
+          TaskId.create(command.taskId),
           { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
           command.expectedVersion
         );

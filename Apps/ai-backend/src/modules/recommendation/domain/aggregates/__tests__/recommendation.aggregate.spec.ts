@@ -1,3 +1,4 @@
+import { AssessmentId, GoalId, LearnerId, RecommendationId, RoadmapId } from '../../../../../shared/domain/identifiers';
 import { RecommendationEngine } from '../../engine/recommendation.engine';
 import { RecommendationInput } from '../../engine/recommendation-engine.types';
 import { Recommendation } from '../recommendation.aggregate';
@@ -26,7 +27,14 @@ const baseInput: RecommendationInput = {
 const makeRecommendation = (): Recommendation => {
   const computation = engine.evaluate(baseInput);
   return Recommendation.create(
-    { recommendationId: 'rec-1', goalId: 'goal-1', roadmapId: 'roadmap-1', assessmentId: 'assessment-1', learnerId: 'learner-1', computation },
+    {
+      recommendationId: RecommendationId.create('rec-1'),
+      goalId: GoalId.create('goal-1'),
+      roadmapId: RoadmapId.create('roadmap-1'),
+      assessmentId: AssessmentId.create('assessment-1'),
+      learnerId: LearnerId.create('learner-1'),
+      computation
+    },
     context
   );
 };
@@ -49,9 +57,9 @@ describe('Recommendation aggregate', () => {
     for (const item of recommendation.getItems()) {
       expect(item.reason.summary.length).toBeGreaterThan(0);
       expect(item.reason.evidence.length).toBeGreaterThan(0);
-      expect(item.affectedGoalId).toBe('goal-1');
-      expect(item.affectedRoadmapId).toBe('roadmap-1');
-      expect(item.affectedAssessmentId).toBe('assessment-1');
+      expect(item.affectedGoalId.toString()).toBe('goal-1');
+      expect(item.affectedRoadmapId.toString()).toBe('roadmap-1');
+      expect(item.affectedAssessmentId.toString()).toBe('assessment-1');
     }
   });
 

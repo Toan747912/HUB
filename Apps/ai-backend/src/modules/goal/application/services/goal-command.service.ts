@@ -1,3 +1,4 @@
+import { GoalId, LearnerId, MilestoneId } from '../../../../shared/domain/identifiers';
 import { Goal } from '../../domain/aggregates/goal.aggregate';
 import { GoalConstraint } from '../../domain/entities/goal-constraint.entity';
 import { GoalMilestone } from '../../domain/entities/goal-milestone.entity';
@@ -49,8 +50,8 @@ export class GoalCommandService {
     try {
       const goal = Goal.create(
         {
-          goalId: command.goalId,
-          learnerId: command.learnerId,
+          goalId: GoalId.create(command.goalId),
+          learnerId: LearnerId.create(command.learnerId),
           title: command.title,
           description: command.description,
           type: GoalType.create(command.type as any),
@@ -182,7 +183,7 @@ export class GoalCommandService {
         const g = await this.repository.findById(command.goalId);
         if (!g) throw new GoalNotFoundError(command.goalId);
 
-        const milestone = new GoalMilestone(command.milestoneId, command.description);
+        const milestone = new GoalMilestone(MilestoneId.create(command.milestoneId), command.description);
         g.addMilestone(milestone, command.expectedVersion);
 
         await this.repository.save(g);

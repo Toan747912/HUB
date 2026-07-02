@@ -1,3 +1,4 @@
+import { GoalId, LearnerId } from '../../../../../shared/domain/identifiers';
 import { Goal } from '../../../domain/aggregates/goal.aggregate';
 import { GoalDifficulty } from '../../../domain/value-objects/goal-difficulty.vo';
 import { GoalPriority } from '../../../domain/value-objects/goal-priority.vo';
@@ -11,8 +12,8 @@ import { GoalCommandService, IGoalLock } from '../goal-command.service';
 const makeGoal = (): Goal => {
   const goal = Goal.create(
     {
-      goalId: 'goal-lock-1',
-      learnerId: 'learner-1',
+      goalId: GoalId.create('goal-lock-1'),
+      learnerId: LearnerId.create('learner-1'),
       title: 'Master TypeScript',
       description: 'Deep TS knowledge',
       type: GoalType.create('SKILL'),

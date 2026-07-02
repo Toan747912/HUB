@@ -8,6 +8,7 @@ import { PlanningInput } from '../../../../domain/engine/roadmap-planning.types'
 import { RoadmapDocument } from '../../documents/roadmap.document';
 import { RoadmapSchema } from '../../schemas/roadmap.schema';
 import { MongoRoadmapRepository } from '../mongo-roadmap.repository';
+import { GoalId, LearnerId, RoadmapId } from '../../../../../../shared/domain/identifiers';
 
 const engine = new RoadmapPlanningEngine();
 
@@ -27,7 +28,13 @@ const makeRoadmap = (overrides: Partial<{ roadmapId: string; learnerId: string }
   const snapshot = { ...goalSnapshot, learnerId: overrides.learnerId ?? goalSnapshot.learnerId };
   const plan = engine.generate(snapshot);
   return Roadmap.create(
-    { roadmapId: overrides.roadmapId ?? 'roadmap-1', goalId: snapshot.goalId, learnerId: snapshot.learnerId, goalSnapshot: snapshot, plan },
+    {
+      roadmapId: RoadmapId.create(overrides.roadmapId ?? 'roadmap-1'),
+      goalId: GoalId.create(snapshot.goalId),
+      learnerId: LearnerId.create(snapshot.learnerId),
+      goalSnapshot: snapshot,
+      plan
+    },
     { traceId: 't', correlationId: 'c', causationId: 'ca' }
   );
 };
@@ -80,7 +87,7 @@ describe('MongoRoadmapRepository — integration', () => {
     const found = await repository.findById('roadmap-t01');
 
     expect(found).not.toBeNull();
-    expect(found!.getId()).toBe('roadmap-t01');
+    expect(found!.getId().toString()).toBe('roadmap-t01');
     expect(found!.getStatus()).toBe('DRAFT');
     expect(found!.getPhases().length).toBe(roadmap.getPhases().length);
   });
@@ -129,7 +136,7 @@ describe('MongoRoadmapRepository — integration', () => {
 
     const forLearnerA = await repository.findAll('learner-a');
     expect(forLearnerA).toHaveLength(1);
-    expect(forLearnerA[0].getId()).toBe('roadmap-a');
+    expect(forLearnerA[0].getId().toString()).toBe('roadmap-a');
 
     const all = await repository.findAll();
     expect(all).toHaveLength(2);

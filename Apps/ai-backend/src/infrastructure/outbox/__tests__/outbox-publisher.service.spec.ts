@@ -1,4 +1,5 @@
 import { GoalDomainEvent } from '../../../modules/goal/domain/events/goal-event-metadata';
+import { GoalId } from '../../../shared/domain/identifiers';
 import { QueueService } from '../../jobs/queue.service';
 import { OutboxPublisherService } from '../outbox-publisher.service';
 import { OutboxRepository } from '../outbox.repository';
@@ -7,7 +8,7 @@ const makeEvent = (eventId: string): GoalDomainEvent => ({
   type: 'GoalCreated',
   metadata: {
     eventId,
-    aggregateId: 'goal-1',
+    aggregateId: GoalId.create('goal-1'),
     aggregateVersion: 1,
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',

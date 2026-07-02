@@ -12,11 +12,11 @@ import {
 export class RecommendationResponseMapper {
   toResponse(recommendation: Recommendation): RecommendationResponseDto {
     return {
-      recommendationId: recommendation.getId(),
-      goalId: recommendation.getGoalId(),
-      roadmapId: recommendation.getRoadmapId(),
-      assessmentId: recommendation.getAssessmentId(),
-      learnerId: recommendation.getLearnerId(),
+      recommendationId: recommendation.getId().toString(),
+      goalId: recommendation.getGoalId().toString(),
+      roadmapId: recommendation.getRoadmapId().toString(),
+      assessmentId: recommendation.getAssessmentId().toString(),
+      learnerId: recommendation.getLearnerId().toString(),
       status: recommendation.getStatus(),
       version: recommendation.getAggregateVersion(),
       engineVersion: recommendation.getEngineVersion(),
@@ -24,14 +24,14 @@ export class RecommendationResponseMapper {
         id: i.id,
         type: i.type,
         skillArea: i.skillArea,
-        taskId: i.taskId,
+        taskId: i.taskId ? i.taskId.toString() : null,
         strategy: i.strategy,
         priority: i.priority,
         scores: { ...i.scores },
         reason: { summary: i.reason.summary, evidence: [...i.reason.evidence] },
-        affectedGoalId: i.affectedGoalId,
-        affectedRoadmapId: i.affectedRoadmapId,
-        affectedAssessmentId: i.affectedAssessmentId,
+        affectedGoalId: i.affectedGoalId.toString(),
+        affectedRoadmapId: i.affectedRoadmapId.toString(),
+        affectedAssessmentId: i.affectedAssessmentId.toString(),
         logicalResourceRef: i.logicalResourceRef
       })),
       learningStrategies: recommendation.getLearningStrategies().map((s) => ({
@@ -63,7 +63,7 @@ export class RecommendationResponseMapper {
 
   toHistory(recommendation: Recommendation): RecommendationHistoryResponseDto {
     return {
-      recommendationId: recommendation.getId(),
+      recommendationId: recommendation.getId().toString(),
       history: recommendation.getHistory().map((h) => ({
         version: h.version,
         reason: h.reason,

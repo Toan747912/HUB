@@ -1,3 +1,4 @@
+import { GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/identifiers';
 import { Roadmap } from '../../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../../domain/engine/roadmap-planning.engine';
 import { PlanningInput } from '../../../domain/engine/roadmap-planning.types';
@@ -25,7 +26,13 @@ const goalSnapshot: PlanningInput = {
 const makeRoadmap = (): Roadmap => {
   const plan = engine.generate(goalSnapshot);
   return Roadmap.create(
-    { roadmapId: 'roadmap-lock-1', goalId: goalSnapshot.goalId, learnerId: goalSnapshot.learnerId, goalSnapshot, plan },
+    {
+      roadmapId: RoadmapId.create('roadmap-lock-1'),
+      goalId: GoalId.create(goalSnapshot.goalId),
+      learnerId: LearnerId.create(goalSnapshot.learnerId),
+      goalSnapshot,
+      plan
+    },
     { traceId: 't', correlationId: 'c', causationId: 'ca' }
   );
 };

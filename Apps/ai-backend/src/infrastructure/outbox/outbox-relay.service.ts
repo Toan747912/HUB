@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { GoalDomainEvent, GoalEventMetadata } from '../../modules/goal/domain/events/goal-event-metadata';
+import { GoalId } from '../../shared/domain/identifiers';
 import { QueueService } from '../jobs/queue.service';
 import { MetricsService } from '../observability/metrics.service';
 import { OutboxEventDocument } from './outbox-event.schema';
@@ -58,7 +59,7 @@ export class OutboxRelayService {
   private toDomainEvent(doc: OutboxEventDocument): GoalDomainEvent {
     const metadata: GoalEventMetadata = {
       eventId: doc.eventId,
-      aggregateId: doc.aggregateId,
+      aggregateId: GoalId.create(doc.aggregateId),
       aggregateVersion: doc.aggregateVersion,
       occurredAt: doc.occurredAt.toISOString(),
       traceId: 'outbox-relay',

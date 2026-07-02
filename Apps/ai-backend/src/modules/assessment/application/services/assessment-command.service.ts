@@ -1,3 +1,4 @@
+import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../shared/domain/identifiers';
 import { Assessment } from '../../domain/aggregates/assessment.aggregate';
 import { AssessmentEngine } from '../../domain/engine/assessment.engine';
 import { AssessmentInput } from '../../domain/engine/assessment-engine.types';
@@ -51,10 +52,10 @@ export class AssessmentCommandService {
     try {
       const assessment = Assessment.create(
         {
-          assessmentId: command.assessmentId,
-          goalId: command.goalId,
-          roadmapId: command.roadmapId,
-          learnerId: command.learnerId
+          assessmentId: AssessmentId.create(command.assessmentId),
+          goalId: GoalId.create(command.goalId),
+          roadmapId: RoadmapId.create(command.roadmapId),
+          learnerId: LearnerId.create(command.learnerId)
         },
         { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId }
       );
@@ -79,9 +80,9 @@ export class AssessmentCommandService {
         if (!a) throw new AssessmentNotFoundError(command.assessmentId);
 
         const input: AssessmentInput = {
-          goalId: a.getGoalId(),
-          roadmapId: a.getRoadmapId(),
-          learnerId: a.getLearnerId(),
+          goalId: a.getGoalId().toString(),
+          roadmapId: a.getRoadmapId().toString(),
+          learnerId: a.getLearnerId().toString(),
           roadmapCompletionRatio: command.roadmapCompletionRatio,
           tasks: command.tasks,
           revisionCount: command.revisionCount,

@@ -1,12 +1,14 @@
+import { GoalId, RoadmapId } from '../../../../shared/domain/identifiers';
+
 export type RoadmapEventMetadata = {
   eventId: string;
-  aggregateId: string;
+  aggregateId: RoadmapId;
   aggregateVersion: number;
   occurredAt: string;
   traceId: string;
   correlationId: string;
   causationId: string;
-  goalId: string;
+  goalId: GoalId;
   plannerVersion: string;
 };
 

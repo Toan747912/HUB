@@ -1,3 +1,4 @@
+import { GoalId, LearnerId, RoadmapId, TaskId } from '../../../../../shared/domain/identifiers';
 import { RoadmapPlanningEngine } from '../../engine/roadmap-planning.engine';
 import { PlanningInput } from '../../engine/roadmap-planning.types';
 import { Roadmap } from '../roadmap.aggregate';
@@ -19,7 +20,10 @@ const engine = new RoadmapPlanningEngine();
 
 const makeRoadmap = (): Roadmap => {
   const plan = engine.generate(goalSnapshot);
-  return Roadmap.create({ roadmapId: 'roadmap-1', goalId: 'goal-1', learnerId: 'learner-1', goalSnapshot, plan }, context);
+  return Roadmap.create(
+    { roadmapId: RoadmapId.create('roadmap-1'), goalId: GoalId.create('goal-1'), learnerId: LearnerId.create('learner-1'), goalSnapshot, plan },
+    context
+  );
 };
 
 describe('Roadmap aggregate', () => {
@@ -104,6 +108,6 @@ describe('Roadmap aggregate', () => {
     roadmap.pullEvents();
     roadmap.publish(context, roadmap.getAggregateVersion());
 
-    expect(() => roadmap.completeTask('does-not-exist', context, roadmap.getAggregateVersion())).toThrow();
+    expect(() => roadmap.completeTask(TaskId.create('does-not-exist'), context, roadmap.getAggregateVersion())).toThrow();
   });
 });

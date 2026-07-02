@@ -1,3 +1,4 @@
+import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/identifiers';
 import { Assessment } from '../../../domain/aggregates/assessment.aggregate';
 import { IAssessmentRepository } from '../../contracts/assessment-repository.contract';
 import { IEventPublisher } from '../../contracts/event-publisher.contract';
@@ -9,7 +10,15 @@ import { AssessmentCommandService, IAssessmentLock } from '../assessment-command
 const context = { traceId: 't', correlationId: 'c', causationId: 'ca' };
 
 const makeAssessment = (): Assessment =>
-  Assessment.create({ assessmentId: 'assessment-lock-1', goalId: 'goal-1', roadmapId: 'roadmap-1', learnerId: 'learner-1' }, context);
+  Assessment.create(
+    {
+      assessmentId: AssessmentId.create('assessment-lock-1'),
+      goalId: GoalId.create('goal-1'),
+      roadmapId: RoadmapId.create('roadmap-1'),
+      learnerId: LearnerId.create('learner-1')
+    },
+    context
+  );
 
 describe('AssessmentCommandService — distributed lock wiring', () => {
   let repository: jest.Mocked<IAssessmentRepository>;
@@ -31,7 +40,7 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
 
   const runCommand = (assessment: Assessment) =>
     new RunAssessmentCommand(
-      assessment.getId(),
+      assessment.getId().toString(),
       80,
       [{ id: 't1', skillArea: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
       0,

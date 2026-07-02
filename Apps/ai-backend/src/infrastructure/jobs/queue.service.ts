@@ -63,7 +63,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     if (!this.tracer) return run();
     return this.tracer.withSpan(
       'bullmq.enqueue',
-      SpanFactory.attributesFor({ operation: 'enqueue', aggregateId: event.metadata.aggregateId }),
+      SpanFactory.attributesFor({ operation: 'enqueue', aggregateId: event.metadata.aggregateId.toString() }),
       run
     );
   }

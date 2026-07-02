@@ -16,7 +16,7 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
   ) {}
 
   async save(recommendation: Recommendation): Promise<void> {
-    await this.instrumented('save', recommendation.getId(), async () => {
+    await this.instrumented('save', recommendation.getId().toString(), async () => {
       const start = Date.now();
       const doc = RecommendationPersistenceMapper.toDocument(recommendation);
       const { _id, createdAt, ...mutableFields } = doc;
@@ -29,9 +29,9 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
           },
           { upsert: true, returnDocument: 'after' }
         );
-        this.log('save', recommendation.getId(), start, 'SUCCESS');
+        this.log('save', recommendation.getId().toString(), start, 'SUCCESS');
       } catch (error) {
-        this.log('save', recommendation.getId(), start, 'FAILURE', error);
+        this.log('save', recommendation.getId().toString(), start, 'FAILURE', error);
         throw error;
       }
     });

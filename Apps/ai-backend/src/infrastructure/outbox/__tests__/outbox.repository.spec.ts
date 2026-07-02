@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Model, createConnection, disconnect } from 'mongoose';
 import { GoalDomainEvent } from '../../../modules/goal/domain/events/goal-event-metadata';
+import { GoalId } from '../../../shared/domain/identifiers';
 import { OutboxEventDocument, OutboxEventSchema } from '../outbox-event.schema';
 import { OutboxRepository } from '../outbox.repository';
 
@@ -12,7 +13,7 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
   type: 'GoalCreated',
   metadata: {
     eventId: overrides.metadata?.eventId ?? 'evt-1',
-    aggregateId: 'goal-1',
+    aggregateId: GoalId.create('goal-1'),
     aggregateVersion: 1,
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',

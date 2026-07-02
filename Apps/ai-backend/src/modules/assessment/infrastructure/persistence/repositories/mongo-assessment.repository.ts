@@ -16,7 +16,7 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
   ) {}
 
   async save(assessment: Assessment): Promise<void> {
-    await this.instrumented('save', assessment.getId(), async () => {
+    await this.instrumented('save', assessment.getId().toString(), async () => {
       const start = Date.now();
       const doc = AssessmentPersistenceMapper.toDocument(assessment);
       const { _id, createdAt, ...mutableFields } = doc;
@@ -29,9 +29,9 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
           },
           { upsert: true, returnDocument: 'after' }
         );
-        this.log('save', assessment.getId(), start, 'SUCCESS');
+        this.log('save', assessment.getId().toString(), start, 'SUCCESS');
       } catch (error) {
-        this.log('save', assessment.getId(), start, 'FAILURE', error);
+        this.log('save', assessment.getId().toString(), start, 'FAILURE', error);
         throw error;
       }
     });

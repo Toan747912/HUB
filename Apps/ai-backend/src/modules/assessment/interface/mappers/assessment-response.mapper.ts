@@ -12,10 +12,10 @@ export class AssessmentResponseMapper {
   toResponse(assessment: Assessment): AssessmentResponseDto {
     const result = assessment.getLatestResult();
     return {
-      assessmentId: assessment.getId(),
-      goalId: assessment.getGoalId(),
-      roadmapId: assessment.getRoadmapId(),
-      learnerId: assessment.getLearnerId(),
+      assessmentId: assessment.getId().toString(),
+      goalId: assessment.getGoalId().toString(),
+      roadmapId: assessment.getRoadmapId().toString(),
+      learnerId: assessment.getLearnerId().toString(),
       status: assessment.getStatus(),
       version: assessment.getAggregateVersion(),
       result: result
@@ -46,7 +46,7 @@ export class AssessmentResponseMapper {
   toCompetencyProfile(assessment: Assessment): CompetencyProfileResponseDto {
     const result = assessment.getLatestResult();
     return {
-      assessmentId: assessment.getId(),
+      assessmentId: assessment.getId().toString(),
       competencies: result ? result.competencies.map((c) => ({ skillArea: c.skillArea, score: c.score, level: c.level })) : [],
       weakAreas: result ? [...result.weakAreas] : [],
       strongAreas: result ? [...result.strongAreas] : [],
@@ -58,7 +58,7 @@ export class AssessmentResponseMapper {
   toKnowledgeGaps(assessment: Assessment): KnowledgeGapsResponseDto {
     const result = assessment.getLatestResult();
     return {
-      assessmentId: assessment.getId(),
+      assessmentId: assessment.getId().toString(),
       gaps: result ? result.knowledgeGaps.map((g) => ({ id: g.id, skillArea: g.skillArea, weight: g.weight, reason: g.reason })) : []
     };
   }

@@ -1,4 +1,5 @@
 import { GoalDomainEvent } from '../../../modules/goal/domain/events/goal-event-metadata';
+import { GoalId } from '../../../shared/domain/identifiers';
 import { AuditLogService } from '../../audit/audit-log.service';
 import { QueueService } from '../../jobs/queue.service';
 import { MetricsService } from '../../observability/metrics.service';
@@ -10,7 +11,7 @@ const makeEvent = (type: GoalDomainEvent['type'], eventId: string): GoalDomainEv
   type,
   metadata: {
     eventId,
-    aggregateId: 'goal-1',
+    aggregateId: GoalId.create('goal-1'),
     aggregateVersion: 1,
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',

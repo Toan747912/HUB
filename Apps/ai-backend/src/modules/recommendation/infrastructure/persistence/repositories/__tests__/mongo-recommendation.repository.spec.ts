@@ -8,6 +8,13 @@ import { RecommendationInput } from '../../../../domain/engine/recommendation-en
 import { RecommendationDocument } from '../../documents/recommendation.document';
 import { RecommendationSchema } from '../../schemas/recommendation.schema';
 import { MongoRecommendationRepository } from '../mongo-recommendation.repository';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RecommendationId,
+  RoadmapId
+} from '../../../../../../shared/domain/identifiers';
 
 const engine = new RecommendationEngine();
 const context = { traceId: 't', correlationId: 'c', causationId: 'ca' };
@@ -34,11 +41,11 @@ const makeRecommendation = (overrides: Partial<{ recommendationId: string; learn
   const computation = engine.evaluate(baseInput);
   return Recommendation.create(
     {
-      recommendationId: overrides.recommendationId ?? 'rec-1',
-      goalId: 'goal-1',
-      roadmapId: 'roadmap-1',
-      assessmentId: 'assessment-1',
-      learnerId: overrides.learnerId ?? 'learner-1',
+      recommendationId: RecommendationId.create(overrides.recommendationId ?? 'rec-1'),
+      goalId: GoalId.create('goal-1'),
+      roadmapId: RoadmapId.create('roadmap-1'),
+      assessmentId: AssessmentId.create('assessment-1'),
+      learnerId: LearnerId.create(overrides.learnerId ?? 'learner-1'),
       computation
     },
     context
@@ -139,7 +146,7 @@ describe('MongoRecommendationRepository — integration', () => {
 
     const forLearnerA = await repository.findAll('learner-a');
     expect(forLearnerA).toHaveLength(1);
-    expect(forLearnerA[0].getId()).toBe('rec-a');
+    expect(forLearnerA[0].getId().toString()).toBe('rec-a');
 
     const all = await repository.findAll();
     expect(all).toHaveLength(2);

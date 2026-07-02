@@ -1,3 +1,10 @@
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RecommendationId,
+  RoadmapId
+} from '../../../../shared/domain/identifiers';
 import { Recommendation } from '../../domain/aggregates/recommendation.aggregate';
 import { RecommendationEngine } from '../../domain/engine/recommendation.engine';
 import { RecommendationInput } from '../../domain/engine/recommendation-engine.types';
@@ -77,11 +84,11 @@ export class RecommendationCommandService {
 
       const recommendation = Recommendation.create(
         {
-          recommendationId: command.recommendationId,
-          goalId: command.goalId,
-          roadmapId: command.roadmapId,
-          assessmentId: command.assessmentId,
-          learnerId: command.learnerId,
+          recommendationId: RecommendationId.create(command.recommendationId),
+          goalId: GoalId.create(command.goalId),
+          roadmapId: RoadmapId.create(command.roadmapId),
+          assessmentId: AssessmentId.create(command.assessmentId),
+          learnerId: LearnerId.create(command.learnerId),
           computation
         },
         { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId }

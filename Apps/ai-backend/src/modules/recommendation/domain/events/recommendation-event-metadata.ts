@@ -1,14 +1,16 @@
+import { AssessmentId, GoalId, RecommendationId, RoadmapId } from '../../../../shared/domain/identifiers';
+
 export type RecommendationEventMetadata = {
   eventId: string;
-  aggregateId: string;
+  aggregateId: RecommendationId;
   aggregateVersion: number;
   occurredAt: string;
   traceId: string;
   correlationId: string;
   causationId: string;
-  goalId: string;
-  roadmapId: string;
-  assessmentId: string;
+  goalId: GoalId;
+  roadmapId: RoadmapId;
+  assessmentId: AssessmentId;
   engineVersion: string;
 };
 

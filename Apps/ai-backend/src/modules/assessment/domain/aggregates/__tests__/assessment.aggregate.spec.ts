@@ -1,3 +1,4 @@
+import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/identifiers';
 import { AssessmentEngine } from '../../engine/assessment.engine';
 import { AssessmentInput } from '../../engine/assessment-engine.types';
 import { Assessment } from '../assessment.aggregate';
@@ -16,7 +17,15 @@ const baseInput: AssessmentInput = {
 };
 
 const makeAssessment = (): Assessment =>
-  Assessment.create({ assessmentId: 'assessment-1', goalId: 'goal-1', roadmapId: 'roadmap-1', learnerId: 'learner-1' }, context);
+  Assessment.create(
+    {
+      assessmentId: AssessmentId.create('assessment-1'),
+      goalId: GoalId.create('goal-1'),
+      roadmapId: RoadmapId.create('roadmap-1'),
+      learnerId: LearnerId.create('learner-1')
+    },
+    context
+  );
 
 describe('Assessment aggregate', () => {
   it('creates a DRAFT assessment and emits AssessmentCreated', () => {

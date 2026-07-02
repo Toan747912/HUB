@@ -1,3 +1,4 @@
+import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/identifiers';
 import { Assessment } from '../../../domain/aggregates/assessment.aggregate';
 import { AssessmentResult } from '../../../domain/entities/assessment-result.entity';
 import { AssessmentHistory, AssessmentHistoryReason } from '../../../domain/entities/assessment-history.entity';
@@ -12,10 +13,10 @@ export class AssessmentPersistenceMapper {
     const result = assessment.getLatestResult();
 
     return {
-      _id: assessment.getId(),
-      goalId: assessment.getGoalId(),
-      roadmapId: assessment.getRoadmapId(),
-      learnerId: assessment.getLearnerId(),
+      _id: assessment.getId().toString(),
+      goalId: assessment.getGoalId().toString(),
+      roadmapId: assessment.getRoadmapId().toString(),
+      learnerId: assessment.getLearnerId().toString(),
       status: assessment.getStatus(),
       aggregateVersion: assessment.getAggregateVersion(),
       latestResult: result
@@ -55,10 +56,10 @@ export class AssessmentPersistenceMapper {
   static toDomain(doc: AssessmentDocument): Assessment {
     const assessment = Object.create(Assessment.prototype) as Assessment;
 
-    (assessment as any).assessmentId = doc._id;
-    (assessment as any).goalId = doc.goalId;
-    (assessment as any).roadmapId = doc.roadmapId;
-    (assessment as any).learnerId = doc.learnerId;
+    (assessment as any).assessmentId = AssessmentId.create(doc._id);
+    (assessment as any).goalId = GoalId.create(doc.goalId);
+    (assessment as any).roadmapId = RoadmapId.create(doc.roadmapId);
+    (assessment as any).learnerId = LearnerId.create(doc.learnerId);
     (assessment as any).status = AssessmentStatus.create(doc.status);
     (assessment as any).aggregateVersion = doc.aggregateVersion;
     (assessment as any).pendingEvents = [];

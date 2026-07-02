@@ -1,13 +1,15 @@
+import { AssessmentId, GoalId, RoadmapId } from '../../../../shared/domain/identifiers';
+
 export type AssessmentEventMetadata = {
   eventId: string;
-  aggregateId: string;
+  aggregateId: AssessmentId;
   aggregateVersion: number;
   occurredAt: string;
   traceId: string;
   correlationId: string;
   causationId: string;
-  goalId: string;
-  roadmapId: string;
+  goalId: GoalId;
+  roadmapId: RoadmapId;
   engineVersion: string;
 };
 

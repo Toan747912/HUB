@@ -1,4 +1,12 @@
 import { randomUUID } from 'crypto';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RecommendationId,
+  RoadmapId,
+  TaskId
+} from '../../../../shared/domain/identifiers';
 import { RecommendationItem } from '../entities/recommendation-item.entity';
 import { RecommendationReason } from '../entities/recommendation-reason.entity';
 import { RecommendationScores } from '../entities/recommendation-scores';
@@ -26,11 +34,11 @@ type EventContext = {
 };
 
 type RecommendationCreateProps = {
-  recommendationId: string;
-  goalId: string;
-  roadmapId: string;
-  assessmentId: string;
-  learnerId: string;
+  recommendationId: RecommendationId;
+  goalId: GoalId;
+  roadmapId: RoadmapId;
+  assessmentId: AssessmentId;
+  learnerId: LearnerId;
   computation: RecommendationComputation;
 };
 
@@ -46,11 +54,11 @@ export class Recommendation {
   private pendingEvents: RecommendationDomainEvent[] = [];
 
   private constructor(
-    private readonly recommendationId: string,
-    private readonly goalId: string,
-    private readonly roadmapId: string,
-    private readonly assessmentId: string,
-    private readonly learnerId: string
+    private readonly recommendationId: RecommendationId,
+    private readonly goalId: GoalId,
+    private readonly roadmapId: RoadmapId,
+    private readonly assessmentId: AssessmentId,
+    private readonly learnerId: LearnerId
   ) {}
 
   static create(props: RecommendationCreateProps, context: EventContext): Recommendation {
@@ -63,7 +71,7 @@ export class Recommendation {
           i.id,
           i.type,
           i.skillArea,
-          i.taskId,
+          i.taskId ? TaskId.create(i.taskId) : null,
           i.strategy,
           i.priority,
           new RecommendationScores(
@@ -76,9 +84,9 @@ export class Recommendation {
             i.scores.overallScore
           ),
           new RecommendationReason(i.reason.summary, i.reason.evidence),
-          i.affectedGoalId,
-          i.affectedRoadmapId,
-          i.affectedAssessmentId,
+          GoalId.create(i.affectedGoalId),
+          RoadmapId.create(i.affectedRoadmapId),
+          AssessmentId.create(i.affectedAssessmentId),
           i.logicalResourceRef
         )
     );
@@ -97,9 +105,9 @@ export class Recommendation {
 
     aggregate.recordEvent(
       recommendationGeneratedEvent(aggregate.buildMetadata(context), {
-        goalId: props.goalId,
-        roadmapId: props.roadmapId,
-        assessmentId: props.assessmentId,
+        goalId: props.goalId.toString(),
+        roadmapId: props.roadmapId.toString(),
+        assessmentId: props.assessmentId.toString(),
         itemCount: aggregate.items.length,
         averageConfidence: props.computation.overallConfidence
       })
@@ -116,23 +124,23 @@ export class Recommendation {
     return aggregate;
   }
 
-  getId(): string {
+  getId(): RecommendationId {
     return this.recommendationId;
   }
 
-  getGoalId(): string {
+  getGoalId(): GoalId {
     return this.goalId;
   }
 
-  getRoadmapId(): string {
+  getRoadmapId(): RoadmapId {
     return this.roadmapId;
   }
 
-  getAssessmentId(): string {
+  getAssessmentId(): AssessmentId {
     return this.assessmentId;
   }
 
-  getLearnerId(): string {
+  getLearnerId(): LearnerId {
     return this.learnerId;
   }
 

@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../shared/domain/identifiers';
 import { AssessmentResult } from '../entities/assessment-result.entity';
 import { Competency } from '../entities/competency.entity';
 import { KnowledgeGap } from '../entities/knowledge-gap.entity';
@@ -25,10 +26,10 @@ type EventContext = {
 };
 
 type AssessmentCreateProps = {
-  assessmentId: string;
-  goalId: string;
-  roadmapId: string;
-  learnerId: string;
+  assessmentId: AssessmentId;
+  goalId: GoalId;
+  roadmapId: RoadmapId;
+  learnerId: LearnerId;
 };
 
 export class Assessment {
@@ -39,10 +40,10 @@ export class Assessment {
   private pendingEvents: AssessmentDomainEvent[] = [];
 
   private constructor(
-    private readonly assessmentId: string,
-    private readonly goalId: string,
-    private readonly roadmapId: string,
-    private readonly learnerId: string
+    private readonly assessmentId: AssessmentId,
+    private readonly goalId: GoalId,
+    private readonly roadmapId: RoadmapId,
+    private readonly learnerId: LearnerId
   ) {}
 
   static create(props: AssessmentCreateProps, context: EventContext): Assessment {
@@ -52,9 +53,9 @@ export class Assessment {
 
     aggregate.recordEvent(
       assessmentCreatedEvent(aggregate.buildMetadata(context), {
-        goalId: props.goalId,
-        roadmapId: props.roadmapId,
-        learnerId: props.learnerId,
+        goalId: props.goalId.toString(),
+        roadmapId: props.roadmapId.toString(),
+        learnerId: props.learnerId.toString(),
         status: aggregate.status.getValue()
       })
     );
@@ -62,19 +63,19 @@ export class Assessment {
     return aggregate;
   }
 
-  getId(): string {
+  getId(): AssessmentId {
     return this.assessmentId;
   }
 
-  getGoalId(): string {
+  getGoalId(): GoalId {
     return this.goalId;
   }
 
-  getRoadmapId(): string {
+  getRoadmapId(): RoadmapId {
     return this.roadmapId;
   }
 
-  getLearnerId(): string {
+  getLearnerId(): LearnerId {
     return this.learnerId;
   }
 
