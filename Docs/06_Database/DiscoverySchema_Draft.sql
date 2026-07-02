@@ -1,0 +1,228 @@
+-- =============================================================================
+-- Discovery Schema — RECONCILED DESIGN ARTIFACT, NOT EXECUTABLE / NOT RUNNABLE
+-- =============================================================================
+-- Phase 1 Build — Discovery Engine.
+--
+-- Status: Reconciled & Aligned, Step "4B-equivalent" for Discovery only.
+-- This file contains the illustrative DDL syntax for the Discovery database
+-- schemas, fully aligned with DECISION-051 through DECISION-055.
+--
+-- Source: Docs/03_Domain_Model/DiscoveryDomain.md
+-- Naming: Docs/06_Database/DatabaseNamingConvention.md (snake_case, <table>_id PK,
+--         actor_type/actor_id audit pattern, DECISION-042..045)
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- 1. discovery_session  (Aggregate Root — Current State Snapshot, mutable)
+-- -----------------------------------------------------------------------------
+-- History Strategy: history.discovery_session, trigger-maintained AFTER UPDATE
+-- (DatabaseNamingConvention.md mục 9).
+
+-- CREATE TABLE discovery_session (
+--   discovery_session_id   uuid        NOT NULL DEFAULT gen_random_uuid(),  -- PK
+--   learner_id              uuid        NOT NULL,                            -- FK -> learner(id)
+--   goal_id                  uuid        NULL,                                -- FK -> goal(goal_id), nullable (see DiscoveryDomain.md mục 3)
+--   trigger                  text        NOT NULL,                            -- 'onboarding' | 'continuous'
+--   state                    text        NOT NULL DEFAULT 'INIT',             -- 'INIT' | 'DISCOVERY' | 'DISCOVERY_COMPLETE' | 'BLOCKED' | 'EXPIRED' | 'ABANDONED'
+--   started_at               timestamptz NOT NULL DEFAULT now(),
+--   completed_at             timestamptz NULL,
+--   archived_at              timestamptz NULL,                                -- timestamp for superseded sessions
+--   superseded_by_discovery_session_id uuid NULL,                            -- FK -> discovery_session (locked by DECISION-054)
+--   created_at               timestamptz NOT NULL DEFAULT now(),
+--   created_by_actor_type    text        NOT NULL,
+--   created_by_actor_id      uuid        NULL,
+--   updated_at               timestamptz NOT NULL DEFAULT now(),
+--   updated_by_actor_type    text        NOT NULL,
+--   updated_by_actor_id      uuid        NULL
+-- );
+--
+-- PRIMARY KEY: discovery_session_id
+-- FOREIGN KEYS:
+--   learner_id  -> learner(id)     ON DELETE RESTRICT
+--   goal_id     -> goal(goal_id)   ON DELETE RESTRICT
+--   superseded_by_discovery_session_id -> discovery_session(discovery_session_id) ON DELETE RESTRICT
+-- CHECK CONSTRAINTS:
+--   ck_discovery_session_trigger        -- trigger IN ('onboarding','continuous')
+--   ck_discovery_session_state          -- state IN ('INIT','DISCOVERY','DISCOVERY_COMPLETE','BLOCKED','EXPIRED','ABANDONED')
+--   ck_discovery_session_goal_required_for_continuous
+--                                        -- trigger <> 'continuous' OR goal_id IS NOT NULL
+--   ck_discovery_session_created_by_actor_type  -- IN ('learner','backend_core','ai_service')
+--   ck_discovery_session_updated_by_actor_type  -- same list
+
+-- -----------------------------------------------------------------------------
+-- 2. claimed_skill_area  (Supporting Entity — append-only, new)
+-- -----------------------------------------------------------------------------
+-- Physical entity to capture textual skill claims clarified during Goal Clarification
+-- before Knowledge Graph mapping (locked by DECISION-055).
+
+-- CREATE TABLE claimed_skill_area (
+--   claimed_skill_area_id   uuid        NOT NULL DEFAULT gen_random_uuid(),  -- PK
+--   discovery_session_id    uuid        NOT NULL,                            -- FK -> discovery_session(discovery_session_id)
+--   label                   text        NOT NULL,                            -- Raw string label of the skill
+--   created_at              timestamptz NOT NULL DEFAULT now(),
+--   created_by_actor_type   text        NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id     uuid        NULL
+-- );
+--
+-- PRIMARY KEY: claimed_skill_area_id
+-- FOREIGN KEYS:
+--   discovery_session_id -> discovery_session(discovery_session_id) ON DELETE RESTRICT
+-- CHECK CONSTRAINTS:
+--   ck_claimed_skill_area_created_by_actor_type -- IN ('learner','backend_core','ai_service')
+
+-- -----------------------------------------------------------------------------
+-- 3. claimed_skill_area_source_answer  (junction — new)
+-- -----------------------------------------------------------------------------
+-- Physical junction table tracing the answers that generated a ClaimedSkillArea (DECISION-055).
+
+-- CREATE TABLE claimed_skill_area_source_answer (
+--   claimed_skill_area_id   uuid NOT NULL,  -- FK -> claimed_skill_area(claimed_skill_area_id)
+--   discovery_answer_id     uuid NOT NULL,  -- FK -> discovery_answer(discovery_answer_id)
+--   PRIMARY KEY (claimed_skill_area_id, discovery_answer_id)
+-- );
+--
+-- FOREIGN KEYS:
+--   claimed_skill_area_id -> claimed_skill_area(claimed_skill_area_id) ON DELETE RESTRICT
+--   discovery_answer_id   -> discovery_answer(discovery_answer_id)     ON DELETE RESTRICT
+
+-- -----------------------------------------------------------------------------
+-- 4. discovery_question  (Supporting Entity — append-only)
+-- -----------------------------------------------------------------------------
+
+-- CREATE TABLE discovery_question (
+--   discovery_question_id   uuid        NOT NULL DEFAULT gen_random_uuid(),  -- PK
+--   discovery_session_id    uuid        NOT NULL,                            -- FK -> discovery_session(discovery_session_id)
+--   capability_source        text        NOT NULL,                            -- 'goal_clarification' | 'competency_probing'
+--   prompt_text               text        NOT NULL,
+--   asked_at                  timestamptz NOT NULL DEFAULT now(),
+--   created_at                timestamptz NOT NULL DEFAULT now(),
+--   created_by_actor_type     text        NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id       uuid        NULL
+-- );
+--
+-- PRIMARY KEY: discovery_question_id
+-- FOREIGN KEYS: discovery_session_id -> discovery_session(discovery_session_id) ON DELETE RESTRICT
+-- CHECK CONSTRAINTS:
+--   ck_discovery_question_capability_source -- IN ('goal_clarification','competency_probing')
+--   ck_discovery_question_created_by_actor_type -- IN ('learner','backend_core','ai_service')
+
+-- -----------------------------------------------------------------------------
+-- 5. discovery_answer  (Supporting Entity — append-only, 1:0..1 with question)
+-- -----------------------------------------------------------------------------
+
+-- CREATE TABLE discovery_answer (
+--   discovery_answer_id      uuid        NOT NULL DEFAULT gen_random_uuid(),  -- PK
+--   discovery_question_id    uuid        NOT NULL,                            -- FK -> discovery_question(discovery_question_id)
+--   raw_input                  text        NOT NULL,                            -- raw response
+--   answered_at                 timestamptz NOT NULL DEFAULT now(),
+--   created_at                   timestamptz NOT NULL DEFAULT now(),
+--   created_by_actor_type        text        NOT NULL DEFAULT 'learner',
+--   created_by_actor_id          uuid        NULL
+-- );
+--
+-- PRIMARY KEY: discovery_answer_id
+-- FOREIGN KEYS: discovery_question_id -> discovery_question(discovery_question_id) ON DELETE RESTRICT
+-- UNIQUE CONSTRAINTS:
+--   uq_discovery_answer_discovery_question_id  -- UNIQUE(discovery_question_id)
+-- CHECK CONSTRAINTS:
+--   ck_discovery_answer_created_by_actor_type -- IN ('learner','backend_core','ai_service')
+
+-- -----------------------------------------------------------------------------
+-- 6. competency_signal  (Supporting Entity — append-only)
+-- -----------------------------------------------------------------------------
+-- Updated per DECISION-055: direct nullable FK to knowledge_node_id removed;
+-- references claimed_skill_area_id (NOT NULL) instead.
+
+-- CREATE TABLE competency_signal (
+--   competency_signal_id     uuid        NOT NULL DEFAULT gen_random_uuid(),  -- PK
+--   discovery_session_id     uuid        NOT NULL,                            -- FK -> discovery_session(discovery_session_id)
+--   claimed_skill_area_id    uuid        NOT NULL,                            -- FK -> claimed_skill_area(claimed_skill_area_id)
+--   self_reported_level        text        NOT NULL,                            -- level scale: Unknown/Remember/Explain/Apply/Teach
+--   observed_level              text        NOT NULL,                            -- same scale
+--   created_at                   timestamptz NOT NULL DEFAULT now(),
+--   created_by_actor_type        text        NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id          uuid        NULL
+-- );
+--
+-- PRIMARY KEY: competency_signal_id
+-- FOREIGN KEYS:
+--   discovery_session_id  -> discovery_session(discovery_session_id)   ON DELETE RESTRICT
+--   claimed_skill_area_id -> claimed_skill_area(claimed_skill_area_id) ON DELETE RESTRICT
+-- CHECK CONSTRAINTS:
+--   ck_competency_signal_levels -- self_reported_level and observed_level IN ('Unknown','Remember','Explain','Apply','Teach')
+--   ck_competency_signal_created_by_actor_type -- IN ('learner','backend_core','ai_service')
+
+-- -----------------------------------------------------------------------------
+-- 7. competency_signal_source_answer  (junction — traced_to[] support for D7)
+-- -----------------------------------------------------------------------------
+
+-- CREATE TABLE competency_signal_source_answer (
+--   competency_signal_id    uuid NOT NULL,  -- FK -> competency_signal(competency_signal_id)
+--   discovery_answer_id     uuid NOT NULL,  -- FK -> discovery_answer(discovery_answer_id)
+--   PRIMARY KEY (competency_signal_id, discovery_answer_id)
+-- );
+--
+-- FOREIGN KEYS:
+--   competency_signal_id -> competency_signal(competency_signal_id) ON DELETE RESTRICT
+--   discovery_answer_id  -> discovery_answer(discovery_answer_id)   ON DELETE RESTRICT
+
+-- -----------------------------------------------------------------------------
+-- 8. self_assessment_mismatch  (append-only)
+-- -----------------------------------------------------------------------------
+-- Updated per DECISION-055: knowledge_node_id is now nullable to support
+-- mismatch generation during initial onboarding when mappings are not ready.
+
+-- CREATE TABLE self_assessment_mismatch (
+--   self_assessment_mismatch_id  uuid        NOT NULL DEFAULT gen_random_uuid(),  -- PK
+--   discovery_session_id          uuid        NOT NULL,                            -- FK -> discovery_session(discovery_session_id)
+--   competency_signal_id          uuid        NOT NULL,                            -- FK -> competency_signal(competency_signal_id)
+--   knowledge_node_id              uuid        NULL,                                -- FK -> knowledge_node(knowledge_node_id), nullable (DECISION-055)
+--   verification_method              text        NOT NULL,                            -- locked as 'Calibrated Micro-Probe'
+--   reasoning                          text        NOT NULL,
+--   detected_at                        timestamptz NOT NULL DEFAULT now(),
+--   created_at                          timestamptz NOT NULL DEFAULT now(),
+--   created_by_actor_type               text        NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id                 uuid        NULL
+-- );
+--
+-- PRIMARY KEY: self_assessment_mismatch_id
+-- FOREIGN KEYS:
+--   discovery_session_id -> discovery_session(discovery_session_id) ON DELETE RESTRICT
+--   competency_signal_id -> competency_signal(competency_signal_id) ON DELETE RESTRICT
+--   knowledge_node_id     -> knowledge_node(knowledge_node_id)       ON DELETE RESTRICT
+-- CHECK CONSTRAINTS:
+--   ck_self_assessment_mismatch_created_by_actor_type -- IN ('learner','backend_core','ai_service')
+
+-- -----------------------------------------------------------------------------
+-- 9. claimed_skill_area_knowledge_node  (cross-domain junction — new)
+-- -----------------------------------------------------------------------------
+-- Maps claimed skill areas to Knowledge Graph nodes asynchronously (locked by DECISION-055).
+
+-- CREATE TABLE claimed_skill_area_knowledge_node (
+--   claimed_skill_area_id   uuid        NOT NULL,                            -- FK -> claimed_skill_area(claimed_skill_area_id)
+--   knowledge_node_id       uuid        NOT NULL,                            -- FK -> knowledge_node(knowledge_node_id)
+--   mapped_at               timestamptz NOT NULL DEFAULT now(),
+--   removed_at              timestamptz NULL,                                -- soft-delete marker for map history
+--   mapped_by_actor_type    text        NOT NULL DEFAULT 'ai_service',
+--   mapped_by_actor_id      uuid        NULL,
+--   PRIMARY KEY (claimed_skill_area_id, knowledge_node_id)
+-- );
+--
+-- FOREIGN KEYS:
+--   claimed_skill_area_id -> claimed_skill_area(claimed_skill_area_id) ON DELETE RESTRICT
+--   knowledge_node_id     -> knowledge_node(knowledge_node_id)       ON DELETE RESTRICT
+-- CHECK CONSTRAINTS:
+--   ck_claimed_skill_area_kn_actor_type -- IN ('learner','backend_core','ai_service')
+
+-- -----------------------------------------------------------------------------
+-- Indexes
+-- -----------------------------------------------------------------------------
+-- ix_discovery_session_learner_id
+-- ix_discovery_session_superseded_id
+-- ix_claimed_skill_area_session_id
+-- ix_discovery_question_discovery_session_id
+-- ix_competency_signal_discovery_session_id
+-- ix_competency_signal_skill_area_id
+-- ix_self_assessment_mismatch_discovery_session_id
+-- ix_self_assessment_mismatch_knowledge_node_id
+-- ix_claimed_skill_area_kn_node_id

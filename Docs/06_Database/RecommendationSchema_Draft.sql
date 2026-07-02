@@ -1,0 +1,47 @@
+-- =============================================================================
+-- Recommendation Schema — RECONCILED DESIGN ARTIFACT (SQL Server Compatible)
+-- =============================================================================
+-- Phase 1 Build — Recommendation Engine.
+--
+-- Status: Draft design for the Recommendation tables.
+-- Traceability: DECISION-019, DECISION-027, DECISION-033, DECISION-042 to 045.
+-- Naming: database naming conventions (snake_case, <table_name>_id PKs).
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- 1. recommendation_proposal (Aggregate Root — Proposal Record)
+-- Traceability: DECISION-019 (Recommendation independent aggregate root)
+-- -----------------------------------------------------------------------------
+-- CREATE TABLE dbo.recommendation_proposal (
+--   recommendation_proposal_id   UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),       -- PK
+--   learner_id                   UNIQUEIDENTIFIER NOT NULL,                       -- FK -> learner(id)
+--   goal_id                      UNIQUEIDENTIFIER NOT NULL,                       -- FK -> goal(goal_id)
+--   proposal_type                NVARCHAR(50)     NOT NULL,                       -- 'insert_node' | 'skip_node' | 'pause_session' | 'change_mode'
+--   payload_details              NVARCHAR(MAX)    NOT NULL,                       -- JSON payload (e.g. proposed node / mode params)
+--   [status]                     NVARCHAR(50)     NOT NULL DEFAULT 'proposed',    -- 'proposed' | 'accepted' | 'rejected' | 'expired' | 'superseded'
+--   confidence                   DECIMAL(5, 2)    NOT NULL DEFAULT 1.00,          -- value between 0.00 and 1.00
+--   reasoning                    NVARCHAR(MAX)    NOT NULL,                       -- explanation reasoning text
+--   created_at                   DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   created_by_actor_type        NVARCHAR(50)     NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id          UNIQUEIDENTIFIER NULL,
+--   updated_at                   DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   updated_by_actor_type        NVARCHAR(50)     NOT NULL DEFAULT 'ai_service',
+--   updated_by_actor_id          UNIQUEIDENTIFIER NULL
+-- );
+--
+-- PRIMARY KEY: recommendation_proposal_id
+-- FOREIGN KEYS:
+--   learner_id -> learner(id) ON DELETE NO ACTION
+--   goal_id -> goal(goal_id)  ON DELETE NO ACTION
+-- CHECK CONSTRAINTS:
+--   ck_recommendation_proposal_type CHECK (proposal_type IN ('insert_node', 'skip_node', 'pause_session', 'change_mode'))
+--   ck_recommendation_proposal_status CHECK ([status] IN ('proposed', 'accepted', 'rejected', 'expired', 'superseded'))
+--   ck_recommendation_proposal_confidence CHECK (confidence BETWEEN 0.00 AND 1.00)
+--   ck_recommendation_proposal_created_by CHECK (created_by_actor_type IN ('learner', 'backend_core', 'ai_service'))
+--   ck_recommendation_proposal_updated_by CHECK (updated_by_actor_type IN ('learner', 'backend_core', 'ai_service'))
+
+-- -----------------------------------------------------------------------------
+-- Indexes
+-- -----------------------------------------------------------------------------
+-- CREATE NONCLUSTERED INDEX ix_recommendation_proposal_learner_goal ON dbo.recommendation_proposal(learner_id, goal_id) INCLUDE (proposal_type, status);
+-- CREATE NONCLUSTERED INDEX ix_recommendation_proposal_status ON dbo.recommendation_proposal(status);

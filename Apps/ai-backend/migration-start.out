@@ -1,0 +1,27 @@
+
+> ai-backend@1.0.0 start:dev
+> ts-node src/main.ts
+
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mInfrastructureModule dependencies initialized[39m[38;5;3m +11ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSharedModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGoalModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRoadmapModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLearningSessionModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mKnowledgeModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEvidenceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAssessmentModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRecommendationModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDiscoveryModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTeachingModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mThrottlerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAiRuntimeModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMigrationModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAiRuntimeController {/ai}:[39m[38;5;3m +6ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ai/execute, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMigrationController {/migration}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/migration/run, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/migration/validate, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/migration/rollback, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19444  - [39m12:04:43 01/07/2026 [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2ms[39m

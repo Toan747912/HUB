@@ -1,0 +1,56 @@
+-- =============================================================================
+-- Assessment Schema — RECONCILED DESIGN ARTIFACT (SQL Server Compatible)
+-- =============================================================================
+-- Phase 1 Build — Assessment Engine.
+--
+-- Status: Draft design for the Assessment tables.
+-- Traceability: DECISION-026, DECISION-030, DECISION-052, DECISION-053.
+-- Naming: database naming conventions (snake_case, <table_name>_id PKs).
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- 1. assessment_result (Aggregate Root — Immutable Audit Log)
+-- Traceability: DECISION-030 (AssessmentResult structure)
+-- -----------------------------------------------------------------------------
+-- CREATE TABLE dbo.assessment_result (
+--   assessment_result_id   UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),          -- PK
+--   learner_id             UNIQUEIDENTIFIER NOT NULL,                          -- FK -> learner(id)
+--   knowledge_node_id      UNIQUEIDENTIFIER NOT NULL,                          -- FK -> knowledge_node(knowledge_node_id)
+--   assessed_level         NVARCHAR(50)     NOT NULL,                          -- 'Remember' | 'Explain' | 'Apply' | 'Teach'
+--   score_details          NVARCHAR(MAX)    NOT NULL,                          -- JSON details mapping sub-capability scores
+--   confidence             DECIMAL(5, 2)    NOT NULL DEFAULT 1.00,             -- value between 0.00 and 1.00
+--   reasoning              NVARCHAR(MAX)    NOT NULL,                          -- explainability explanation text
+--   created_at             DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   created_by_actor_type  NVARCHAR(50)     NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id    UNIQUEIDENTIFIER NULL
+-- );
+--
+-- PRIMARY KEY: assessment_result_id
+-- FOREIGN KEYS:
+--   learner_id -> learner(id) ON DELETE NO ACTION
+--   knowledge_node_id -> knowledge_node(knowledge_node_id) ON DELETE NO ACTION
+-- CHECK CONSTRAINTS:
+--   ck_assessment_result_level CHECK (assessed_level IN ('Remember', 'Explain', 'Apply', 'Teach'))
+--   ck_assessment_result_confidence CHECK (confidence BETWEEN 0.00 AND 1.00)
+--   ck_assessment_result_created_by CHECK (created_by_actor_type IN ('learner', 'backend_core', 'ai_service'))
+
+-- -----------------------------------------------------------------------------
+-- 2. assessment_result_source_evidence (Junction Entity — M:N trace links)
+-- Traceability: DECISION-027 (Explainability First physical trace link)
+-- -----------------------------------------------------------------------------
+-- CREATE TABLE dbo.assessment_result_source_evidence (
+--   assessment_result_id  UNIQUEIDENTIFIER NOT NULL,                          -- FK -> assessment_result(assessment_result_id)
+--   evidence_id           UNIQUEIDENTIFIER NOT NULL,                          -- FK -> evidence(evidence_id)
+--   PRIMARY KEY (assessment_result_id, evidence_id)
+-- );
+--
+-- FOREIGN KEYS:
+--   assessment_result_id -> assessment_result(assessment_result_id) ON DELETE NO ACTION
+--   evidence_id          -> evidence(evidence_id)                   ON DELETE NO ACTION
+
+-- -----------------------------------------------------------------------------
+-- Indexes
+-- -----------------------------------------------------------------------------
+-- CREATE NONCLUSTERED INDEX ix_assessment_result_learner_node ON dbo.assessment_result(learner_id, knowledge_node_id);
+-- CREATE NONCLUSTERED INDEX ix_assessment_result_created_at ON dbo.assessment_result(created_at DESC);
+-- CREATE NONCLUSTERED INDEX ix_assessment_result_source_ev ON dbo.assessment_result_source_evidence(evidence_id);

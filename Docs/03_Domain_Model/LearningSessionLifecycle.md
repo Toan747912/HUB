@@ -1,0 +1,105 @@
+# Learning Session Lifecycle Specification
+
+This document maps the state transitions, allowed triggers, terminal states, and governance checks for the three-tier session hierarchy in the **AI Mentor OS**.
+
+---
+
+## 1. LearningSession Lifecycle
+
+The parent session represents the entire timeline of a single Learner×Goal version context.
+
+```
+                  ┌─────────┐
+                  │  Draft  │
+                  └────┬────┘
+                       │ GoalDefined Event
+                       ▼
+   ┌─────────┐    manual /     ┌─────────┐
+   │ Paused  │ ◄── proposal ──►│ Active  │
+   └────┬────┘    resolution   └───┬─┬─┬─┘
+        │                          │ │ │
+        │              all nodes   │ │ │
+        │              completed   │ │ │
+        ├──────────────────────────┼─┘ │
+        │                          │   │ Goal change / manual abort
+        │                          │   ▼
+        │                          │ ┌───────────┐
+        │                          │ │ Abandoned │ (Terminal)
+        │                          │ └───────────┘
+        │                          ▼
+        │                    ┌───────────┐
+        │                    │ Completed │ (Terminal)
+        │                    └───────────┘
+        ▼
+  ┌───────────┐
+  │ Archived  │ (Terminal)
+  └───────────┘
+```
+
+### 1.1 State Definitions
+- **Draft:** Session created during initial onboarding, waiting for goal activation.
+- **Active:** Learner has active sub-sessions or telemetry actions logged.
+- **Paused:** Active session halted. Triggered only by learner action or confirmed AI proposals (DECISION-033).
+- **Completed:** Mapped Goal reaches `Completed`.
+- **Abandoned:** Learner manually terminates the pathway without completion.
+- **Archived:** Mapped Goal is superseded. The session is frozen to preserve progression history (DECISION-032).
+
+### 1.2 Transition Matrix
+| Source | Target | Trigger | Governance Check |
+|---|---|---|---|
+| **Draft** | **Active** | `GoalDefined` event emitted. | Verifies single-active session invariant. |
+| **Active** | **Paused** | Learner pause / Confirmed AI proposal. | Suspends active timers. |
+| **Active** | **Completed** | Mapped Goal becomes `Completed`. | Ends all child sub-sessions. |
+| **Active** | **Abandoned** | Learner manual cancel. | Ends all child sub-sessions. |
+| **Active** | **Archived** | Mapped Goal is superseded (DECISION-032). | Cascades archival down the hierarchy. |
+| **Paused** | **Active** | Learner resume action. | Verifies single-active session invariant. |
+| **Paused** | **Archived** | Mapped Goal is superseded (DECISION-032). | Terminal state. |
+| **Terminal** | *Any* | **Invalid** | State is frozen. |
+
+---
+
+## 2. SubSession Lifecycle
+
+A `SubSession` tracks progress on a specific leaf `RoadmapNode` or `KnowledgeNode`.
+
+```
+        ┌─────────┐    activate     ┌────────┐    completion     ┌───────────┐
+        │ Planned │ ───────────────▶│ Active │ ─────────────────▶│ Completed │ (Terminal)
+        └────┬────┘                 └────┬───┘                   └───────────┘
+             │                           │
+             └─────── cancel ────────────┴──────────────────────▶┌───────────┐
+                                                                 │ Cancelled │ (Terminal)
+                                                                 └___________┘
+```
+
+### 2.1 State Definitions
+- **Planned:** Node added to the pathway but not yet activated.
+- **Active:** Learner is studying this node.
+- **Completed:** Mapped concept meets Socratic mastery criteria ($\ge 75\%$).
+- **Cancelled:** Node bypassed or deleted during roadmap changes.
+
+---
+
+## 3. MentorSession Lifecycle
+
+A `MentorSession` represents a single interactive conversational interaction turn.
+
+```
+       ┌─────────┐     trigger      ┌────────┐    waiting for    ┌──────────────────┐
+       │ Created │ ───────────────▶│ Active │ ───▶ user response ──▶ WaitingForLearner │
+       └─────────┘                 └────┬───┘                    └────────┬─────────┘
+                                        │                                 │
+                                    completion                         timeout
+                                        │                                 │
+                                        ▼                                 ▼
+                                  ┌───────────┐                     ┌───────────┐
+                                  │ Completed │                     │  Expired  │
+                                  └───────────┘                     └───────────┘
+```
+
+### 3.1 State Definitions
+- **Created:** Turn context generated by the Teaching Engine.
+- **Active:** Socratic prompt displayed; processing logic.
+- **WaitingForLearner:** Waiting for user text response or action.
+- **Completed:** User responds; evidence extracted; state committed.
+- **Expired:** Idle timeout exceeded (e.g. learner closed tab).

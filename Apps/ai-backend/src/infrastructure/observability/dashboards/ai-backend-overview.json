@@ -1,0 +1,144 @@
+{
+  "title": "AI Backend — Overview",
+  "uid": "ai-backend-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "time": { "from": "now-6h", "to": "now" },
+  "tags": ["ai-backend", "observability"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "HTTP",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "title": "Request Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "targets": [{ "expr": "sum(rate(http_requests_total[5m])) by (route, status)", "legendFormat": "{{route}} {{status}}" }]
+    },
+    {
+      "id": 3,
+      "title": "p95 Latency (s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route))", "legendFormat": "{{route}}" }]
+    },
+    {
+      "id": 4,
+      "title": "MongoDB",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "panels": []
+    },
+    {
+      "id": 5,
+      "title": "Mongo Dependency Up",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 10 },
+      "targets": [{ "expr": "service_dependency_up{dependency=\"mongodb\"}" }]
+    },
+    {
+      "id": 6,
+      "title": "Mongo Latency (ms) by Operation",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 10 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(mongodb_latency_ms_bucket[5m])) by (le, operation))", "legendFormat": "{{operation}}" }]
+    },
+    {
+      "id": 7,
+      "title": "Redis",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "panels": []
+    },
+    {
+      "id": 8,
+      "title": "Redis Dependency Up",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 19 },
+      "targets": [{ "expr": "service_dependency_up{dependency=\"redis\"}" }]
+    },
+    {
+      "id": 9,
+      "title": "Redis Latency (ms) by Operation",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 19 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(redis_latency_ms_bucket[5m])) by (le, operation))", "legendFormat": "{{operation}}" }]
+    },
+    {
+      "id": 10,
+      "title": "BullMQ",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "panels": []
+    },
+    {
+      "id": 11,
+      "title": "BullMQ Dependency Up",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 28 },
+      "targets": [{ "expr": "service_dependency_up{dependency=\"bullmq\"}" }]
+    },
+    {
+      "id": 12,
+      "title": "Jobs by Outcome",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 9, "x": 6, "y": 28 },
+      "targets": [{ "expr": "sum(rate(bullmq_jobs_total[5m])) by (status)", "legendFormat": "{{status}}" }]
+    },
+    {
+      "id": 13,
+      "title": "Queue Delay p95 (ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 28 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(bullmq_queue_delay_ms_bucket[5m])) by (le))" }]
+    },
+    {
+      "id": 14,
+      "title": "Outbox",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "panels": []
+    },
+    {
+      "id": 15,
+      "title": "Outbox Pending",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 37 },
+      "targets": [{ "expr": "outbox_pending_total" }]
+    },
+    {
+      "id": 16,
+      "title": "Circuit Breaker State (0=CLOSED,1=OPEN,2=HALF_OPEN)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
+      "targets": [{ "expr": "circuit_breaker_state", "legendFormat": "{{job}}" }]
+    },
+    {
+      "id": 17,
+      "title": "Goal Module",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 },
+      "panels": []
+    },
+    {
+      "id": 18,
+      "title": "Goals Created (rate)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 46 },
+      "targets": [{ "expr": "sum(rate(goal_created_total[5m]))" }]
+    },
+    {
+      "id": 19,
+      "title": "Goals Completed (rate)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 46 },
+      "targets": [{ "expr": "sum(rate(goal_completed_total[5m]))" }]
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+-- =============================================================================
+-- Knowledge Schema — RECONCILED DESIGN ARTIFACT (SQL Server Compatible)
+-- =============================================================================
+-- Phase 1 Build — Knowledge Engine.
+--
+-- Status: Draft design for the Knowledge tables.
+-- Traceability: DECISION-023, DECISION-025, DECISION-026, DECISION-042 to 045.
+-- Naming: database naming conventions (snake_case, <table_name>_id PKs).
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- 1. knowledge_node (Aggregate Root — Canonical Graph Node)
+-- -----------------------------------------------------------------------------
+-- CREATE TABLE dbo.knowledge_node (
+--   knowledge_node_id      UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),          -- PK
+--   title                  NVARCHAR(255)    NOT NULL,                          -- Unique
+--   description            NVARCHAR(MAX)    NOT NULL,
+--   [status]               NVARCHAR(50)     NOT NULL DEFAULT 'draft',          -- 'draft' | 'local' | 'structural' | 'archived'
+--   created_at             DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   created_by_actor_type  NVARCHAR(50)     NOT NULL,                          -- 'learner' | 'backend_core' | 'ai_service'
+--   created_by_actor_id    UNIQUEIDENTIFIER NULL,
+--   updated_at             DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   updated_by_actor_type  NVARCHAR(50)     NOT NULL,
+--   updated_by_actor_id    UNIQUEIDENTIFIER NULL
+-- );
+--
+-- PRIMARY KEY: knowledge_node_id
+-- UNIQUE CONSTRAINTS: uq_knowledge_node_title UNIQUE(title)
+-- CHECK CONSTRAINTS:
+--   ck_knowledge_node_status CHECK ([status] IN ('draft', 'local', 'structural', 'archived'))
+--   ck_knowledge_node_created_by CHECK (created_by_actor_type IN ('learner', 'backend_core', 'ai_service'))
+--   ck_knowledge_node_updated_by CHECK (updated_by_actor_type IN ('learner', 'backend_core', 'ai_service'))
+
+-- -----------------------------------------------------------------------------
+-- 2. knowledge_edge (Relationship Entity — DAG edges)
+-- -----------------------------------------------------------------------------
+-- CREATE TABLE dbo.knowledge_edge (
+--   from_knowledge_node_id  UNIQUEIDENTIFIER NOT NULL,                         -- FK -> knowledge_node(knowledge_node_id)
+--   to_knowledge_node_id    UNIQUEIDENTIFIER NOT NULL,                         -- FK -> knowledge_node(knowledge_node_id)
+--   relation_type           NVARCHAR(50)     NOT NULL,                          -- 'prerequisite_of' | 'expands_to' | 'related_to'
+--   created_at              DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   created_by_actor_type   NVARCHAR(50)     NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id     UNIQUEIDENTIFIER NULL
+-- );
+--
+-- PRIMARY KEY: (from_knowledge_node_id, to_knowledge_node_id)
+-- FOREIGN KEYS:
+--   from_knowledge_node_id -> knowledge_node(knowledge_node_id) ON DELETE NO ACTION
+--   to_knowledge_node_id   -> knowledge_node(knowledge_node_id) ON DELETE NO ACTION
+-- CHECK CONSTRAINTS:
+--   ck_knowledge_edge_relation_type CHECK (relation_type IN ('prerequisite_of', 'expands_to', 'related_to'))
+--   ck_knowledge_edge_created_by CHECK (created_by_actor_type IN ('learner', 'backend_core', 'ai_service'))
+
+-- -----------------------------------------------------------------------------
+-- 3. knowledge_node_mastery (Aggregate Root — Learner Mastery Tracker)
+-- -----------------------------------------------------------------------------
+-- CREATE TABLE dbo.knowledge_node_mastery (
+--   knowledge_node_mastery_id  UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),       -- PK
+--   learner_id                  UNIQUEIDENTIFIER NOT NULL,                     -- FK -> learner(id)
+--   knowledge_node_id           UNIQUEIDENTIFIER NOT NULL,                     -- FK -> knowledge_node(knowledge_node_id)
+--   mastery_level               NVARCHAR(50)     NOT NULL DEFAULT 'Unknown',   -- 'Unknown' | 'Remember' | 'Explain' | 'Apply' | 'Teach'
+--   teach_composite_score       DECIMAL(5, 2)    NOT NULL DEFAULT 0.0,         -- value between 0.00 and 1.00
+--   updated_at                  DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   version_number              BIGINT           NOT NULL DEFAULT 1            -- optimistic locking counter (DECISION-044)
+-- );
+--
+-- PRIMARY KEY: knowledge_node_mastery_id
+-- FOREIGN KEYS:
+--   learner_id -> learner(id) ON DELETE NO ACTION
+--   knowledge_node_id -> knowledge_node(knowledge_node_id) ON DELETE NO ACTION
+-- UNIQUE CONSTRAINTS:
+--   uq_mastery_learner_node UNIQUE (learner_id, knowledge_node_id)
+-- CHECK CONSTRAINTS:
+--   ck_mastery_level CHECK (mastery_level IN ('Unknown', 'Remember', 'Explain', 'Apply', 'Teach'))
+--   ck_teach_score CHECK (teach_composite_score BETWEEN 0.0 AND 1.0)
+
+-- -----------------------------------------------------------------------------
+-- 4. expansion_record (Supporting Entity — Curation Audit Trail)
+-- -----------------------------------------------------------------------------
+-- CREATE TABLE dbo.expansion_record (
+--   expansion_record_id    UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),          -- PK
+--   knowledge_node_id      UNIQUEIDENTIFIER NOT NULL,                          -- FK -> knowledge_node(knowledge_node_id)
+--   reasoning              NVARCHAR(MAX)    NOT NULL,                          -- explainability explanation
+--   traced_to              NVARCHAR(MAX)    NOT NULL,                          -- serialized string array of UUIDs (DECISION-027)
+--   created_at             DATETIMEOFFSET   NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+--   created_by_actor_type  NVARCHAR(50)     NOT NULL DEFAULT 'ai_service',
+--   created_by_actor_id    UNIQUEIDENTIFIER NULL
+-- );
+--
+-- PRIMARY KEY: expansion_record_id
+-- FOREIGN KEYS:
+--   knowledge_node_id -> knowledge_node(knowledge_node_id) ON DELETE NO ACTION
+-- CHECK CONSTRAINTS:
+--   ck_expansion_record_created_by CHECK (created_by_actor_type IN ('learner', 'backend_core', 'ai_service'))
+
+-- -----------------------------------------------------------------------------
+-- Indexes
+-- -----------------------------------------------------------------------------
+-- CREATE NONCLUSTERED INDEX ix_knowledge_node_status ON dbo.knowledge_node(status);
+-- CREATE NONCLUSTERED INDEX ix_knowledge_edge_to ON dbo.knowledge_edge(to_knowledge_node_id);
+-- CREATE NONCLUSTERED INDEX ix_mastery_learner ON dbo.knowledge_node_mastery(learner_id);
+-- CREATE NONCLUSTERED INDEX ix_mastery_node ON dbo.knowledge_node_mastery(knowledge_node_id);
+-- CREATE NONCLUSTERED INDEX ix_expansion_record_node ON dbo.expansion_record(knowledge_node_id);

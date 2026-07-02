@@ -1,0 +1,72 @@
+groups:
+  - name: ai-backend.rules
+    rules:
+      - alert: RedisUnavailable
+        expr: service_dependency_up{dependency="redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Redis is unreachable'
+          description: 'service_dependency_up{{dependency="redis"}} has been 0 for 2 minutes. Distributed locking, the shared circuit breaker, and BullMQ are degraded or unavailable.'
+          runbook: 'ObservabilityRunbook.md#redis-unavailable'
+
+      - alert: MongoDisconnected
+        expr: service_dependency_up{dependency="mongodb"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'MongoDB is disconnected'
+          description: 'service_dependency_up{{dependency="mongodb"}} has been 0 for 1 minute. All Goal persistence and outbox writes are failing.'
+          runbook: 'ObservabilityRunbook.md#mongo-disconnected'
+
+      - alert: BullMQStalledJobs
+        expr: histogram_quantile(0.95, sum(rate(bullmq_queue_delay_ms_bucket[5m])) by (le)) > 30000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'BullMQ jobs are waiting too long before processing'
+          description: 'p95 bullmq_queue_delay_ms has exceeded 30s for 5 minutes, indicating stalled or under-provisioned workers.'
+          runbook: 'ObservabilityRunbook.md#bullmq-stalled-jobs'
+
+      - alert: OutboxBacklogHigh
+        expr: outbox_pending_total > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Outbox backlog is growing'
+          description: 'outbox_pending_total has exceeded 100 for 5 minutes. The relay sweep may be failing to reach the queue, or event volume has spiked.'
+          runbook: 'ObservabilityRunbook.md#outbox-backlog-high'
+
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'A circuit breaker is OPEN'
+          description: 'circuit_breaker_state{{job="{{ $labels.job }}"}} is OPEN. Job processing for this key is currently being refused.'
+          runbook: 'ObservabilityRunbook.md#circuit-breaker-open'
+
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'API p95 latency is high'
+          description: 'p95 http_request_duration_seconds for route {{ $labels.route }} has exceeded 1s for 5 minutes.'
+          runbook: 'ObservabilityRunbook.md#high-api-latency'
+
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'API error rate above 5%'
+          description: 'The ratio of 5xx responses to total requests has exceeded 5% for 5 minutes.'
+          runbook: 'ObservabilityRunbook.md#high-error-rate'
