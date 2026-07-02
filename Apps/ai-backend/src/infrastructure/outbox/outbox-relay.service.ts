@@ -1,13 +1,37 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
-import { GoalDomainEvent, GoalEventMetadata } from '../../modules/goal/domain/events/goal-event-metadata';
-import { GoalId } from '../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  Identifier,
+  RecommendationId,
+  RoadmapId
+} from '../../shared/domain/identifiers';
 import { QueueService } from '../jobs/queue.service';
 import { MetricsService } from '../observability/metrics.service';
+import { DomainEvent, DomainEventMetadata } from './domain-event.contract';
 import { OutboxEventDocument } from './outbox-event.schema';
 import { OutboxRepository } from './outbox.repository';
 
 const RELAY_INTERVAL_MS = 10_000;
+
+// Reconstructs the branded aggregate identifier matching the persisted
+// aggregateType, so relayed events carry a properly-typed aggregateId
+// (falls back to the untyped GoalId wrapper for unknown/legacy rows — only
+// `.toString()` is relied on downstream, so this fallback never loses data).
+function reconstructAggregateId(aggregateType: string, aggregateId: string): Identifier<string> {
+  switch (aggregateType) {
+    case 'Roadmap':
+      return RoadmapId.create(aggregateId);
+    case 'Assessment':
+      return AssessmentId.create(aggregateId);
+    case 'Recommendation':
+      return RecommendationId.create(aggregateId);
+    case 'Goal':
+    default:
+      return GoalId.create(aggregateId);
+  }
+}
 
 @Injectable()
 export class OutboxRelayService {
@@ -56,18 +80,25 @@ export class OutboxRelayService {
     return relayed;
   }
 
-  private toDomainEvent(doc: OutboxEventDocument): GoalDomainEvent {
-    const metadata: GoalEventMetadata = {
+  private toDomainEvent(doc: OutboxEventDocument): DomainEvent<string, unknown> {
+    // Reconstructed from the persisted document — traceId/correlationId/
+    // causationId/aggregateType are the real values written by
+    // OutboxRepository.doSaveMany, never fabricated. Any module-specific
+    // metadata fields (e.g. Roadmap's goalId/plannerVersion) are spread back
+    // in from the persisted `metadata` column.
+    const metadata: DomainEventMetadata = {
       eventId: doc.eventId,
-      aggregateId: GoalId.create(doc.aggregateId),
+      aggregateId: reconstructAggregateId(doc.aggregateType, doc.aggregateId),
+      aggregateType: doc.aggregateType,
       aggregateVersion: doc.aggregateVersion,
       occurredAt: doc.occurredAt.toISOString(),
-      traceId: 'outbox-relay',
-      correlationId: doc.eventId,
-      causationId: doc.eventId
+      traceId: doc.traceId,
+      correlationId: doc.correlationId,
+      causationId: doc.causationId,
+      ...doc.metadata
     };
     return {
-      type: doc.eventType as GoalDomainEvent['type'],
+      type: doc.eventType,
       metadata,
       payload: doc.payload
     };

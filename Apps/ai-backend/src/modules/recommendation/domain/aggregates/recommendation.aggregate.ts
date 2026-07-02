@@ -234,6 +234,7 @@ export class Recommendation {
     return {
       eventId: randomUUID(),
       aggregateId: this.recommendationId,
+      aggregateType: 'Recommendation',
       aggregateVersion: this.aggregateVersion,
       occurredAt: new Date().toISOString(),
       traceId: context.traceId,

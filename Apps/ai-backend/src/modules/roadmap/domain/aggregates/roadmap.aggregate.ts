@@ -268,6 +268,7 @@ export class Roadmap {
     return {
       eventId: randomUUID(),
       aggregateId: this.roadmapId,
+      aggregateType: 'Roadmap',
       aggregateVersion: this.aggregateVersion,
       occurredAt: new Date().toISOString(),
       traceId: context.traceId,

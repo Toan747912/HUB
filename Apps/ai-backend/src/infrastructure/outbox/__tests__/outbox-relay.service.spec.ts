@@ -3,16 +3,22 @@ import { OutboxRelayService } from '../outbox-relay.service';
 import { OutboxRepository } from '../outbox.repository';
 import { QueueService } from '../../jobs/queue.service';
 
-const pendingDoc = (eventId: string): OutboxEventDocument => ({
+const pendingDoc = (eventId: string, overrides: Partial<OutboxEventDocument> = {}): OutboxEventDocument => ({
   _id: eventId,
   eventId,
   aggregateId: 'goal-1',
+  aggregateType: 'Goal',
   aggregateVersion: 1,
   eventType: 'GoalCreated',
   payload: { foo: 'bar' },
   occurredAt: new Date(),
   publishedAt: null,
-  status: 'PENDING'
+  status: 'PENDING',
+  traceId: 'trace-1',
+  correlationId: 'corr-1',
+  causationId: 'cause-1',
+  metadata: {},
+  ...overrides
 });
 
 describe('OutboxRelayService', () => {
@@ -68,5 +74,33 @@ describe('OutboxRelayService', () => {
 
     expect(relayed).toBe(0);
     expect(outbox.markPublished).not.toHaveBeenCalled();
+  });
+
+  // Core regression this phase exists to prevent: traceId/correlationId/causationId
+  // must survive create -> persist -> relay unchanged, not be fabricated as
+  // 'outbox-relay' / doc.eventId / doc.eventId the way the old relay did.
+  it('reconstructs the real traceId/correlationId/causationId/aggregateType from the persisted row instead of fabricating them', async () => {
+    outbox.findPending.mockResolvedValue([
+      pendingDoc('evt-roundtrip', {
+        aggregateId: 'roadmap-1',
+        aggregateType: 'Roadmap',
+        eventType: 'RoadmapCreated',
+        traceId: 'trace-original',
+        correlationId: 'corr-original',
+        causationId: 'cause-original',
+        metadata: { goalId: 'goal-1', plannerVersion: 'v2' }
+      })
+    ]);
+
+    await relay.relayPending();
+
+    const [relayedEvent] = queue.enqueue.mock.calls[0];
+    expect(relayedEvent.metadata.traceId).toBe('trace-original');
+    expect(relayedEvent.metadata.correlationId).toBe('corr-original');
+    expect(relayedEvent.metadata.causationId).toBe('cause-original');
+    expect(relayedEvent.metadata.aggregateType).toBe('Roadmap');
+    // Per-module metadata beyond the base fields (e.g. Roadmap's goalId/plannerVersion)
+    // must also round-trip instead of being dropped.
+    expect(relayedEvent.metadata).toMatchObject({ goalId: 'goal-1', plannerVersion: 'v2' });
   });
 });

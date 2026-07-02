@@ -3,6 +3,7 @@ import { GoalId, RoadmapId } from '../../../../shared/domain/identifiers';
 export type RoadmapEventMetadata = {
   eventId: string;
   aggregateId: RoadmapId;
+  aggregateType: 'Roadmap';
   aggregateVersion: number;
   occurredAt: string;
   traceId: string;

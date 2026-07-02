@@ -276,6 +276,7 @@ export class Goal {
     return {
       eventId: randomUUID(),
       aggregateId: this.goalId,
+      aggregateType: 'Goal',
       aggregateVersion: this.aggregateVersion,
       occurredAt: new Date().toISOString(),
       traceId: context.traceId,

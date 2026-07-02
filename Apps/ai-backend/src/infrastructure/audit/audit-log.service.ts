@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { GoalDomainEvent } from '../../modules/goal/domain/events/goal-event-metadata';
+import { DomainEvent } from '../outbox/domain-event.contract';
 import { RequestContextService } from '../observability/request-context.service';
 import { AuditLogRepository } from './audit-log.repository';
 
@@ -14,7 +14,7 @@ export class AuditLogService {
    * Domain events carry post-state (payload) but not pre-state, so `before` is
    * honestly recorded as null rather than reconstructed/guessed.
    */
-  async recordFromDomainEvent(event: GoalDomainEvent): Promise<void> {
+  async recordFromDomainEvent(event: DomainEvent): Promise<void> {
     // Event types are always "<AggregateName><Action>" (e.g. GoalCreated,
     // RoadmapPublished), so the leading capitalized word names the aggregate
     // without needing a per-module audit adapter.

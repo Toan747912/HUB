@@ -40,6 +40,7 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
   metadata: {
     eventId: 'evt-1',
     aggregateId: GoalId.create('goal-1'),
+    aggregateType: 'Goal',
     aggregateVersion: 1,
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',

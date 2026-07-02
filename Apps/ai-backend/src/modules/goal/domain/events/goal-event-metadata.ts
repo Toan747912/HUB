@@ -3,6 +3,7 @@ import { GoalId } from '../../../../shared/domain/identifiers';
 export type GoalEventMetadata = {
   eventId: string;
   aggregateId: GoalId;
+  aggregateType: 'Goal';
   aggregateVersion: number;
   occurredAt: string;
   traceId: string;

@@ -4,6 +4,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Model, createConnection, disconnect } from 'mongoose';
 import { GoalDomainEvent } from '../../../modules/goal/domain/events/goal-event-metadata';
 import { GoalId } from '../../../shared/domain/identifiers';
+import { DomainEvent } from '../domain-event.contract';
 import { OutboxEventDocument, OutboxEventSchema } from '../outbox-event.schema';
 import { OutboxRepository } from '../outbox.repository';
 
@@ -14,6 +15,7 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
   metadata: {
     eventId: overrides.metadata?.eventId ?? 'evt-1',
     aggregateId: GoalId.create('goal-1'),
+    aggregateType: 'Goal',
     aggregateVersion: 1,
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
@@ -72,6 +74,50 @@ describe('OutboxRepository — integration', () => {
     expect(pending[0].status).toBe('PENDING');
     expect(pending[0].eventType).toBe('GoalCreated');
     expect(pending[0].aggregateId).toBe('goal-1');
+  });
+
+  // Core regression this phase exists to prevent: traceId/correlationId/causationId
+  // (and aggregateType) must round-trip through persistence verbatim, not be dropped
+  // and later fabricated by the relay.
+  it('persists traceId/correlationId/causationId/aggregateType verbatim from the in-memory event', async () => {
+    const event = makeEvent({
+      metadata: {
+        ...makeEvent().metadata,
+        eventId: 'evt-roundtrip',
+        traceId: 'trace-original',
+        correlationId: 'corr-original',
+        causationId: 'cause-original'
+      }
+    });
+    await repository.saveMany([event]);
+
+    const pending = await repository.findPending();
+    const doc = pending.find((d) => d.eventId === 'evt-roundtrip');
+    expect(doc?.traceId).toBe('trace-original');
+    expect(doc?.correlationId).toBe('corr-original');
+    expect(doc?.causationId).toBe('cause-original');
+    expect(doc?.aggregateType).toBe('Goal');
+  });
+
+  it('stashes per-module metadata fields beyond the base set into the metadata column', async () => {
+    // Simulates a Roadmap-shaped event's extra fields (goalId/plannerVersion)
+    // flowing through the shared, Goal-agnostic OutboxRepository via the
+    // DomainEvent contract — the repository doesn't know about these fields
+    // by name, it just preserves whatever isn't part of the known base set.
+    const event: DomainEvent = {
+      ...makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-extra-metadata' } }),
+      metadata: {
+        ...makeEvent().metadata,
+        eventId: 'evt-extra-metadata',
+        goalId: 'goal-1',
+        plannerVersion: 'v2'
+      } as DomainEvent['metadata']
+    };
+    await repository.saveMany([event]);
+
+    const pending = await repository.findPending();
+    const doc = pending.find((d) => d.eventId === 'evt-extra-metadata');
+    expect(doc?.metadata).toMatchObject({ goalId: 'goal-1', plannerVersion: 'v2' });
   });
 
   it('saveMany is idempotent on eventId (safe to call twice)', async () => {

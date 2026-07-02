@@ -3,6 +3,7 @@ import { AssessmentId, GoalId, RecommendationId, RoadmapId } from '../../../../s
 export type RecommendationEventMetadata = {
   eventId: string;
   aggregateId: RecommendationId;
+  aggregateType: 'Recommendation';
   aggregateVersion: number;
   occurredAt: string;
   traceId: string;

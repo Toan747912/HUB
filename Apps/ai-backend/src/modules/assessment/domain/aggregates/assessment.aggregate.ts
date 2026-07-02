@@ -202,6 +202,7 @@ export class Assessment {
     return {
       eventId: randomUUID(),
       aggregateId: this.assessmentId,
+      aggregateType: 'Assessment',
       aggregateVersion: this.aggregateVersion,
       occurredAt: new Date().toISOString(),
       traceId: context.traceId,

@@ -9,6 +9,7 @@ const makeEvent = (eventId: string): GoalDomainEvent => ({
   metadata: {
     eventId,
     aggregateId: GoalId.create('goal-1'),
+    aggregateType: 'Goal',
     aggregateVersion: 1,
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',

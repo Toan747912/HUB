@@ -8,12 +8,17 @@ const pendingDoc = (eventId: string): OutboxEventDocument => ({
   _id: eventId,
   eventId,
   aggregateId: 'goal-1',
+  aggregateType: 'Goal',
   aggregateVersion: 1,
   eventType: 'GoalCreated',
   payload: {},
   occurredAt: new Date(),
   publishedAt: null,
-  status: 'PENDING'
+  status: 'PENDING',
+  traceId: 'trace-1',
+  correlationId: 'corr-1',
+  causationId: 'cause-1',
+  metadata: {}
 });
 
 describe('OutboxRelayService — observability wiring', () => {

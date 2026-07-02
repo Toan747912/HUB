@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Job, Queue, Worker } from 'bullmq';
-import { GoalDomainEvent } from '../../modules/goal/domain/events/goal-event-metadata';
+import { DomainEvent } from '../outbox/domain-event.contract';
 import { MetricsService } from '../observability/metrics.service';
 import { SpanFactory } from '../observability/span.factory';
 import { TracerService } from '../observability/tracer.service';
@@ -10,9 +10,9 @@ import { GOAL_EVENTS_DLQ, GOAL_EVENTS_QUEUE, getQueueConnection } from './queue.
 @Injectable()
 export class QueueService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(QueueService.name);
-  private queue: Queue<GoalDomainEvent> | null = null;
-  private dlq: Queue<GoalDomainEvent> | null = null;
-  private worker: Worker<GoalDomainEvent> | null = null;
+  private queue: Queue<DomainEvent> | null = null;
+  private dlq: Queue<DomainEvent> | null = null;
+  private worker: Worker<DomainEvent> | null = null;
 
   constructor(
     private readonly circuitBreaker: RedisCircuitBreakerService,
@@ -26,12 +26,12 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.queue = new Queue<GoalDomainEvent>(GOAL_EVENTS_QUEUE, { connection });
-    this.dlq = new Queue<GoalDomainEvent>(GOAL_EVENTS_DLQ, { connection });
+    this.queue = new Queue<DomainEvent>(GOAL_EVENTS_QUEUE, { connection });
+    this.dlq = new Queue<DomainEvent>(GOAL_EVENTS_DLQ, { connection });
 
-    this.worker = new Worker<GoalDomainEvent>(
+    this.worker = new Worker<DomainEvent>(
       GOAL_EVENTS_QUEUE,
-      async (job: Job<GoalDomainEvent>) => this.process(job),
+      async (job: Job<DomainEvent>) => this.process(job),
       { connection }
     );
 
@@ -58,7 +58,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     return this.queue !== null;
   }
 
-  async enqueue(event: GoalDomainEvent): Promise<void> {
+  async enqueue(event: DomainEvent): Promise<void> {
     const run = () => this.doEnqueue(event);
     if (!this.tracer) return run();
     return this.tracer.withSpan(
@@ -68,7 +68,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  private async doEnqueue(event: GoalDomainEvent): Promise<void> {
+  private async doEnqueue(event: DomainEvent): Promise<void> {
     if (!this.queue) {
       this.log('enqueue_skipped_no_queue', event);
       return;
@@ -86,7 +86,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     this.metrics?.incrementBullmqJob('enqueued');
   }
 
-  async moveToDeadLetter(event: GoalDomainEvent, reason?: string): Promise<void> {
+  async moveToDeadLetter(event: DomainEvent, reason?: string): Promise<void> {
     if (!this.dlq) {
       return;
     }
@@ -95,7 +95,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     this.metrics?.incrementBullmqJob('dead_lettered');
   }
 
-  private async process(job: Job<GoalDomainEvent>): Promise<void> {
+  private async process(job: Job<DomainEvent>): Promise<void> {
     const start = Date.now();
     const event = job.data;
     const jobKey = event.type;
@@ -119,7 +119,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private log(event: string, domainEvent: GoalDomainEvent, extra: Record<string, unknown> = {}): void {
+  private log(event: string, domainEvent: DomainEvent, extra: Record<string, unknown> = {}): void {
     this.logger.log(
       JSON.stringify({
         event,

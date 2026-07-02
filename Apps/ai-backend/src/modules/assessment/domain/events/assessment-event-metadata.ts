@@ -3,6 +3,7 @@ import { AssessmentId, GoalId, RoadmapId } from '../../../../shared/domain/ident
 export type AssessmentEventMetadata = {
   eventId: string;
   aggregateId: AssessmentId;
+  aggregateType: 'Assessment';
   aggregateVersion: number;
   occurredAt: string;
   traceId: string;

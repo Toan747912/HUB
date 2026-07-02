@@ -6,6 +6,7 @@ import { QueueService } from '../jobs/queue.service';
 import { MetricsService } from '../observability/metrics.service';
 import { SpanFactory } from '../observability/span.factory';
 import { TracerService } from '../observability/tracer.service';
+import { DomainEvent } from './domain-event.contract';
 import { OutboxRepository } from './outbox.repository';
 
 @Injectable()
@@ -36,7 +37,8 @@ export class OutboxPublisherService implements IEventPublisher {
 
   private async doPublishMany(events: GoalDomainEvent[]): Promise<void> {
     // Durability first: events are safe in the outbox before we ever touch the queue.
-    await this.outbox.saveMany(events);
+    const domainEvents: DomainEvent[] = events;
+    await this.outbox.saveMany(domainEvents);
 
     for (const event of events) {
       this.recordBusinessMetrics(event);
