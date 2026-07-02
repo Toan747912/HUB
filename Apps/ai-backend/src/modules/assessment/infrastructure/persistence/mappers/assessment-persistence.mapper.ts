@@ -1,4 +1,4 @@
-import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/identifiers';
+import { AssessmentId, GoalId, LearnerId, RoadmapId, SkillId } from '../../../../../shared/domain/identifiers';
 import { Assessment } from '../../../domain/aggregates/assessment.aggregate';
 import { AssessmentResult } from '../../../domain/entities/assessment-result.entity';
 import { AssessmentHistory, AssessmentHistoryReason } from '../../../domain/entities/assessment-history.entity';
@@ -22,13 +22,13 @@ export class AssessmentPersistenceMapper {
       latestResult: result
         ? {
             skillScores: result.skillScores.map((s) => ({
-              skillArea: s.skillArea,
+              skillId: s.skillId.toString(),
               rawScore: s.rawScore,
               taskCount: s.taskCount,
               completedTaskCount: s.completedTaskCount
             })),
-            competencies: result.competencies.map((c) => ({ skillArea: c.skillArea, score: c.score, level: c.level })),
-            knowledgeGaps: result.knowledgeGaps.map((g) => ({ id: g.id, skillArea: g.skillArea, weight: g.weight, reason: g.reason })),
+            competencies: result.competencies.map((c) => ({ skillId: c.skillId.toString(), score: c.score, level: c.level })),
+            knowledgeGaps: result.knowledgeGaps.map((g) => ({ id: g.id, skillId: g.skillId.toString(), weight: g.weight, reason: g.reason })),
             confidenceScore: result.confidenceScore,
             readiness: result.readiness,
             weakAreas: [...result.weakAreas],
@@ -68,9 +68,9 @@ export class AssessmentPersistenceMapper {
 
     (assessment as any).latestResult = doc.latestResult
       ? new AssessmentResult(
-          doc.latestResult.skillScores.map((s) => new SkillScore(s.skillArea, s.rawScore, s.taskCount, s.completedTaskCount)),
-          doc.latestResult.competencies.map((c) => new Competency(c.skillArea, c.score, c.level)),
-          doc.latestResult.knowledgeGaps.map((g) => new KnowledgeGap(g.id, g.skillArea, g.weight, g.reason)),
+          doc.latestResult.skillScores.map((s) => new SkillScore(SkillId.create(s.skillId), s.rawScore, s.taskCount, s.completedTaskCount)),
+          doc.latestResult.competencies.map((c) => new Competency(SkillId.create(c.skillId), c.score, c.level)),
+          doc.latestResult.knowledgeGaps.map((g) => new KnowledgeGap(g.id, SkillId.create(g.skillId), g.weight, g.reason)),
           doc.latestResult.confidenceScore,
           doc.latestResult.readiness as any,
           doc.latestResult.weakAreas,

@@ -22,6 +22,7 @@ import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
 import { RecommendationModule } from './modules/recommendation/recommendation.module';
 import { GoalModule } from './modules/goal/goal.module';
+import { SkillModule } from './modules/skill/skill.module';
 import { RoadmapModule } from './modules/roadmap/roadmap.module';
 import { OrchestrationModule } from './modules/orchestration/orchestration.module';
 import { LearningSessionModule } from './modules/learning-session/learning-session.module';
@@ -67,6 +68,7 @@ import { getDatabaseName, getDatabaseUri } from './modules/goal/infrastructure/p
     HealthModule,
     InfrastructureModule,
     SharedModule,
+    SkillModule,
     GoalModule,
     RoadmapModule,
     LearningSessionModule,

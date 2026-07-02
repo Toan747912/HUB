@@ -2,7 +2,7 @@ import { Schema } from 'mongoose';
 
 const SkillScoreSchema = new Schema(
   {
-    skillArea: { type: String, required: true },
+    skillId: { type: String, required: true },
     rawScore: { type: Number, required: true },
     taskCount: { type: Number, required: true },
     completedTaskCount: { type: Number, required: true }
@@ -12,7 +12,7 @@ const SkillScoreSchema = new Schema(
 
 const CompetencySchema = new Schema(
   {
-    skillArea: { type: String, required: true },
+    skillId: { type: String, required: true },
     score: { type: Number, required: true },
     level: { type: String, required: true }
   },
@@ -22,7 +22,7 @@ const CompetencySchema = new Schema(
 const KnowledgeGapSchema = new Schema(
   {
     id: { type: String, required: true },
-    skillArea: { type: String, required: true },
+    skillId: { type: String, required: true },
     weight: { type: String, required: true },
     reason: { type: String, required: true }
   },

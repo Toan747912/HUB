@@ -22,7 +22,7 @@ const REVIEW_INTERVAL_DAYS: Record<string, number> = { CRITICAL: 1, HIGH: 3, MED
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 type SkillBucket = {
-  skillArea: string;
+  skillId: string;
   tasks: RecommendationTaskSignal[];
   competencyScore: number;
   gap?: RecommendationGapSignal;
@@ -49,7 +49,7 @@ export class RecommendationEngine {
       const strategy = this.selectStrategy(bucket, scores, input.revisionCount);
 
       learningStrategies.push({
-        skillArea: bucket.skillArea,
+        skillId: bucket.skillId,
         strategy,
         rationale: this.strategyRationale(strategy, bucket, scores)
       });
@@ -58,7 +58,7 @@ export class RecommendationEngine {
       if (incompleteCount > 0) {
         items.push(
           this.buildItem(input, 'TASK_PRIORITY', bucket, scores, {
-            summary: `${bucket.skillArea}: ${incompleteCount} task(s) remaining, priority score ${scores.priorityScore}`,
+            summary: `${bucket.skillId}: ${incompleteCount} task(s) remaining, priority score ${scores.priorityScore}`,
             evidence: [
               `needScore=${scores.needScore}`,
               `urgencyScore=${scores.urgencyScore}`,
@@ -80,10 +80,10 @@ export class RecommendationEngine {
             bucket,
             scores,
             {
-              summary: `Suggested resources for "${bucket.skillArea}" (${strategy})`,
+              summary: `Suggested resources for "${bucket.skillId}" (${strategy})`,
               evidence: [`strategy=${strategy}`, `competencyScore=${bucket.competencyScore}`]
             },
-            `skill:${bucket.skillArea}:${strategy.toLowerCase()}-resources`
+            `skill:${bucket.skillId}:${strategy.toLowerCase()}-resources`
           )
         );
       }
@@ -91,15 +91,15 @@ export class RecommendationEngine {
       if (bucket.gap) {
         const intervalDays = REVIEW_INTERVAL_DAYS[bucket.gap.weight] ?? 14;
         reviewSchedules.push({
-          skillArea: bucket.skillArea,
+          skillId: bucket.skillId,
           intervalDays,
           dueDate: this.addDays(input.referenceDate, intervalDays),
-          reason: `Knowledge gap weight ${bucket.gap.weight} on "${bucket.skillArea}"`
+          reason: `Knowledge gap weight ${bucket.gap.weight} on "${bucket.skillId}"`
         });
 
         items.push(
           this.buildItem(input, 'REVIEW_SCHEDULE', bucket, scores, {
-            summary: `Schedule a review of "${bucket.skillArea}" in ${intervalDays} day(s)`,
+            summary: `Schedule a review of "${bucket.skillId}" in ${intervalDays} day(s)`,
             evidence: [`gapWeight=${bucket.gap.weight}`, bucket.gap.reason]
           })
         );
@@ -129,24 +129,24 @@ export class RecommendationEngine {
   private groupBySkill(input: RecommendationInput): SkillBucket[] {
     const bySkill = new Map<string, RecommendationTaskSignal[]>();
     for (const task of input.tasks) {
-      const list = bySkill.get(task.skillArea) ?? [];
+      const list = bySkill.get(task.skillId) ?? [];
       list.push(task);
-      bySkill.set(task.skillArea, list);
+      bySkill.set(task.skillId, list);
     }
 
     const competencyBySkill = new Map<string, RecommendationCompetencySignal>();
-    for (const c of input.competencies) competencyBySkill.set(c.skillArea, c);
+    for (const c of input.competencies) competencyBySkill.set(c.skillId, c);
 
     const gapBySkill = new Map<string, RecommendationGapSignal>();
-    for (const g of input.knowledgeGaps) gapBySkill.set(g.skillArea, g);
+    for (const g of input.knowledgeGaps) gapBySkill.set(g.skillId, g);
 
     return [...bySkill.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([skillArea, tasks]) => ({
-        skillArea,
+      .map(([skillId, tasks]) => ({
+        skillId,
         tasks,
-        competencyScore: competencyBySkill.get(skillArea)?.score ?? 0,
-        gap: gapBySkill.get(skillArea)
+        competencyScore: competencyBySkill.get(skillId)?.score ?? 0,
+        gap: gapBySkill.get(skillId)
       }));
   }
 
@@ -210,7 +210,7 @@ export class RecommendationEngine {
   }
 
   private strategyRationale(strategy: LearningStrategyValue, bucket: SkillBucket, scores: RecommendationScoresResult): string {
-    return `strategy=${strategy} for "${bucket.skillArea}" (competency=${bucket.competencyScore}, gap=${bucket.gap?.weight ?? 'none'}, priorityScore=${scores.priorityScore})`;
+    return `strategy=${strategy} for "${bucket.skillId}" (competency=${bucket.competencyScore}, gap=${bucket.gap?.weight ?? 'none'}, priorityScore=${scores.priorityScore})`;
   }
 
   private buildDifficultyAdjustmentItem(
@@ -220,13 +220,13 @@ export class RecommendationEngine {
   ): RecommendationItemResult | null {
     if (scores.difficultyScore - bucket.competencyScore > 30) {
       return this.buildItem(input, 'DIFFICULTY_ADJUSTMENT', bucket, scores, {
-        summary: `Decrease difficulty for "${bucket.skillArea}" — perceived difficulty exceeds competency`,
+        summary: `Decrease difficulty for "${bucket.skillId}" — perceived difficulty exceeds competency`,
         evidence: [`difficultyScore=${scores.difficultyScore}`, `competencyScore=${bucket.competencyScore}`]
       });
     }
     if (bucket.competencyScore - scores.difficultyScore > 40 && bucket.competencyScore >= 80) {
       return this.buildItem(input, 'DIFFICULTY_ADJUSTMENT', bucket, scores, {
-        summary: `Increase difficulty for "${bucket.skillArea}" — competency has outpaced current difficulty`,
+        summary: `Increase difficulty for "${bucket.skillId}" — competency has outpaced current difficulty`,
         evidence: [`difficultyScore=${scores.difficultyScore}`, `competencyScore=${bucket.competencyScore}`]
       });
     }
@@ -248,7 +248,7 @@ export class RecommendationEngine {
       riskScore: 0,
       overallScore: overallUrgency
     };
-    const pseudoBucket: SkillBucket = { skillArea: '__roadmap__', tasks: [], competencyScore: 0 };
+    const pseudoBucket: SkillBucket = { skillId: '__roadmap__', tasks: [], competencyScore: 0 };
 
     if (input.readiness === 'AT_RISK' && overallUrgency >= 70) {
       items.push(
@@ -284,7 +284,7 @@ export class RecommendationEngine {
     const needScoreBySkill = new Map<string, number>();
     for (const bucket of buckets) {
       const gapWeightScore = bucket.gap ? GAP_WEIGHT_SCORE[bucket.gap.weight] ?? 0 : 0;
-      needScoreBySkill.set(bucket.skillArea, gapWeightScore * 0.6 + (100 - bucket.competencyScore) * 0.4);
+      needScoreBySkill.set(bucket.skillId, gapWeightScore * 0.6 + (100 - bucket.competencyScore) * 0.4);
     }
 
     const completedIds = new Set(input.tasks.filter((t) => t.completed).map((t) => t.id));
@@ -292,7 +292,7 @@ export class RecommendationEngine {
 
     const withScores = incompleteTasks.map((task) => {
       const blocked = task.dependsOn.some((depId) => !completedIds.has(depId));
-      const needScore = needScoreBySkill.get(task.skillArea) ?? 0;
+      const needScore = needScoreBySkill.get(task.skillId) ?? 0;
       const riskScore = Math.min(100, input.revisionCount * 3);
       const rawPriority = blocked ? 0 : Math.round(needScore * 0.5 + overallUrgency * 0.3 + riskScore * 0.2);
       return { task, blocked, priorityScore: Math.max(0, Math.min(100, rawPriority)) };
@@ -312,7 +312,7 @@ export class RecommendationEngine {
       blocked: entry.blocked,
       rationale: entry.blocked
         ? `Blocked: unmet dependency in [${entry.task.dependsOn.join(', ')}]`
-        : `priorityScore=${entry.priorityScore} for skill "${entry.task.skillArea}"`
+        : `priorityScore=${entry.priorityScore} for skill "${entry.task.skillId}"`
     }));
   }
 
@@ -325,9 +325,9 @@ export class RecommendationEngine {
     logicalResourceRef: string | null = null
   ): RecommendationItemResult {
     return {
-      id: `${input.roadmapId}-${type.toLowerCase()}-${bucket.skillArea}`,
+      id: `${input.roadmapId}-${type.toLowerCase()}-${bucket.skillId}`,
       type,
-      skillArea: bucket.skillArea === '__roadmap__' ? null : bucket.skillArea,
+      skillId: bucket.skillId === '__roadmap__' ? null : bucket.skillId,
       taskId: null,
       strategy: null,
       priority: RecommendationPriority.fromScore(scores.priorityScore).getValue(),

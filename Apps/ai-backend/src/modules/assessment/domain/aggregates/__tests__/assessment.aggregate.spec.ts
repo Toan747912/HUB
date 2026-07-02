@@ -11,7 +11,7 @@ const baseInput: AssessmentInput = {
   roadmapId: 'roadmap-1',
   learnerId: 'learner-1',
   roadmapCompletionRatio: 95,
-  tasks: [{ id: 't1', skillArea: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
+  tasks: [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
   revisionCount: 0,
   previousRuns: []
 };
@@ -60,7 +60,7 @@ describe('Assessment aggregate', () => {
 
     const gapInput: AssessmentInput = {
       ...baseInput,
-      tasks: [{ id: 't1', skillArea: 'Weak', completed: false, estimatedDurationDays: 2 }]
+      tasks: [{ id: 't1', skillId: 'Weak', completed: false, estimatedDurationDays: 2 }]
     };
     const computation = engine.evaluate(gapInput);
     assessment.run(computation, context, assessment.getAggregateVersion());

@@ -25,7 +25,7 @@ const RecommendationItemSchema = new Schema(
   {
     id: { type: String, required: true },
     type: { type: String, required: true },
-    skillArea: { type: String, required: false, default: null },
+    skillId: { type: String, required: false, default: null },
     taskId: { type: String, required: false, default: null },
     strategy: { type: String, required: false, default: null },
     priority: { type: String, required: true },
@@ -41,7 +41,7 @@ const RecommendationItemSchema = new Schema(
 
 const LearningStrategyAssignmentSchema = new Schema(
   {
-    skillArea: { type: String, required: true },
+    skillId: { type: String, required: true },
     strategy: { type: String, required: true },
     rationale: { type: String, required: true }
   },
@@ -50,7 +50,7 @@ const LearningStrategyAssignmentSchema = new Schema(
 
 const ReviewScheduleSchema = new Schema(
   {
-    skillArea: { type: String, required: true },
+    skillId: { type: String, required: true },
     intervalDays: { type: Number, required: true },
     dueDate: { type: String, required: true },
     reason: { type: String, required: true }

@@ -16,7 +16,7 @@ export interface RecommendationReasonDoc {
 export interface RecommendationItemDoc {
   id: string;
   type: string;
-  skillArea: string | null;
+  skillId: string | null;
   taskId: string | null;
   strategy: string | null;
   priority: string;
@@ -29,13 +29,13 @@ export interface RecommendationItemDoc {
 }
 
 export interface LearningStrategyAssignmentDoc {
-  skillArea: string;
+  skillId: string;
   strategy: string;
   rationale: string;
 }
 
 export interface ReviewScheduleDoc {
-  skillArea: string;
+  skillId: string;
   intervalDays: number;
   dueDate: string;
   reason: string;

@@ -5,6 +5,7 @@ import {
   LearnerId,
   RecommendationId,
   RoadmapId,
+  SkillId,
   TaskId
 } from '../../../../shared/domain/identifiers';
 import { RecommendationItem } from '../entities/recommendation-item.entity';
@@ -72,7 +73,7 @@ export class Recommendation {
         new RecommendationItem(
           i.id,
           i.type,
-          i.skillArea,
+          i.skillId ? SkillId.create(i.skillId) : null,
           i.taskId ? TaskId.create(i.taskId) : null,
           i.strategy,
           i.priority,
@@ -93,10 +94,10 @@ export class Recommendation {
         )
     );
     aggregate.learningStrategies = props.computation.learningStrategies.map(
-      (s) => new LearningStrategyAssignment(s.skillArea, s.strategy, s.rationale)
+      (s) => new LearningStrategyAssignment(SkillId.create(s.skillId), s.strategy, s.rationale)
     );
     aggregate.reviewSchedules = props.computation.reviewSchedules.map(
-      (r) => new ReviewSchedule(r.skillArea, r.intervalDays, r.dueDate, r.reason)
+      (r) => new ReviewSchedule(SkillId.create(r.skillId), r.intervalDays, r.dueDate, r.reason)
     );
     aggregate.priorityDecisions = props.computation.priorityDecisions.map(
       (p) => new PriorityDecision(p.taskId, p.priorityScore, p.originalOrder, p.suggestedOrder, p.blocked, p.rationale)
@@ -118,7 +119,7 @@ export class Recommendation {
     if (aggregate.learningStrategies.length > 0) {
       aggregate.recordEvent(
         learningStrategyChangedEvent(aggregate.buildMetadata(context), {
-          strategies: aggregate.learningStrategies.map((s) => ({ skillArea: s.skillArea, strategy: s.strategy, rationale: s.rationale }))
+          strategies: aggregate.learningStrategies.map((s) => ({ skillId: s.skillId.toString(), strategy: s.strategy, rationale: s.rationale }))
         })
       );
     }

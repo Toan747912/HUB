@@ -4,6 +4,7 @@ import {
   LearnerId,
   RecommendationId,
   RoadmapId,
+  SkillId,
   TaskId
 } from '../../../../../shared/domain/identifiers';
 import { Recommendation } from '../../../domain/aggregates/recommendation.aggregate';
@@ -31,7 +32,7 @@ export class RecommendationPersistenceMapper {
       items: recommendation.getItems().map((i) => ({
         id: i.id,
         type: i.type,
-        skillArea: i.skillArea,
+        skillId: i.skillId ? i.skillId.toString() : null,
         taskId: i.taskId ? i.taskId.toString() : null,
         strategy: i.strategy,
         priority: i.priority,
@@ -43,12 +44,12 @@ export class RecommendationPersistenceMapper {
         logicalResourceRef: i.logicalResourceRef
       })),
       learningStrategies: recommendation.getLearningStrategies().map((s) => ({
-        skillArea: s.skillArea,
+        skillId: s.skillId.toString(),
         strategy: s.strategy,
         rationale: s.rationale
       })),
       reviewSchedules: recommendation.getReviewSchedules().map((r) => ({
-        skillArea: r.skillArea,
+        skillId: r.skillId.toString(),
         intervalDays: r.intervalDays,
         dueDate: r.dueDate,
         reason: r.reason
@@ -96,7 +97,7 @@ export class RecommendationPersistenceMapper {
         new RecommendationItem(
           i.id,
           i.type,
-          i.skillArea,
+          i.skillId ? SkillId.create(i.skillId) : null,
           i.taskId ? TaskId.create(i.taskId) : null,
           i.strategy,
           i.priority,
@@ -118,11 +119,11 @@ export class RecommendationPersistenceMapper {
     );
 
     (recommendation as any).learningStrategies = doc.learningStrategies.map(
-      (s) => new LearningStrategyAssignment(s.skillArea, s.strategy, s.rationale)
+      (s) => new LearningStrategyAssignment(SkillId.create(s.skillId), s.strategy, s.rationale)
     );
 
     (recommendation as any).reviewSchedules = doc.reviewSchedules.map(
-      (r) => new ReviewSchedule(r.skillArea, r.intervalDays, r.dueDate, r.reason)
+      (r) => new ReviewSchedule(SkillId.create(r.skillId), r.intervalDays, r.dueDate, r.reason)
     );
 
     (recommendation as any).priorityDecisions = doc.priorityDecisions.map(

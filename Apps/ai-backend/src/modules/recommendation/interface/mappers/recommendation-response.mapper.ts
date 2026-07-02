@@ -23,7 +23,7 @@ export class RecommendationResponseMapper {
       items: recommendation.getItems().map((i) => ({
         id: i.id,
         type: i.type,
-        skillArea: i.skillArea,
+        skillId: i.skillId ? i.skillId.toString() : null,
         taskId: i.taskId ? i.taskId.toString() : null,
         strategy: i.strategy,
         priority: i.priority,
@@ -35,12 +35,12 @@ export class RecommendationResponseMapper {
         logicalResourceRef: i.logicalResourceRef
       })),
       learningStrategies: recommendation.getLearningStrategies().map((s) => ({
-        skillArea: s.skillArea,
+        skillId: s.skillId.toString(),
         strategy: s.strategy,
         rationale: s.rationale
       })),
       reviewSchedules: recommendation.getReviewSchedules().map((r) => ({
-        skillArea: r.skillArea,
+        skillId: r.skillId.toString(),
         intervalDays: r.intervalDays,
         dueDate: r.dueDate,
         reason: r.reason

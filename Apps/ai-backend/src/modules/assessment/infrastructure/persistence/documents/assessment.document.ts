@@ -1,19 +1,19 @@
 export interface SkillScoreDoc {
-  skillArea: string;
+  skillId: string;
   rawScore: number;
   taskCount: number;
   completedTaskCount: number;
 }
 
 export interface CompetencyDoc {
-  skillArea: string;
+  skillId: string;
   score: number;
   level: string;
 }
 
 export interface KnowledgeGapDoc {
   id: string;
-  skillArea: string;
+  skillId: string;
   weight: string;
   reason: string;
 }

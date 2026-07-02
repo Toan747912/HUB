@@ -13,10 +13,10 @@ const baseInput: RecommendationInput = {
   roadmapCompletionRatio: 60,
   revisionCount: 0,
   tasks: [
-    { id: 't1', skillArea: 'Foundations', completed: true, order: 1, dependsOn: [], estimatedDurationDays: 2, actualDurationDays: 2 },
-    { id: 't2', skillArea: 'Foundations', completed: false, order: 2, dependsOn: ['t1'], estimatedDurationDays: 3 }
+    { id: 't1', skillId: 'Foundations', completed: true, order: 1, dependsOn: [], estimatedDurationDays: 2, actualDurationDays: 2 },
+    { id: 't2', skillId: 'Foundations', completed: false, order: 2, dependsOn: ['t1'], estimatedDurationDays: 3 }
   ],
-  competencies: [{ skillArea: 'Foundations', score: 60, level: 'PROFICIENT' }],
+  competencies: [{ skillId: 'Foundations', score: 60, level: 'PROFICIENT' }],
   knowledgeGaps: [],
   confidenceScore: 70,
   readiness: 'NOT_READY'
@@ -48,14 +48,14 @@ describe('RecommendationEngine', () => {
     const result = engine.evaluate(baseInput);
     const taskPriorityItems = result.items.filter((i) => i.type === 'TASK_PRIORITY');
     expect(taskPriorityItems).toHaveLength(1);
-    expect(taskPriorityItems[0].skillArea).toBe('Foundations');
+    expect(taskPriorityItems[0].skillId).toBe('Foundations');
   });
 
   describe('gap handling', () => {
     it('produces a REVIEW_SCHEDULE item and a scheduled review when a knowledge gap exists', () => {
       const result = engine.evaluate({
         ...baseInput,
-        knowledgeGaps: [{ skillArea: 'Foundations', weight: 'HIGH', reason: 'Completion below threshold' }]
+        knowledgeGaps: [{ skillId: 'Foundations', weight: 'HIGH', reason: 'Completion below threshold' }]
       });
       expect(result.reviewSchedules).toHaveLength(1);
       expect(result.reviewSchedules[0].intervalDays).toBe(3);
@@ -73,7 +73,7 @@ describe('RecommendationEngine', () => {
       const result = engine.evaluate({
         ...baseInput,
         goalDifficulty: 'EXPERT',
-        competencies: [{ skillArea: 'Foundations', score: 10, level: 'NOVICE' }]
+        competencies: [{ skillId: 'Foundations', score: 10, level: 'NOVICE' }]
       });
       const item = result.items.find((i) => i.type === 'DIFFICULTY_ADJUSTMENT');
       expect(item).toBeDefined();
@@ -84,7 +84,7 @@ describe('RecommendationEngine', () => {
       const result = engine.evaluate({
         ...baseInput,
         goalDifficulty: 'BEGINNER',
-        competencies: [{ skillArea: 'Foundations', score: 95, level: 'EXPERT' }]
+        competencies: [{ skillId: 'Foundations', score: 95, level: 'EXPERT' }]
       });
       const item = result.items.find((i) => i.type === 'DIFFICULTY_ADJUSTMENT');
       expect(item).toBeDefined();
@@ -100,8 +100,8 @@ describe('RecommendationEngine', () => {
   describe('strategy selection', () => {
     const strategyInput = (overrides: Partial<RecommendationInput>): RecommendationInput => ({
       ...baseInput,
-      tasks: [{ id: 'x1', skillArea: 'X', completed: true, order: 1, dependsOn: [], estimatedDurationDays: 2, actualDurationDays: 2 }],
-      competencies: [{ skillArea: 'X', score: 60, level: 'PROFICIENT' }],
+      tasks: [{ id: 'x1', skillId: 'X', completed: true, order: 1, dependsOn: [], estimatedDurationDays: 2, actualDurationDays: 2 }],
+      competencies: [{ skillId: 'X', score: 60, level: 'PROFICIENT' }],
       knowledgeGaps: [],
       revisionCount: 0,
       ...overrides
@@ -109,14 +109,14 @@ describe('RecommendationEngine', () => {
 
     const strategyFor = (input: RecommendationInput): string => {
       const result = engine.evaluate(input);
-      return result.learningStrategies.find((s) => s.skillArea === 'X')!.strategy;
+      return result.learningStrategies.find((s) => s.skillId === 'X')!.strategy;
     };
 
     it('selects RECOVERY for a CRITICAL gap with very low competency', () => {
       const strategy = strategyFor(
         strategyInput({
-          competencies: [{ skillArea: 'X', score: 20, level: 'NOVICE' }],
-          knowledgeGaps: [{ skillArea: 'X', weight: 'CRITICAL', reason: 'severe gap' }]
+          competencies: [{ skillId: 'X', score: 20, level: 'NOVICE' }],
+          knowledgeGaps: [{ skillId: 'X', weight: 'CRITICAL', reason: 'severe gap' }]
         })
       );
       expect(strategy).toBe('RECOVERY');
@@ -125,8 +125,8 @@ describe('RecommendationEngine', () => {
     it('selects DEEP_DIVE for a HIGH gap with moderate competency', () => {
       const strategy = strategyFor(
         strategyInput({
-          competencies: [{ skillArea: 'X', score: 50, level: 'PROFICIENT' }],
-          knowledgeGaps: [{ skillArea: 'X', weight: 'HIGH', reason: 'notable gap' }]
+          competencies: [{ skillId: 'X', score: 50, level: 'PROFICIENT' }],
+          knowledgeGaps: [{ skillId: 'X', weight: 'HIGH', reason: 'notable gap' }]
         })
       );
       expect(strategy).toBe('DEEP_DIVE');
@@ -135,39 +135,39 @@ describe('RecommendationEngine', () => {
     it('selects REPEAT for a completed task that significantly overran its estimate', () => {
       const strategy = strategyFor(
         strategyInput({
-          tasks: [{ id: 'x1', skillArea: 'X', completed: true, order: 1, dependsOn: [], estimatedDurationDays: 2, actualDurationDays: 5 }],
-          competencies: [{ skillArea: 'X', score: 70, level: 'PROFICIENT' }]
+          tasks: [{ id: 'x1', skillId: 'X', completed: true, order: 1, dependsOn: [], estimatedDurationDays: 2, actualDurationDays: 5 }],
+          competencies: [{ skillId: 'X', score: 70, level: 'PROFICIENT' }]
         })
       );
       expect(strategy).toBe('REPEAT');
     });
 
     it('selects REVIEW for low competency with no gap and no overrun', () => {
-      const strategy = strategyFor(strategyInput({ competencies: [{ skillArea: 'X', score: 30, level: 'DEVELOPING' }] }));
+      const strategy = strategyFor(strategyInput({ competencies: [{ skillId: 'X', score: 30, level: 'DEVELOPING' }] }));
       expect(strategy).toBe('REVIEW');
     });
 
     it('selects PRACTICE for developing competency with no gap', () => {
-      const strategy = strategyFor(strategyInput({ competencies: [{ skillArea: 'X', score: 60, level: 'PROFICIENT' }] }));
+      const strategy = strategyFor(strategyInput({ competencies: [{ skillId: 'X', score: 60, level: 'PROFICIENT' }] }));
       expect(strategy).toBe('PRACTICE');
     });
 
     it('selects SLOW_DOWN when revision churn is high and competency is not yet mastered', () => {
       const strategy = strategyFor(
-        strategyInput({ competencies: [{ skillArea: 'X', score: 75, level: 'ADVANCED' }], revisionCount: 6 })
+        strategyInput({ competencies: [{ skillId: 'X', score: 75, level: 'ADVANCED' }], revisionCount: 6 })
       );
       expect(strategy).toBe('SLOW_DOWN');
     });
 
     it('selects ADVANCE for solid competency with low revision churn', () => {
       const strategy = strategyFor(
-        strategyInput({ competencies: [{ skillArea: 'X', score: 75, level: 'ADVANCED' }], revisionCount: 0 })
+        strategyInput({ competencies: [{ skillId: 'X', score: 75, level: 'ADVANCED' }], revisionCount: 0 })
       );
       expect(strategy).toBe('ADVANCE');
     });
 
     it('selects SKIP for mastered competency with no gap', () => {
-      const strategy = strategyFor(strategyInput({ competencies: [{ skillArea: 'X', score: 95, level: 'EXPERT' }] }));
+      const strategy = strategyFor(strategyInput({ competencies: [{ skillId: 'X', score: 95, level: 'EXPERT' }] }));
       expect(strategy).toBe('SKIP');
     });
   });
@@ -178,7 +178,7 @@ describe('RecommendationEngine', () => {
         ...baseInput,
         readiness: 'AT_RISK',
         referenceDate: '2027-05-20T00:00:00.000Z',
-        tasks: [{ id: 't2', skillArea: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 60 }]
+        tasks: [{ id: 't2', skillId: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 60 }]
       });
       expect(result.items.some((i) => i.type === 'ROADMAP_ADJUSTMENT' && /Extend target date/.test(i.reason.summary))).toBe(true);
     });
@@ -187,8 +187,8 @@ describe('RecommendationEngine', () => {
       const result = engine.evaluate({
         ...baseInput,
         knowledgeGaps: [
-          { skillArea: 'A', weight: 'CRITICAL', reason: 'gap A' },
-          { skillArea: 'B', weight: 'CRITICAL', reason: 'gap B' }
+          { skillId: 'A', weight: 'CRITICAL', reason: 'gap A' },
+          { skillId: 'B', weight: 'CRITICAL', reason: 'gap B' }
         ]
       });
       expect(result.items.some((i) => i.type === 'ROADMAP_ADJUSTMENT' && /Regenerate roadmap/.test(i.reason.summary))).toBe(true);
@@ -214,8 +214,8 @@ describe('RecommendationEngine', () => {
       const blockedInput: RecommendationInput = {
         ...baseInput,
         tasks: [
-          { id: 't1', skillArea: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 2 },
-          { id: 't2', skillArea: 'Foundations', completed: false, order: 2, dependsOn: ['t1'], estimatedDurationDays: 3 }
+          { id: 't1', skillId: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 2 },
+          { id: 't2', skillId: 'Foundations', completed: false, order: 2, dependsOn: ['t1'], estimatedDurationDays: 3 }
         ]
       };
       const blockedResult = engine.evaluate(blockedInput);
@@ -228,8 +228,8 @@ describe('RecommendationEngine', () => {
       const input: RecommendationInput = {
         ...baseInput,
         tasks: [
-          { id: 't1', skillArea: 'Foundations', completed: false, order: 1, dependsOn: ['missing'], estimatedDurationDays: 2 },
-          { id: 't2', skillArea: 'Foundations', completed: false, order: 2, dependsOn: [], estimatedDurationDays: 2 }
+          { id: 't1', skillId: 'Foundations', completed: false, order: 1, dependsOn: ['missing'], estimatedDurationDays: 2 },
+          { id: 't2', skillId: 'Foundations', completed: false, order: 2, dependsOn: [], estimatedDurationDays: 2 }
         ]
       };
       const result = engine.evaluate(input);
@@ -247,7 +247,7 @@ describe('RecommendationEngine', () => {
         ...baseInput,
         roadmapCompletionRatio: 10,
         revisionCount: 8,
-        knowledgeGaps: [{ skillArea: 'Foundations', weight: 'CRITICAL', reason: 'severe' }],
+        knowledgeGaps: [{ skillId: 'Foundations', weight: 'CRITICAL', reason: 'severe' }],
         readiness: 'AT_RISK'
       });
 

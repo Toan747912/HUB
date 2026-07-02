@@ -14,13 +14,13 @@ export type AssessmentCompletedPayload = {
 };
 
 export type CompetencyUpdatedPayload = {
-  competencies: { skillArea: string; score: number; level: string }[];
+  competencies: { skillId: string; score: number; level: string }[];
   weakAreas: string[];
   strongAreas: string[];
 };
 
 export type KnowledgeGapDetectedPayload = {
-  gaps: { skillArea: string; weight: string; reason: string }[];
+  gaps: { skillId: string; weight: string; reason: string }[];
 };
 
 export type AssessmentArchivedPayload = {

@@ -1,6 +1,6 @@
 export type AssessmentTaskSignal = {
   id: string;
-  skillArea: string;
+  skillId: string;
   completed: boolean;
   estimatedDurationDays: number;
   actualDurationDays?: number;
@@ -23,21 +23,21 @@ export type AssessmentInput = {
 };
 
 export type SkillScoreResult = {
-  skillArea: string;
+  skillId: string;
   rawScore: number;
   taskCount: number;
   completedTaskCount: number;
 };
 
 export type CompetencyResult = {
-  skillArea: string;
+  skillId: string;
   score: number;
   level: string;
 };
 
 export type KnowledgeGapResult = {
   id: string;
-  skillArea: string;
+  skillId: string;
   weight: string;
   reason: string;
 };

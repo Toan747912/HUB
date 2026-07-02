@@ -21,13 +21,13 @@ export class AssessmentResponseMapper {
       result: result
         ? {
             skillScores: result.skillScores.map((s) => ({
-              skillArea: s.skillArea,
+              skillId: s.skillId.toString(),
               rawScore: s.rawScore,
               taskCount: s.taskCount,
               completedTaskCount: s.completedTaskCount
             })),
-            competencies: result.competencies.map((c) => ({ skillArea: c.skillArea, score: c.score, level: c.level })),
-            knowledgeGaps: result.knowledgeGaps.map((g) => ({ id: g.id, skillArea: g.skillArea, weight: g.weight, reason: g.reason })),
+            competencies: result.competencies.map((c) => ({ skillId: c.skillId.toString(), score: c.score, level: c.level })),
+            knowledgeGaps: result.knowledgeGaps.map((g) => ({ id: g.id, skillId: g.skillId.toString(), weight: g.weight, reason: g.reason })),
             confidenceScore: result.confidenceScore,
             readiness: result.readiness,
             weakAreas: [...result.weakAreas],
@@ -47,7 +47,7 @@ export class AssessmentResponseMapper {
     const result = assessment.getLatestResult();
     return {
       assessmentId: assessment.getId().toString(),
-      competencies: result ? result.competencies.map((c) => ({ skillArea: c.skillArea, score: c.score, level: c.level })) : [],
+      competencies: result ? result.competencies.map((c) => ({ skillId: c.skillId.toString(), score: c.score, level: c.level })) : [],
       weakAreas: result ? [...result.weakAreas] : [],
       strongAreas: result ? [...result.strongAreas] : [],
       confidenceScore: result ? result.confidenceScore : 0,
@@ -59,7 +59,7 @@ export class AssessmentResponseMapper {
     const result = assessment.getLatestResult();
     return {
       assessmentId: assessment.getId().toString(),
-      gaps: result ? result.knowledgeGaps.map((g) => ({ id: g.id, skillArea: g.skillArea, weight: g.weight, reason: g.reason })) : []
+      gaps: result ? result.knowledgeGaps.map((g) => ({ id: g.id, skillId: g.skillId.toString(), weight: g.weight, reason: g.reason })) : []
     };
   }
 }

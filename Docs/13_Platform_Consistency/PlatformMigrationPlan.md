@@ -1,0 +1,121 @@
+# Platform Migration Plan — `skillArea` → Canonical `SkillId` (WP-06C Workstream B)
+
+## Background
+
+Prior to WP-06C Phase 5, `skillArea` was a free-text `string` threaded through
+the Assessment and Recommendation modules (domain entities, DTOs, mappers,
+Mongoose schemas, the deterministic assessment/recommendation engines, and
+their tests) with no canonical owner. There was no Skill catalog entity
+anywhere in the codebase, so two different call sites could refer to
+"the same" skill using differently-cased or differently-spelled strings with
+no way to detect the collision or the duplication.
+
+This document records the migration that introduced a canonical Skill
+catalog (`src/modules/skill/`) and retyped the `skillArea` field to a typed
+`skillId: SkillId` at the domain-entity/aggregate boundary, plus the one-time
+backfill that populated the catalog from every distinct `skillArea` value
+that existed in the codebase at the time of migration.
+
+## What changed
+
+- New module `src/modules/skill/` — a catalog/lookup aggregate (`Skill`),
+  Mongoose schema/collection (`skills`, unique index on `normalizedName` to
+  prevent duplicate catalog entries), and `SkillCatalogService` with
+  `findOrCreateByName(name)` / `findById(skillId)`.
+- `skillArea: string` renamed to `skillId: SkillId` in the Assessment domain
+  entities (`Competency`, `KnowledgeGap`, `SkillScore`) and Recommendation
+  domain entities (`RecommendationItem`, `LearningStrategyAssignment`,
+  `ReviewSchedule`).
+- The assessment/recommendation **engines**
+  (`assessment.engine.ts`, `assessment-engine.types.ts`,
+  `recommendation.engine.ts`, `recommendation-engine.types.ts`) keep
+  `skillId` typed as plain `string` (a canonical `SkillId.toString()` value
+  passed in, not free text). This is a deliberate judgment call: these
+  engines use the field heavily as a `Map` key (e.g.
+  `bySkill.get(task.skillId)`) and in template-literal interpolation (e.g.
+  `` `${input.roadmapId}-gap-${skill.skillId}` ``), and a typed
+  `Identifier` object does not behave correctly as a `Map` key or safely in
+  string interpolation across the many call sites in these two large files.
+  The same judgment call was already made and accepted for
+  `roadmap-planning.engine.ts` in an earlier phase of WP-06C. The typed
+  `SkillId` boundary sits at the aggregate layer that calls into and receives
+  output from the engine (`Assessment.run()`, `Recommendation.create()`),
+  where `SkillId.create(...)` converts the engine's plain string into the
+  typed identifier.
+- DTOs and Mongoose schemas keep the field as plain `string` (the serialized
+  `SkillId` value), renamed `skillArea` → `skillId`.
+- Event payload types (`CompetencyUpdatedPayload`, `KnowledgeGapDetectedPayload`,
+  `LearningStrategyChangedPayload`) carry `skillId: string` (serialized via
+  `.toString()` at the point the aggregate constructs the event payload).
+
+## Migration mechanism
+
+A one-time migration helper,
+`src/modules/skill/scripts/migrate-skill-areas.script.ts`, exports:
+
+- `KNOWN_SKILL_AREA_VALUES` — the distinct `skillArea` string literals that
+  existed across assessment/recommendation test fixtures and engine seed
+  data as of this migration (there was no production data store for
+  `skillArea` prior to this change; the codebase had no seed/fixture data
+  outside of tests). These values were collected via `git diff` over the
+  `skillArea` → `skillId` rename commit.
+- `SENTINEL_VALUES` — placeholder strings that are shaped like a
+  `skillArea` value but are not real skills, and must not be migrated into
+  the catalog.
+- `migrateSkillAreas(skillCatalogService, values)` — for each distinct
+  value, calls `SkillCatalogService.findOrCreateByName(value)` (which
+  normalizes the name and looks it up by `normalizedName` before creating a
+  new catalog entry, so re-running the migration is idempotent) and returns
+  a `{ resolved, unresolved }` report.
+
+The script was executed once (via a Nest `TestingModule` + `mongodb-memory-server`
+harness, mirroring the pattern already used by this repo's Mongo repository
+integration tests) against `KNOWN_SKILL_AREA_VALUES` to produce the mapping
+below.
+
+## Resolved: `skillArea` → `SkillId`
+
+| Old `skillArea` value | New `SkillId` |
+|---|---|
+| `Solid` | `46a96912-26c3-4d44-a0a3-ce229cfad415` |
+| `Weak` | `4daadeae-e0f0-4fef-86a6-c4f30c9c2bc6` |
+| `Foundations` | `09939e06-1805-4ce9-be18-254a3ffe1db1` |
+| `Advanced Practice` | `2195736e-fc68-4431-b175-d0252df74355` |
+| `Weak Area` | `edbd148e-f966-4486-84d8-f6061854cef5` |
+| `Strong Area` | `d133d336-044d-486f-aed8-e49f20d865cc` |
+| `A` | `4b311abe-3ffd-44ce-b5bd-38ab8a39925e` |
+| `B` | `b2f85c49-d212-4c9f-ba65-728cc88fea57` |
+| `X` | `2b9b76f4-7645-4e49-8e57-24f665a9190e` |
+
+9 distinct skillArea values were resolved into 9 new catalog entries (one
+per value — no collisions were detected via `normalizedName`).
+
+Note: the `SkillId` values above are UUIDs generated by `SkillId.generate()`
+at script-execution time (backed by a throwaway `mongodb-memory-server`
+instance used to validate the mechanism end-to-end). Re-running this script
+against the real deployment database will mint fresh, deployment-specific
+`SkillId`s the first time each name is seen; subsequent runs are idempotent
+because `findOrCreateByName` looks up by `normalizedName` before creating.
+
+## Unresolved
+
+| Value | Reason excluded |
+|---|---|
+| `__roadmap__` | Sentinel/pseudo-bucket value used internally by `recommendation.engine.ts` (`buildRoadmapAdjustmentItems` / `pseudoBucket`) to group roadmap-level (not skill-level) recommendation items. It is not a real skill and must never appear in the Skill catalog. `RecommendationItem.skillId` is `null` for items produced from this pseudo-bucket (see `bucket.skillArea === '__roadmap__' ? null : ...` in the engine, now `bucket.skillId === '__roadmap__' ? null : ...`). |
+
+No empty-string or otherwise malformed values were found in the inventoried
+fixtures; the sentinel above is the only intentional exclusion.
+
+## Follow-up (out of scope for this migration)
+
+- This migration operates on **known literal values found in the codebase's
+  test fixtures**, since there is no production `skillArea` data store to
+  migrate. If/when real assessment or recommendation records exist in a
+  deployed environment with free-text `skillArea` values, the same
+  `migrateSkillAreas` mechanism can be pointed at a query over that
+  collection's distinct values instead of `KNOWN_SKILL_AREA_VALUES`.
+- Deeper skill taxonomy (categories beyond the minimal
+  `TECHNICAL | CONCEPTUAL | PRACTICAL | OTHER`, parent/child hierarchies
+  beyond the single `parentSkillId` field, alias curation) is intentionally
+  out of scope — the catalog introduced here is a lookup/dedup mechanism,
+  not a new business capability.

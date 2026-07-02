@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../shared/domain/identifiers';
+import { AssessmentId, GoalId, LearnerId, RoadmapId, SkillId } from '../../../../shared/domain/identifiers';
 import { AssessmentResult } from '../entities/assessment-result.entity';
 import { Competency } from '../entities/competency.entity';
 import { KnowledgeGap } from '../entities/knowledge-gap.entity';
@@ -122,9 +122,9 @@ export class Assessment {
     this.bumpVersion();
 
     this.latestResult = new AssessmentResult(
-      computation.skillScores.map((s) => new SkillScore(s.skillArea, s.rawScore, s.taskCount, s.completedTaskCount)),
-      computation.competencies.map((c) => new Competency(c.skillArea, c.score, c.level)),
-      computation.knowledgeGaps.map((g) => new KnowledgeGap(g.id, g.skillArea, g.weight, g.reason)),
+      computation.skillScores.map((s) => new SkillScore(SkillId.create(s.skillId), s.rawScore, s.taskCount, s.completedTaskCount)),
+      computation.competencies.map((c) => new Competency(SkillId.create(c.skillId), c.score, c.level)),
+      computation.knowledgeGaps.map((g) => new KnowledgeGap(g.id, SkillId.create(g.skillId), g.weight, g.reason)),
       computation.confidenceScore,
       computation.readiness,
       computation.weakAreas,
@@ -153,7 +153,7 @@ export class Assessment {
     if (computation.knowledgeGaps.length > 0) {
       this.recordEvent(
         knowledgeGapDetectedEvent(this.buildMetadata(context), {
-          gaps: computation.knowledgeGaps.map((g) => ({ skillArea: g.skillArea, weight: g.weight, reason: g.reason }))
+          gaps: computation.knowledgeGaps.map((g) => ({ skillId: g.skillId, weight: g.weight, reason: g.reason }))
         })
       );
     }

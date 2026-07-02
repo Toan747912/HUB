@@ -40,12 +40,12 @@ export class AssessmentEngine {
     const weakAreas = competencies
       .filter((c) => c.score < WEAK_THRESHOLD)
       .sort((a, b) => a.score - b.score)
-      .map((c) => c.skillArea);
+      .map((c) => c.skillId);
 
     const strongAreas = competencies
       .filter((c) => c.score >= STRONG_THRESHOLD)
       .sort((a, b) => b.score - a.score)
-      .map((c) => c.skillArea);
+      .map((c) => c.skillId);
 
     const confidenceScore = this.estimateConfidence(input, competencies, knowledgeGaps);
     const readiness = this.calculateReadiness(input, confidenceScore, knowledgeGaps);
@@ -66,16 +66,16 @@ export class AssessmentEngine {
     const bySkill = new Map<string, { total: number; completed: number }>();
 
     for (const task of tasks) {
-      const bucket = bySkill.get(task.skillArea) ?? { total: 0, completed: 0 };
+      const bucket = bySkill.get(task.skillId) ?? { total: 0, completed: 0 };
       bucket.total += 1;
       if (task.completed) bucket.completed += 1;
-      bySkill.set(task.skillArea, bucket);
+      bySkill.set(task.skillId, bucket);
     }
 
     return [...bySkill.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([skillArea, bucket]) => ({
-        skillArea,
+      .map(([skillId, bucket]) => ({
+        skillId,
         rawScore: bucket.total === 0 ? 0 : Math.round((bucket.completed / bucket.total) * 100),
         taskCount: bucket.total,
         completedTaskCount: bucket.completed
@@ -84,7 +84,7 @@ export class AssessmentEngine {
 
   private computeCompetencies(skillScores: SkillScoreResult[]): CompetencyResult[] {
     return skillScores.map((skill) => ({
-      skillArea: skill.skillArea,
+      skillId: skill.skillId,
       score: skill.rawScore,
       level: CompetencyLevel.fromScore(skill.rawScore).getValue()
     }));
@@ -94,13 +94,13 @@ export class AssessmentEngine {
     return skillScores
       .filter((skill) => skill.rawScore < GAP_THRESHOLD)
       .map((skill) => {
-        const overrunSeverity = this.averageOverrunRatio(input.tasks, skill.skillArea) * 100;
+        const overrunSeverity = this.averageOverrunRatio(input.tasks, skill.skillId) * 100;
         const severity = GAP_THRESHOLD - skill.rawScore + overrunSeverity;
         return {
-          id: `${input.roadmapId}-gap-${skill.skillArea}`,
-          skillArea: skill.skillArea,
+          id: `${input.roadmapId}-gap-${skill.skillId}`,
+          skillId: skill.skillId,
           weight: KnowledgeWeight.fromSeverity(severity).getValue(),
-          reason: `Completion for "${skill.skillArea}" is ${skill.rawScore}%, below the ${GAP_THRESHOLD}% readiness threshold`
+          reason: `Completion for "${skill.skillId}" is ${skill.rawScore}%, below the ${GAP_THRESHOLD}% readiness threshold`
         };
       });
   }
@@ -140,9 +140,9 @@ export class AssessmentEngine {
     return 'NOT_READY';
   }
 
-  private averageOverrunRatio(tasks: AssessmentInput['tasks'], skillArea?: string): number {
+  private averageOverrunRatio(tasks: AssessmentInput['tasks'], skillId?: string): number {
     const relevant = tasks.filter(
-      (task) => (skillArea === undefined || task.skillArea === skillArea) && task.completed && typeof task.actualDurationDays === 'number' && task.estimatedDurationDays > 0
+      (task) => (skillId === undefined || task.skillId === skillId) && task.completed && typeof task.actualDurationDays === 'number' && task.estimatedDurationDays > 0
     );
     if (relevant.length === 0) return 0;
 

@@ -22,7 +22,7 @@ export type RecommendationArchivedPayload = {
 };
 
 export type LearningStrategyChangedPayload = {
-  strategies: { skillArea: string; strategy: string; rationale: string }[];
+  strategies: { skillId: string; strategy: string; rationale: string }[];
 };
 
 export type RecommendationInvalidatedPayload = {

@@ -7,10 +7,10 @@ const baseInput: AssessmentInput = {
   learnerId: 'learner-1',
   roadmapCompletionRatio: 75,
   tasks: [
-    { id: 't1', skillArea: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 },
-    { id: 't2', skillArea: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 },
-    { id: 't3', skillArea: 'Advanced Practice', completed: false, estimatedDurationDays: 4 },
-    { id: 't4', skillArea: 'Advanced Practice', completed: true, estimatedDurationDays: 4, actualDurationDays: 5 }
+    { id: 't1', skillId: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 },
+    { id: 't2', skillId: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 },
+    { id: 't3', skillId: 'Advanced Practice', completed: false, estimatedDurationDays: 4 },
+    { id: 't4', skillId: 'Advanced Practice', completed: true, estimatedDurationDays: 4, actualDurationDays: 5 }
   ],
   revisionCount: 0,
   previousRuns: []
@@ -28,8 +28,8 @@ describe('AssessmentEngine', () => {
 
   it('infers competency per skill area from task completion ratio', () => {
     const result = engine.evaluate(baseInput);
-    const foundations = result.competencies.find((c) => c.skillArea === 'Foundations')!;
-    const advanced = result.competencies.find((c) => c.skillArea === 'Advanced Practice')!;
+    const foundations = result.competencies.find((c) => c.skillId === 'Foundations')!;
+    const advanced = result.competencies.find((c) => c.skillId === 'Advanced Practice')!;
 
     expect(foundations.score).toBe(100);
     expect(foundations.level).toBe('EXPERT');
@@ -40,14 +40,14 @@ describe('AssessmentEngine', () => {
     const result = engine.evaluate({
       ...baseInput,
       tasks: [
-        { id: 't1', skillArea: 'Weak Area', completed: false, estimatedDurationDays: 2 },
-        { id: 't2', skillArea: 'Weak Area', completed: false, estimatedDurationDays: 2 },
-        { id: 't3', skillArea: 'Strong Area', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }
+        { id: 't1', skillId: 'Weak Area', completed: false, estimatedDurationDays: 2 },
+        { id: 't2', skillId: 'Weak Area', completed: false, estimatedDurationDays: 2 },
+        { id: 't3', skillId: 'Strong Area', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }
       ]
     });
 
     expect(result.knowledgeGaps).toHaveLength(1);
-    expect(result.knowledgeGaps[0].skillArea).toBe('Weak Area');
+    expect(result.knowledgeGaps[0].skillId).toBe('Weak Area');
     expect(result.weakAreas).toContain('Weak Area');
     expect(result.strongAreas).toContain('Strong Area');
   });
@@ -55,7 +55,7 @@ describe('AssessmentEngine', () => {
   it('produces no gaps when every skill area is above the threshold', () => {
     const result = engine.evaluate({
       ...baseInput,
-      tasks: [{ id: 't1', skillArea: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }]
+      tasks: [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }]
     });
 
     expect(result.knowledgeGaps).toHaveLength(0);
@@ -96,7 +96,7 @@ describe('AssessmentEngine', () => {
     const ready = engine.evaluate({
       ...baseInput,
       roadmapCompletionRatio: 95,
-      tasks: [{ id: 't1', skillArea: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }]
+      tasks: [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }]
     });
     expect(ready.readiness).toBe('READY');
 
@@ -104,9 +104,9 @@ describe('AssessmentEngine', () => {
       ...baseInput,
       roadmapCompletionRatio: 10,
       tasks: [
-        { id: 't1', skillArea: 'Weak', completed: false, estimatedDurationDays: 2 },
-        { id: 't2', skillArea: 'Weak', completed: false, estimatedDurationDays: 2 },
-        { id: 't3', skillArea: 'Weak', completed: false, estimatedDurationDays: 2 }
+        { id: 't1', skillId: 'Weak', completed: false, estimatedDurationDays: 2 },
+        { id: 't2', skillId: 'Weak', completed: false, estimatedDurationDays: 2 },
+        { id: 't3', skillId: 'Weak', completed: false, estimatedDurationDays: 2 }
       ]
     });
     expect(atRisk.readiness).toBe('AT_RISK');

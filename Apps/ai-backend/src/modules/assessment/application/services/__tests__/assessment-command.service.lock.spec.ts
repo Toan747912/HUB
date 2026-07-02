@@ -42,7 +42,7 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
     new RunAssessmentCommand(
       assessment.getId().toString(),
       80,
-      [{ id: 't1', skillArea: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
+      [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
       0,
       [],
       assessment.getAggregateVersion(),

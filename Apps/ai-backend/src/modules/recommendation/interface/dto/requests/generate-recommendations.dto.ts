@@ -22,7 +22,7 @@ export class RecommendationTaskSignalDto {
 
   @IsString()
   @IsNotEmpty()
-  skillArea!: string;
+  skillId!: string;
 
   @IsBoolean()
   completed!: boolean;
@@ -48,7 +48,7 @@ export class RecommendationTaskSignalDto {
 export class RecommendationCompetencySignalDto {
   @IsString()
   @IsNotEmpty()
-  skillArea!: string;
+  skillId!: string;
 
   @IsNumber()
   @Min(0)
@@ -63,7 +63,7 @@ export class RecommendationCompetencySignalDto {
 export class RecommendationGapSignalDto {
   @IsString()
   @IsNotEmpty()
-  skillArea!: string;
+  skillId!: string;
 
   @IsString()
   @IsNotEmpty()

@@ -16,7 +16,7 @@ export class RecommendationReasonResponseDto {
 export class RecommendationItemResponseDto {
   id!: string;
   type!: string;
-  skillArea!: string | null;
+  skillId!: string | null;
   taskId!: string | null;
   strategy!: string | null;
   priority!: string;
@@ -29,13 +29,13 @@ export class RecommendationItemResponseDto {
 }
 
 export class LearningStrategyAssignmentResponseDto {
-  skillArea!: string;
+  skillId!: string;
   strategy!: string;
   rationale!: string;
 }
 
 export class ReviewScheduleResponseDto {
-  skillArea!: string;
+  skillId!: string;
   intervalDays!: number;
   dueDate!: string;
   reason!: string;

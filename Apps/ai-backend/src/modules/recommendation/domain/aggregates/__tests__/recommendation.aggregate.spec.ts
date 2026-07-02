@@ -17,9 +17,9 @@ const baseInput: RecommendationInput = {
   referenceDate: '2027-01-01T00:00:00.000Z',
   roadmapCompletionRatio: 60,
   revisionCount: 0,
-  tasks: [{ id: 't1', skillArea: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 3 }],
-  competencies: [{ skillArea: 'Foundations', score: 60, level: 'PROFICIENT' }],
-  knowledgeGaps: [{ skillArea: 'Foundations', weight: 'HIGH', reason: 'gap' }],
+  tasks: [{ id: 't1', skillId: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 3 }],
+  competencies: [{ skillId: 'Foundations', score: 60, level: 'PROFICIENT' }],
+  knowledgeGaps: [{ skillId: 'Foundations', weight: 'HIGH', reason: 'gap' }],
   confidenceScore: 70,
   readiness: 'NOT_READY'
 };

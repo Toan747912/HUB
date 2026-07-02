@@ -1,4 +1,4 @@
-import { AssessmentId, GoalId, RoadmapId, TaskId } from '../../../../shared/domain/identifiers';
+import { AssessmentId, GoalId, RoadmapId, SkillId, TaskId } from '../../../../shared/domain/identifiers';
 import { RecommendationReason } from './recommendation-reason.entity';
 import { RecommendationScores } from './recommendation-scores';
 
@@ -6,7 +6,7 @@ export class RecommendationItem {
   constructor(
     public readonly id: string,
     public readonly type: string,
-    public readonly skillArea: string | null,
+    public readonly skillId: SkillId | null,
     public readonly taskId: TaskId | null,
     public readonly strategy: string | null,
     public readonly priority: string,

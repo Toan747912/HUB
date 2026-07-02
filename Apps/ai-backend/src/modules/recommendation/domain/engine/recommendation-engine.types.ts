@@ -1,6 +1,6 @@
 export type RecommendationTaskSignal = {
   id: string;
-  skillArea: string;
+  skillId: string;
   completed: boolean;
   order: number;
   dependsOn: string[];
@@ -9,13 +9,13 @@ export type RecommendationTaskSignal = {
 };
 
 export type RecommendationCompetencySignal = {
-  skillArea: string;
+  skillId: string;
   score: number;
   level: string;
 };
 
 export type RecommendationGapSignal = {
-  skillArea: string;
+  skillId: string;
   weight: string;
   reason: string;
 };
@@ -51,7 +51,7 @@ export type RecommendationScoresResult = {
 export type RecommendationItemResult = {
   id: string;
   type: string;
-  skillArea: string | null;
+  skillId: string | null;
   taskId: string | null;
   strategy: string | null;
   priority: string;
@@ -64,13 +64,13 @@ export type RecommendationItemResult = {
 };
 
 export type LearningStrategyResult = {
-  skillArea: string;
+  skillId: string;
   strategy: string;
   rationale: string;
 };
 
 export type ReviewScheduleResult = {
-  skillArea: string;
+  skillId: string;
   intervalDays: number;
   dueDate: string;
   reason: string;

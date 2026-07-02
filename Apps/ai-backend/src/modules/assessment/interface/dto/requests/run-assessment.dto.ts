@@ -22,7 +22,7 @@ export class AssessmentTaskSignalDto {
 
   @IsString()
   @IsNotEmpty()
-  skillArea!: string;
+  skillId!: string;
 
   @IsBoolean()
   completed!: boolean;

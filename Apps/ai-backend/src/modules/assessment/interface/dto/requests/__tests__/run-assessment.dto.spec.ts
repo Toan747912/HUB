@@ -7,7 +7,7 @@ import { RunAssessmentDto } from '../run-assessment.dto';
 const validPayload = () => ({
   assessmentId: randomUUID(),
   roadmapCompletionRatio: 75,
-  tasks: [{ id: 't1', skillArea: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
+  tasks: [{ id: 't1', skillId: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
   revisionCount: 0,
   previousRuns: []
 });
@@ -43,9 +43,9 @@ describe('RunAssessmentDto validation', () => {
     expect(errors.some((e) => e.property === 'revisionCount')).toBe(true);
   });
 
-  it('rejects a malformed nested task (missing skillArea)', async () => {
+  it('rejects a malformed nested task (missing skillId)', async () => {
     const payload = validPayload();
-    delete (payload.tasks[0] as any).skillArea;
+    delete (payload.tasks[0] as any).skillId;
     const dto = plainToInstance(RunAssessmentDto, payload);
     const errors = await validate(dto);
     const taskErrors = errors.find((e) => e.property === 'tasks');
