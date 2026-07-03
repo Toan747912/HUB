@@ -20,12 +20,12 @@ export const AuditEventSchema = new Schema(
     resource: { type: String, required: true, index: true },
     before: { type: Schema.Types.Mixed, required: false, default: null },
     after: { type: Schema.Types.Mixed, required: false, default: null },
-    timestamp: { type: Date, required: true }
+    timestamp: { type: Date, required: true },
   },
   {
     _id: false,
-    collection: 'audit_events'
-  }
+    collection: 'audit_events',
+  },
 );
 
 AuditEventSchema.index({ resource: 1, timestamp: -1 });

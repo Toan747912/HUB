@@ -6,6 +6,6 @@ export class CreateAssessmentCommand {
     public readonly learnerId: string,
     public readonly traceId: string,
     public readonly correlationId: string,
-    public readonly causationId: string
+    public readonly causationId: string,
   ) {}
 }

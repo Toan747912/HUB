@@ -6,6 +6,6 @@ export class MigrationStep {
     public readonly reason: string,
     public readonly sqlUpBatch: string[],
     public readonly sqlDownBatch: string[],
-    public readonly dependencies: string[] = []
+    public readonly dependencies: string[] = [],
   ) {}
 }

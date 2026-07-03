@@ -6,6 +6,6 @@ export class RecommendationScores {
     public readonly difficultyScore: number,
     public readonly confidenceScore: number,
     public readonly riskScore: number,
-    public readonly overallScore: number
+    public readonly overallScore: number,
   ) {}
 }

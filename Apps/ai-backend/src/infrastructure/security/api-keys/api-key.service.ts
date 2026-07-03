@@ -11,7 +11,7 @@ export class ApiKeyService {
   constructor(
     private readonly repository: ApiKeyRepository,
     private readonly auditLog?: AuditLogService,
-    private readonly requestContext?: RequestContextService
+    private readonly requestContext?: RequestContextService,
   ) {}
 
   private hash(rawKey: string): string {
@@ -35,7 +35,7 @@ export class ApiKeyService {
       userId: this.requestContext?.get()?.userId ?? null,
       operation: 'API_KEY_ISSUED',
       resource: `ApiKey:${created._id}`,
-      after: { label, permissions }
+      after: { label, permissions },
     });
 
     return rawKey;
@@ -52,7 +52,7 @@ export class ApiKeyService {
       traceId: this.traceId(),
       userId: this.requestContext?.get()?.userId ?? null,
       operation: 'API_KEY_REVOKED',
-      resource: `ApiKey:${id}`
+      resource: `ApiKey:${id}`,
     });
   }
 }

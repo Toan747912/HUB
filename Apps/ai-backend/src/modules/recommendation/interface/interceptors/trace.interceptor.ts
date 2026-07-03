@@ -20,8 +20,8 @@ export class TraceInterceptor implements NestInterceptor {
               method: request.method,
               url: request.url,
               statusCode: response.statusCode ?? 200,
-              latencyMs: Date.now() - now
-            })
+              latencyMs: Date.now() - now,
+            }),
           );
         },
         error: () => {
@@ -31,11 +31,11 @@ export class TraceInterceptor implements NestInterceptor {
               method: request.method,
               url: request.url,
               statusCode: response.statusCode ?? 500,
-              latencyMs: Date.now() - now
-            })
+              latencyMs: Date.now() - now,
+            }),
           );
-        }
-      })
+        },
+      }),
     );
   }
 }

@@ -5,18 +5,18 @@ const SkillScoreSchema = new Schema(
     skillId: { type: String, required: true },
     rawScore: { type: Number, required: true },
     taskCount: { type: Number, required: true },
-    completedTaskCount: { type: Number, required: true }
+    completedTaskCount: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const CompetencySchema = new Schema(
   {
     skillId: { type: String, required: true },
     score: { type: Number, required: true },
-    level: { type: String, required: true }
+    level: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const KnowledgeGapSchema = new Schema(
@@ -24,9 +24,9 @@ const KnowledgeGapSchema = new Schema(
     id: { type: String, required: true },
     skillId: { type: String, required: true },
     weight: { type: String, required: true },
-    reason: { type: String, required: true }
+    reason: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const AssessmentResultSchema = new Schema(
@@ -39,9 +39,9 @@ const AssessmentResultSchema = new Schema(
     weakAreas: { type: [String], required: true, default: [] },
     strongAreas: { type: [String], required: true, default: [] },
     engineVersion: { type: String, required: true },
-    computedAt: { type: Date, required: true }
+    computedAt: { type: Date, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const AssessmentHistorySchema = new Schema(
@@ -52,9 +52,9 @@ const AssessmentHistorySchema = new Schema(
     confidenceScore: { type: Number, required: true },
     readiness: { type: String, required: true },
     gapCount: { type: Number, required: true },
-    createdAt: { type: Date, required: true }
+    createdAt: { type: Date, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 export const AssessmentSchema = new Schema(
@@ -67,13 +67,13 @@ export const AssessmentSchema = new Schema(
     aggregateVersion: { type: Number, required: true, default: 0 },
     latestResult: { type: AssessmentResultSchema, required: false, default: null },
     history: { type: [AssessmentHistorySchema], required: true, default: [] },
-    invalidatedAt: { type: Date, required: false, default: null }
+    invalidatedAt: { type: Date, required: false, default: null },
   },
   {
     _id: false,
     timestamps: true,
-    collection: 'assessments'
-  }
+    collection: 'assessments',
+  },
 );
 
 AssessmentSchema.index({ learnerId: 1, status: 1 });

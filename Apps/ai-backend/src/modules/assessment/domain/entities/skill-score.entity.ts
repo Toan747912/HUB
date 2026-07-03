@@ -5,6 +5,6 @@ export class SkillScore {
     public readonly skillId: SkillId,
     public readonly rawScore: number,
     public readonly taskCount: number,
-    public readonly completedTaskCount: number
+    public readonly completedTaskCount: number,
   ) {}
 }

@@ -4,6 +4,6 @@ import { ExplainabilityRulesService } from './services/explainability-rules.serv
 
 @Module({
   providers: [DomainBoundaryGuardService, ExplainabilityRulesService],
-  exports: [DomainBoundaryGuardService, ExplainabilityRulesService]
+  exports: [DomainBoundaryGuardService, ExplainabilityRulesService],
 })
 export class SharedModule {}

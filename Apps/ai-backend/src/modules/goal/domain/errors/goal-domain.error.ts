@@ -8,7 +8,7 @@ export class GoalDomainError extends Error {
       | 'GOAL_NOT_FOUND'
       | 'GOAL_MILESTONE_NOT_FOUND'
       | 'GOAL_CONSTRAINT_NOT_FOUND',
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = 'GoalDomainError';

@@ -3,6 +3,6 @@ import { TeachingService } from './teaching.service';
 
 @Module({
   providers: [TeachingService],
-  exports: [TeachingService]
+  exports: [TeachingService],
 })
 export class TeachingModule {}

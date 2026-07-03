@@ -5,7 +5,7 @@ export class GoalMilestone {
     public readonly id: MilestoneId,
     public readonly title: string,
     public readonly reached: boolean = false,
-    public readonly reachedAt?: Date
+    public readonly reachedAt?: Date,
   ) {}
 
   markReached(): GoalMilestone {

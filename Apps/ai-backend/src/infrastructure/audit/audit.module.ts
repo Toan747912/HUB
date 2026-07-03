@@ -10,6 +10,6 @@ import { AuditLogService } from './audit-log.service';
 @Module({
   imports: [MongooseModule.forFeature([{ name: 'AuditEvent', schema: AuditEventSchema }])],
   providers: [AuditLogRepository, AuditLogService],
-  exports: [AuditLogRepository, AuditLogService]
+  exports: [AuditLogRepository, AuditLogService],
 })
 export class AuditModule {}

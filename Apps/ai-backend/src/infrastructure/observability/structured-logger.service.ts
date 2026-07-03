@@ -26,7 +26,7 @@ export interface StructuredLogLine {
 export class StructuredLoggerService {
   constructor(
     private readonly tracer?: TracerService,
-    private readonly requestContext?: RequestContextService
+    private readonly requestContext?: RequestContextService,
   ) {}
 
   log(entry: StructuredLogEntry): void {
@@ -54,7 +54,7 @@ export class StructuredLoggerService {
       operation: entry.operation,
       latencyMs: entry.latencyMs,
       status: entry.status,
-      errorCode: entry.errorCode
+      errorCode: entry.errorCode,
     };
   }
 }

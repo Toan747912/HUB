@@ -12,7 +12,7 @@ import {
   IsUUID,
   Max,
   Min,
-  ValidateNested
+  ValidateNested,
 } from 'class-validator';
 
 export class AssessmentTaskSignalDto {

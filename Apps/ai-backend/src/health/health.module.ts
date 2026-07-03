@@ -10,6 +10,6 @@ import { RedisHealthService } from './redis-health.service';
   imports: [MongooseModule, RedisModule, QueueModule],
   controllers: [HealthController],
   providers: [DatabaseHealthService, RedisHealthService],
-  exports: [DatabaseHealthService, RedisHealthService]
+  exports: [DatabaseHealthService, RedisHealthService],
 })
 export class HealthModule {}

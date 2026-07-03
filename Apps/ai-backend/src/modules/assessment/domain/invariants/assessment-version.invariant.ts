@@ -4,7 +4,7 @@ export const ensureExpectedVersion = (currentVersion: number, expectedVersion: n
   if (currentVersion !== expectedVersion) {
     throw new AssessmentDomainError(
       'ASSESSMENT_VERSION_CONFLICT',
-      `Expected version ${expectedVersion}, but aggregate is at version ${currentVersion}`
+      `Expected version ${expectedVersion}, but aggregate is at version ${currentVersion}`,
     );
   }
 };

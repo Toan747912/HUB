@@ -41,7 +41,7 @@ export const KNOWN_SKILL_AREA_VALUES: string[] = [
   // script against the full inventory demonstrates the sentinel-exclusion
   // path end to end and surfaces it in the "unresolved" section of the
   // generated report.
-  '__roadmap__'
+  '__roadmap__',
 ];
 
 /**
@@ -72,7 +72,7 @@ export type SkillAreaMigrationResult = {
  */
 export async function migrateSkillAreas(
   skillCatalogService: SkillCatalogService,
-  values: string[] = KNOWN_SKILL_AREA_VALUES
+  values: string[] = KNOWN_SKILL_AREA_VALUES,
 ): Promise<SkillAreaMigrationResult> {
   const distinctValues = [...new Set(values)];
 

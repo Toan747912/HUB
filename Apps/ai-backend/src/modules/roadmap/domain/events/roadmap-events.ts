@@ -41,63 +41,63 @@ export type RoadmapInvalidatedPayload = {
 
 export const roadmapCreatedEvent = (
   metadata: RoadmapEventMetadata,
-  payload: RoadmapCreatedPayload
+  payload: RoadmapCreatedPayload,
 ): RoadmapDomainEvent<RoadmapCreatedPayload> => ({
   type: 'RoadmapCreated',
   metadata,
-  payload
+  payload,
 });
 
 export const roadmapUpdatedEvent = (
   metadata: RoadmapEventMetadata,
-  payload: RoadmapUpdatedPayload
+  payload: RoadmapUpdatedPayload,
 ): RoadmapDomainEvent<RoadmapUpdatedPayload> => ({
   type: 'RoadmapUpdated',
   metadata,
-  payload
+  payload,
 });
 
 export const roadmapPublishedEvent = (
   metadata: RoadmapEventMetadata,
-  payload: RoadmapPublishedPayload
+  payload: RoadmapPublishedPayload,
 ): RoadmapDomainEvent<RoadmapPublishedPayload> => ({
   type: 'RoadmapPublished',
   metadata,
-  payload
+  payload,
 });
 
 export const roadmapArchivedEvent = (
   metadata: RoadmapEventMetadata,
-  payload: RoadmapArchivedPayload
+  payload: RoadmapArchivedPayload,
 ): RoadmapDomainEvent<RoadmapArchivedPayload> => ({
   type: 'RoadmapArchived',
   metadata,
-  payload
+  payload,
 });
 
 export const roadmapCompletedEvent = (
   metadata: RoadmapEventMetadata,
-  payload: RoadmapCompletedPayload
+  payload: RoadmapCompletedPayload,
 ): RoadmapDomainEvent<RoadmapCompletedPayload> => ({
   type: 'RoadmapCompleted',
   metadata,
-  payload
+  payload,
 });
 
 export const roadmapRegeneratedEvent = (
   metadata: RoadmapEventMetadata,
-  payload: RoadmapRegeneratedPayload
+  payload: RoadmapRegeneratedPayload,
 ): RoadmapDomainEvent<RoadmapRegeneratedPayload> => ({
   type: 'RoadmapRegenerated',
   metadata,
-  payload
+  payload,
 });
 
 export const roadmapInvalidatedEvent = (
   metadata: RoadmapEventMetadata,
-  payload: RoadmapInvalidatedPayload
+  payload: RoadmapInvalidatedPayload,
 ): RoadmapDomainEvent<RoadmapInvalidatedPayload> => ({
   type: 'RoadmapInvalidated',
   metadata,
-  payload
+  payload,
 });

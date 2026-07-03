@@ -9,6 +9,6 @@ import { PermissionGuard } from './rbac/permission.guard';
 @Module({
   imports: [AuthModule, ApiKeysModule, AuditModule],
   providers: [JwtAuthGuard, PermissionGuard],
-  exports: [AuthModule, ApiKeysModule, JwtAuthGuard, PermissionGuard]
+  exports: [AuthModule, ApiKeysModule, JwtAuthGuard, PermissionGuard],
 })
 export class SecurityModule {}

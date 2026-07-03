@@ -7,7 +7,7 @@ import { AuditLogRepository } from './audit-log.repository';
 export class AuditLogService {
   constructor(
     private readonly repository: AuditLogRepository,
-    private readonly requestContext?: RequestContextService
+    private readonly requestContext?: RequestContextService,
   ) {}
 
   /**
@@ -25,7 +25,7 @@ export class AuditLogService {
       operation: event.type,
       resource: `${aggregateName}:${event.metadata.aggregateId}`,
       before: null,
-      after: event.payload
+      after: event.payload,
     });
   }
 
@@ -46,7 +46,7 @@ export class AuditLogService {
       operation: entry.operation,
       resource: entry.resource,
       before: null,
-      after: entry.after ?? null
+      after: entry.after ?? null,
     });
   }
 }

@@ -17,7 +17,7 @@ export class DatabaseHealthService {
       0: 'disconnected',
       1: 'connected',
       2: 'connecting',
-      3: 'disconnecting'
+      3: 'disconnecting',
     };
     return states[this.connection.readyState] ?? 'disconnected';
   }

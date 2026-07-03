@@ -11,8 +11,8 @@ export class ResponseInterceptor implements NestInterceptor {
         success: true,
         data,
         error: null,
-        traceId: request.traceId ?? 'unknown'
-      }))
+        traceId: request.traceId ?? 'unknown',
+      })),
     );
   }
 }

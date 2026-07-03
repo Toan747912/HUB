@@ -10,6 +10,6 @@ export class RoadmapRevision {
     public readonly taskCount: number,
     public readonly estimatedDurationDays: number,
     public readonly complexity: string,
-    public readonly createdAt: Date = new Date()
+    public readonly createdAt: Date = new Date(),
   ) {}
 }

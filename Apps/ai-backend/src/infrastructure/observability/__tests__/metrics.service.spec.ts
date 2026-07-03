@@ -29,7 +29,7 @@ describe('MetricsService', () => {
       'redis_latency_ms',
       'bullmq_jobs_total',
       'outbox_pending_total',
-      'circuit_breaker_state'
+      'circuit_breaker_state',
     ]) {
       expect(text).toContain(name);
     }

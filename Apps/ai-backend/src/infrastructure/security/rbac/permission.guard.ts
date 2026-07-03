@@ -13,13 +13,13 @@ export class PermissionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly auditLog?: AuditLogService,
-    private readonly requestContext?: RequestContextService
+    private readonly requestContext?: RequestContextService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<Permission[]>(PERMISSIONS_METADATA_KEY, [
       context.getHandler(),
-      context.getClass()
+      context.getClass(),
     ]);
 
     if (!required || required.length === 0) {
@@ -43,7 +43,7 @@ export class PermissionGuard implements CanActivate {
         userId: request.user?.sub ?? null,
         operation: 'PERMISSION_GRANTED',
         resource: `${request.method} ${request.route?.path ?? request.originalUrl}`,
-        after: { requiredPermissions: required, roles }
+        after: { requiredPermissions: required, roles },
       });
       return true;
     }
@@ -53,13 +53,13 @@ export class PermissionGuard implements CanActivate {
       userId: request.user?.sub ?? null,
       operation: 'PERMISSION_DENIED',
       resource: `${request.method} ${request.route?.path ?? request.originalUrl}`,
-      after: { requiredPermissions: required, roles }
+      after: { requiredPermissions: required, roles },
     });
 
     throw new ForbiddenException({
       success: false,
       error: 'PERMISSION_DENIED',
-      message: `Missing required permission(s): ${required.join(', ')}`
+      message: `Missing required permission(s): ${required.join(', ')}`,
     });
   }
 }

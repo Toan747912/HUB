@@ -8,7 +8,7 @@ export class DomainBoundaryGuardService {
       throw new ForbiddenException({
         error: 'DOMAIN_BOUNDARY_VIOLATION',
         message: 'Cross-domain writes are forbidden',
-        forbiddenWrites: forbidden
+        forbiddenWrites: forbidden,
       });
     }
   }

@@ -12,6 +12,6 @@ export class GoalVersion {
     public readonly difficulty: GoalDifficulty,
     public readonly priority: Priority,
     public readonly targetDate: TargetDate,
-    public readonly createdAt: Date = new Date()
+    public readonly createdAt: Date = new Date(),
   ) {}
 }

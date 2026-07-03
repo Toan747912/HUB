@@ -21,7 +21,7 @@ export class GoalPersistenceMapper {
       difficulty: v.difficulty.getValue(),
       priority: v.priority.getValue(),
       targetDate: v.targetDate.getValue(),
-      createdAt: v.createdAt
+      createdAt: v.createdAt,
     }));
 
     const constraints = goal.getConstraints().map((c) => ({
@@ -29,14 +29,14 @@ export class GoalPersistenceMapper {
       type: c.type,
       value: c.value,
       active: c.active,
-      createdAt: c.createdAt
+      createdAt: c.createdAt,
     }));
 
     const milestones = goal.getMilestones().map((m) => ({
       id: m.id.toString(),
       title: m.title,
       reached: m.reached,
-      reachedAt: m.reachedAt
+      reachedAt: m.reachedAt,
     }));
 
     const progress = goal.getProgress();
@@ -52,10 +52,10 @@ export class GoalPersistenceMapper {
       progress: {
         completionRatio: progress.completionRatio,
         reachedMilestoneIds: [...progress.reachedMilestoneIds],
-        updatedAt: progress.updatedAt
+        updatedAt: progress.updatedAt,
       },
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -80,22 +80,22 @@ export class GoalPersistenceMapper {
           GoalDifficulty.create(v.difficulty),
           Priority.create(v.priority),
           TargetDate.create(v.targetDate),
-          v.createdAt
-        )
+          v.createdAt,
+        ),
     );
 
     (goal as any).constraints = doc.constraints.map(
-      (c) => new GoalConstraint(c.id, c.type, c.value, c.active, c.createdAt)
+      (c) => new GoalConstraint(c.id, c.type, c.value, c.active, c.createdAt),
     );
 
     (goal as any).milestones = doc.milestones.map(
-      (m) => new GoalMilestone(MilestoneId.create(m.id), m.title, m.reached, m.reachedAt)
+      (m) => new GoalMilestone(MilestoneId.create(m.id), m.title, m.reached, m.reachedAt),
     );
 
     (goal as any).progress = new GoalProgress(
       doc.progress.completionRatio,
       doc.progress.reachedMilestoneIds,
-      doc.progress.updatedAt
+      doc.progress.updatedAt,
     );
 
     return goal;

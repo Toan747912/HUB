@@ -16,9 +16,9 @@ export class MongoSkillRepository implements ISkillRepository {
       _id,
       {
         $set: { ...mutableFields, updatedAt: new Date() },
-        $setOnInsert: { createdAt: new Date() }
+        $setOnInsert: { createdAt: new Date() },
       },
-      { upsert: true, returnDocument: 'after' }
+      { upsert: true, returnDocument: 'after' },
     );
   }
 

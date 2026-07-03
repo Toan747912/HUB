@@ -3,6 +3,6 @@ import { KnowledgeService } from './knowledge.service';
 
 @Module({
   providers: [KnowledgeService],
-  exports: [KnowledgeService]
+  exports: [KnowledgeService],
 })
 export class KnowledgeModule {}

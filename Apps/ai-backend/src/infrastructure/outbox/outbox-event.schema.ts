@@ -34,13 +34,13 @@ export const OutboxEventSchema = new Schema(
     traceId: { type: String, required: true },
     correlationId: { type: String, required: true },
     causationId: { type: String, required: true },
-    metadata: { type: Schema.Types.Mixed, required: false, default: {} }
+    metadata: { type: Schema.Types.Mixed, required: false, default: {} },
   },
   {
     _id: false,
     timestamps: true,
-    collection: 'outbox_events'
-  }
+    collection: 'outbox_events',
+  },
 );
 
 OutboxEventSchema.index({ status: 1, occurredAt: 1 });

@@ -10,14 +10,14 @@ import { SkillCatalogService } from './application/services/skill-catalog.servic
   providers: [
     {
       provide: SKILL_REPOSITORY,
-      useClass: MongoSkillRepository
+      useClass: MongoSkillRepository,
     },
     {
       provide: SkillCatalogService,
       useFactory: (repository: any) => new SkillCatalogService(repository),
-      inject: [SKILL_REPOSITORY]
-    }
+      inject: [SKILL_REPOSITORY],
+    },
   ],
-  exports: [SkillCatalogService]
+  exports: [SkillCatalogService],
 })
 export class SkillModule {}

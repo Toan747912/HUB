@@ -10,6 +10,6 @@ export class UpdateGoalCommand {
     public readonly expectedVersion: number,
     public readonly traceId: string,
     public readonly correlationId: string,
-    public readonly causationId: string
+    public readonly causationId: string,
   ) {}
 }

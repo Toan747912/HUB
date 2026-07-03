@@ -7,6 +7,6 @@ export class RecommendationHistory {
     public readonly engineVersion: string,
     public readonly itemCount: number,
     public readonly averageConfidence: number,
-    public readonly createdAt: Date = new Date()
+    public readonly createdAt: Date = new Date(),
   ) {}
 }

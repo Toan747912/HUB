@@ -34,7 +34,7 @@ describe('GoalLockService — observability wiring', () => {
     expect(tracer.withSpan).toHaveBeenCalledWith(
       'redis.lock',
       expect.objectContaining({ operation: 'lock', aggregateId: 'goal-trace-1' }),
-      expect.any(Function)
+      expect.any(Function),
     );
 
     await locks.unlock(lock);

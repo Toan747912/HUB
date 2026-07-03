@@ -4,6 +4,6 @@ export class LearningStrategyAssignment {
   constructor(
     public readonly skillId: SkillId,
     public readonly strategy: string,
-    public readonly rationale: string
+    public readonly rationale: string,
   ) {}
 }

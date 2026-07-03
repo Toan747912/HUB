@@ -5,6 +5,6 @@ export class RejectRecommendationCommand {
     public readonly expectedVersion: number | undefined,
     public readonly traceId: string,
     public readonly correlationId: string,
-    public readonly causationId: string
+    public readonly causationId: string,
   ) {}
 }

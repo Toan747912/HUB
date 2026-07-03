@@ -7,7 +7,7 @@ import {
   getJwtSecret,
   getRefreshSecret,
   getRefreshTokenTtlSeconds,
-  getRequestBodyLimit
+  getRequestBodyLimit,
 } from '../security.config';
 
 describe('security.config', () => {

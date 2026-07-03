@@ -3,6 +3,6 @@ import { EvidenceService } from './evidence.service';
 
 @Module({
   providers: [EvidenceService],
-  exports: [EvidenceService]
+  exports: [EvidenceService],
 })
 export class EvidenceModule {}

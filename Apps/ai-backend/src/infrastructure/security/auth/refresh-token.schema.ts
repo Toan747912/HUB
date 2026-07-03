@@ -20,10 +20,10 @@ export const RefreshTokenSchema = new Schema(
     expiresAt: { type: Date, required: true },
     consumedAt: { type: Date, required: false, default: null },
     revokedAt: { type: Date, required: false, default: null },
-    replacedByTokenId: { type: String, required: false, default: null }
+    replacedByTokenId: { type: String, required: false, default: null },
   },
   {
     _id: false,
-    collection: 'refresh_tokens'
-  }
+    collection: 'refresh_tokens',
+  },
 );

@@ -31,8 +31,8 @@ export class GoalQueryService {
           stage: 'queryService.getGoals.enter',
           repositoryDefined: this.repository !== undefined && this.repository !== null,
           repositoryType: this.repository?.constructor?.name,
-          hasFindAll: typeof (this.repository as any)?.findAll === 'function'
-        })
+          hasFindAll: typeof (this.repository as any)?.findAll === 'function',
+        }),
       );
 
       const goals = await this.repository.findAll();
@@ -43,8 +43,8 @@ export class GoalQueryService {
           stage: 'queryService.getGoals.afterFindAll',
           goalsType: typeof goals,
           isArray: Array.isArray(goals),
-          goalsLength: Array.isArray(goals) ? goals.length : undefined
-        })
+          goalsLength: Array.isArray(goals) ? goals.length : undefined,
+        }),
       );
 
       this.log('GET_GOALS', 'all', start, 'SUCCESS');
@@ -56,8 +56,8 @@ export class GoalQueryService {
           stage: 'queryService.getGoals.error',
           errorName: error instanceof Error ? error.name : typeof error,
           errorMessage: error instanceof Error ? error.message : String(error),
-          errorStack: error instanceof Error ? error.stack : undefined
-        })
+          errorStack: error instanceof Error ? error.stack : undefined,
+        }),
       );
       this.log('GET_GOALS', 'all', start, 'FAILURE', error);
       throw error;
@@ -95,7 +95,7 @@ export class GoalQueryService {
     aggregateId: string,
     startMs: number,
     status: string,
-    error?: unknown
+    error?: unknown,
   ): void {
     const entry = {
       traceId: 'app',
@@ -104,7 +104,7 @@ export class GoalQueryService {
       latencyMs: Date.now() - startMs,
       status,
       errorType: error instanceof Error ? error.constructor.name : undefined,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     console.log(JSON.stringify(entry));
   }

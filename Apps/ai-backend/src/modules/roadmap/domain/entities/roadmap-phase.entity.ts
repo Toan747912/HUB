@@ -6,7 +6,7 @@ export class RoadmapPhase {
     public readonly id: PhaseId,
     public readonly title: string,
     public readonly order: number,
-    public readonly milestones: RoadmapMilestone[]
+    public readonly milestones: RoadmapMilestone[],
   ) {}
 
   withMilestone(milestone: RoadmapMilestone): RoadmapPhase {

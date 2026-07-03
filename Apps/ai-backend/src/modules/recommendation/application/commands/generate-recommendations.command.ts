@@ -1,7 +1,7 @@
 import {
   RecommendationCompetencySignal,
   RecommendationGapSignal,
-  RecommendationTaskSignal
+  RecommendationTaskSignal,
 } from '../../domain/engine/recommendation-engine.types';
 
 export class GenerateRecommendationsCommand {
@@ -24,6 +24,6 @@ export class GenerateRecommendationsCommand {
     public readonly readiness: string,
     public readonly traceId: string,
     public readonly correlationId: string,
-    public readonly causationId: string
+    public readonly causationId: string,
   ) {}
 }

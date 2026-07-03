@@ -5,6 +5,6 @@ export class ReviewSchedule {
     public readonly skillId: SkillId,
     public readonly intervalDays: number,
     public readonly dueDate: string,
-    public readonly reason: string
+    public readonly reason: string,
   ) {}
 }

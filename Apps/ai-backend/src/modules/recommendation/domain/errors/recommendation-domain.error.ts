@@ -5,7 +5,7 @@ export class RecommendationDomainError extends Error {
       | 'RECOMMENDATION_VERSION_CONFLICT'
       | 'RECOMMENDATION_SCORE_OUT_OF_BOUNDS'
       | 'RECOMMENDATION_EMPTY_PLAN',
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = 'RecommendationDomainError';

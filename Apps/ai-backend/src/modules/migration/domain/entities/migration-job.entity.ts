@@ -6,6 +6,6 @@ export class MigrationJob {
     public readonly jobId: string,
     public readonly steps: MigrationStep[],
     public state: MigrationState = MigrationState.PENDING,
-    public readonly metadata: Record<string, string> = {}
+    public readonly metadata: Record<string, string> = {},
   ) {}
 }

@@ -33,54 +33,54 @@ export type AssessmentInvalidatedPayload = {
 
 export const assessmentCreatedEvent = (
   metadata: AssessmentEventMetadata,
-  payload: AssessmentCreatedPayload
+  payload: AssessmentCreatedPayload,
 ): AssessmentDomainEvent<AssessmentCreatedPayload> => ({
   type: 'AssessmentCreated',
   metadata,
-  payload
+  payload,
 });
 
 export const assessmentCompletedEvent = (
   metadata: AssessmentEventMetadata,
-  payload: AssessmentCompletedPayload
+  payload: AssessmentCompletedPayload,
 ): AssessmentDomainEvent<AssessmentCompletedPayload> => ({
   type: 'AssessmentCompleted',
   metadata,
-  payload
+  payload,
 });
 
 export const competencyUpdatedEvent = (
   metadata: AssessmentEventMetadata,
-  payload: CompetencyUpdatedPayload
+  payload: CompetencyUpdatedPayload,
 ): AssessmentDomainEvent<CompetencyUpdatedPayload> => ({
   type: 'CompetencyUpdated',
   metadata,
-  payload
+  payload,
 });
 
 export const knowledgeGapDetectedEvent = (
   metadata: AssessmentEventMetadata,
-  payload: KnowledgeGapDetectedPayload
+  payload: KnowledgeGapDetectedPayload,
 ): AssessmentDomainEvent<KnowledgeGapDetectedPayload> => ({
   type: 'KnowledgeGapDetected',
   metadata,
-  payload
+  payload,
 });
 
 export const assessmentArchivedEvent = (
   metadata: AssessmentEventMetadata,
-  payload: AssessmentArchivedPayload
+  payload: AssessmentArchivedPayload,
 ): AssessmentDomainEvent<AssessmentArchivedPayload> => ({
   type: 'AssessmentArchived',
   metadata,
-  payload
+  payload,
 });
 
 export const assessmentInvalidatedEvent = (
   metadata: AssessmentEventMetadata,
-  payload: AssessmentInvalidatedPayload
+  payload: AssessmentInvalidatedPayload,
 ): AssessmentDomainEvent<AssessmentInvalidatedPayload> => ({
   type: 'AssessmentInvalidated',
   metadata,
-  payload
+  payload,
 });

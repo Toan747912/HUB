@@ -5,6 +5,6 @@ export class PriorityDecision {
     public readonly originalOrder: number,
     public readonly suggestedOrder: number,
     public readonly blocked: boolean,
-    public readonly rationale: string
+    public readonly rationale: string,
   ) {}
 }

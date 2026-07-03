@@ -32,7 +32,7 @@ export class GoalResponseMapper {
       targetDate: this.toIso(goal.targetDate),
       version: Number(goal.version ?? 0),
       createdAt: this.toIso(goal.createdAt),
-      updatedAt: this.toIso(goal.updatedAt)
+      updatedAt: this.toIso(goal.updatedAt),
     };
   }
 
@@ -43,8 +43,8 @@ export class GoalResponseMapper {
         stage: 'mapper.toList.enter',
         goalsType: typeof goals,
         isArray: Array.isArray(goals),
-        goalsLength: Array.isArray(goals) ? goals.length : undefined
-      })
+        goalsLength: Array.isArray(goals) ? goals.length : undefined,
+      }),
     );
 
     try {
@@ -55,8 +55,8 @@ export class GoalResponseMapper {
           stage: 'mapper.toList.afterMap',
           resultType: typeof result,
           isArray: Array.isArray(result),
-          resultLength: Array.isArray(result) ? result.length : undefined
-        })
+          resultLength: Array.isArray(result) ? result.length : undefined,
+        }),
       );
       return result;
     } catch (error) {
@@ -66,8 +66,8 @@ export class GoalResponseMapper {
           stage: 'mapper.toList.error',
           errorName: error instanceof Error ? error.name : typeof error,
           errorMessage: error instanceof Error ? error.message : String(error),
-          errorStack: error instanceof Error ? error.stack : undefined
-        })
+          errorStack: error instanceof Error ? error.stack : undefined,
+        }),
       );
       throw error;
     }

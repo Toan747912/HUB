@@ -17,11 +17,11 @@ export const ApiKeySchema = new Schema(
     label: { type: String, required: true },
     revokedAt: { type: Date, required: false, default: null },
     // Principle of least privilege: an API key grants nothing until explicitly scoped.
-    permissions: { type: [String], required: false, default: [] }
+    permissions: { type: [String], required: false, default: [] },
   },
   {
     _id: false,
     timestamps: { createdAt: true, updatedAt: false },
-    collection: 'api_keys'
-  }
+    collection: 'api_keys',
+  },
 );

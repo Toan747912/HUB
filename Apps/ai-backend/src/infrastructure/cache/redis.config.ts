@@ -14,7 +14,7 @@ export function getRedisOptions(): RedisOptions | null {
     port,
     ...(password ? { password } : {}),
     maxRetriesPerRequest: null,
-    lazyConnect: true
+    lazyConnect: true,
   };
 }
 

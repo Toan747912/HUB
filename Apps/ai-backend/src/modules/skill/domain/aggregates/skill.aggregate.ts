@@ -23,7 +23,7 @@ export class Skill {
     private category: SkillCategory,
     private parentSkillId: SkillId | null,
     private aliases: string[],
-    private metadata: Record<string, unknown>
+    private metadata: Record<string, unknown>,
   ) {}
 
   static create(props: SkillCreateProps): Skill {
@@ -33,7 +33,7 @@ export class Skill {
       props.category ?? SkillCategory.other(),
       props.parentSkillId ?? null,
       props.aliases ? [...props.aliases] : [],
-      props.metadata ? { ...props.metadata } : {}
+      props.metadata ? { ...props.metadata } : {},
     );
   }
 

@@ -13,7 +13,7 @@ describe('MongoGoalRepository — observability wiring', () => {
     metrics = new MetricsService();
     fakeModel = {
       findById: () => ({ lean: () => ({ exec: () => Promise.resolve(null) }) }),
-      findByIdAndDelete: () => ({ exec: () => Promise.resolve(undefined) })
+      findByIdAndDelete: () => ({ exec: () => Promise.resolve(undefined) }),
     };
     repository = new MongoGoalRepository(fakeModel, tracer as unknown as TracerService, metrics);
   });
@@ -24,7 +24,7 @@ describe('MongoGoalRepository — observability wiring', () => {
     expect(tracer.withSpan).toHaveBeenCalledWith(
       'mongodb.findById',
       expect.objectContaining({ operation: 'findById', aggregateId: 'goal-1' }),
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 

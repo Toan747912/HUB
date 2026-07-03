@@ -12,7 +12,7 @@ const ALLOWED_TYPES: RecommendationTypeValue[] = [
   'REVIEW_SCHEDULE',
   'ROADMAP_ADJUSTMENT',
   'LEARNING_RESOURCE',
-  'STRATEGY_CHANGE'
+  'STRATEGY_CHANGE',
 ];
 
 export class RecommendationType {

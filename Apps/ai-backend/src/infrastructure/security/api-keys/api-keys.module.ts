@@ -8,6 +8,6 @@ import { ApiKeyService } from './api-key.service';
 @Module({
   imports: [MongooseModule.forFeature([{ name: 'ApiKey', schema: ApiKeySchema }]), AuditModule],
   providers: [ApiKeyRepository, ApiKeyService],
-  exports: [ApiKeyRepository, ApiKeyService]
+  exports: [ApiKeyRepository, ApiKeyService],
 })
 export class ApiKeysModule {}

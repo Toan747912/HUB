@@ -9,7 +9,7 @@ import {
   Req,
   UseFilters,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreateAssessmentCommand } from '../../application/commands/create-assessment.command';
 import { RunAssessmentCommand } from '../../application/commands/run-assessment.command';
@@ -41,7 +41,7 @@ export class AssessmentController {
   constructor(
     private readonly commandService: AssessmentCommandService,
     private readonly queryService: AssessmentQueryService,
-    private readonly mapper: AssessmentResponseMapper
+    private readonly mapper: AssessmentResponseMapper,
   ) {}
 
   @Post()
@@ -54,7 +54,7 @@ export class AssessmentController {
       body.learnerId,
       req.traceId ?? 'unknown',
       req.traceId ?? 'unknown',
-      'http:create-assessment'
+      'http:create-assessment',
     );
 
     const assessment = await this.commandService.createAssessment(command);
@@ -73,7 +73,7 @@ export class AssessmentController {
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:run-assessment'
+      body.causationId ?? 'http:run-assessment',
     );
 
     const assessment = await this.commandService.runAssessment(command);
@@ -117,14 +117,14 @@ export class AssessmentController {
   async approve(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VersionGuardedDto,
-    @Req() req: AssessmentRequestWithTrace
+    @Req() req: AssessmentRequestWithTrace,
   ) {
     const command = new ApproveAssessmentCommand(
       id,
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:approve-assessment'
+      body.causationId ?? 'http:approve-assessment',
     );
     const assessment = await this.commandService.approveAssessment(command);
     return this.mapper.toResponse(assessment);
@@ -135,14 +135,14 @@ export class AssessmentController {
   async archive(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VersionGuardedDto,
-    @Req() req: AssessmentRequestWithTrace
+    @Req() req: AssessmentRequestWithTrace,
   ) {
     const command = new ArchiveAssessmentCommand(
       id,
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:archive-assessment'
+      body.causationId ?? 'http:archive-assessment',
     );
     const assessment = await this.commandService.archiveAssessment(command);
     return this.mapper.toResponse(assessment);

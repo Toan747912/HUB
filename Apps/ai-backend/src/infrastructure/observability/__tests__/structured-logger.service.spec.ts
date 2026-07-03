@@ -29,8 +29,8 @@ describe('StructuredLoggerService', () => {
         operation: 'save',
         status: 'SUCCESS',
         latencyMs: 12,
-        aggregateId: 'goal-1'
-      })
+        aggregateId: 'goal-1',
+      }),
     );
   });
 

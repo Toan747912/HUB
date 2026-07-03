@@ -25,7 +25,7 @@ const REQUIRED_ALERTS = [
   'BullMQStalledJobs',
   'OutboxBacklogHigh',
   'CircuitBreakerOpen',
-  'HighAPILatency'
+  'HighAPILatency',
 ];
 
 describe('Alert rule loading', () => {

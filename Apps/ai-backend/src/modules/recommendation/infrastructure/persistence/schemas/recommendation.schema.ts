@@ -8,17 +8,17 @@ const RecommendationScoresSchema = new Schema(
     difficultyScore: { type: Number, required: true },
     confidenceScore: { type: Number, required: true },
     riskScore: { type: Number, required: true },
-    overallScore: { type: Number, required: true }
+    overallScore: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const RecommendationReasonSchema = new Schema(
   {
     summary: { type: String, required: true },
-    evidence: { type: [String], required: true, default: [] }
+    evidence: { type: [String], required: true, default: [] },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const RecommendationItemSchema = new Schema(
@@ -34,18 +34,18 @@ const RecommendationItemSchema = new Schema(
     affectedGoalId: { type: String, required: true },
     affectedRoadmapId: { type: String, required: true },
     affectedAssessmentId: { type: String, required: true },
-    logicalResourceRef: { type: String, required: false, default: null }
+    logicalResourceRef: { type: String, required: false, default: null },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const LearningStrategyAssignmentSchema = new Schema(
   {
     skillId: { type: String, required: true },
     strategy: { type: String, required: true },
-    rationale: { type: String, required: true }
+    rationale: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const ReviewScheduleSchema = new Schema(
@@ -53,9 +53,9 @@ const ReviewScheduleSchema = new Schema(
     skillId: { type: String, required: true },
     intervalDays: { type: Number, required: true },
     dueDate: { type: String, required: true },
-    reason: { type: String, required: true }
+    reason: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const PriorityDecisionSchema = new Schema(
@@ -65,9 +65,9 @@ const PriorityDecisionSchema = new Schema(
     originalOrder: { type: Number, required: true },
     suggestedOrder: { type: Number, required: true },
     blocked: { type: Boolean, required: true },
-    rationale: { type: String, required: true }
+    rationale: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const RecommendationHistorySchema = new Schema(
@@ -77,9 +77,9 @@ const RecommendationHistorySchema = new Schema(
     engineVersion: { type: String, required: true },
     itemCount: { type: Number, required: true },
     averageConfidence: { type: Number, required: true },
-    createdAt: { type: Date, required: true }
+    createdAt: { type: Date, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 export const RecommendationSchema = new Schema(
@@ -97,13 +97,13 @@ export const RecommendationSchema = new Schema(
     reviewSchedules: { type: [ReviewScheduleSchema], required: true, default: [] },
     priorityDecisions: { type: [PriorityDecisionSchema], required: true, default: [] },
     history: { type: [RecommendationHistorySchema], required: true, default: [] },
-    invalidatedAt: { type: Date, required: false, default: null }
+    invalidatedAt: { type: Date, required: false, default: null },
   },
   {
     _id: false,
     timestamps: true,
-    collection: 'recommendations'
-  }
+    collection: 'recommendations',
+  },
 );
 
 RecommendationSchema.index({ learnerId: 1, status: 1 });

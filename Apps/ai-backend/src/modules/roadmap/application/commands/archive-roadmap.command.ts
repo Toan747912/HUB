@@ -4,6 +4,6 @@ export class ArchiveRoadmapCommand {
     public readonly expectedVersion: number | undefined,
     public readonly traceId: string,
     public readonly correlationId: string,
-    public readonly causationId: string
+    public readonly causationId: string,
   ) {}
 }

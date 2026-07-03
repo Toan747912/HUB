@@ -5,6 +5,6 @@ export class KnowledgeGap {
     public readonly id: string,
     public readonly skillId: SkillId,
     public readonly weight: string,
-    public readonly reason: string
+    public readonly reason: string,
   ) {}
 }

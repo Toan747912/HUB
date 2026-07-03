@@ -8,6 +8,6 @@ export class AssessmentHistory {
     public readonly confidenceScore: number,
     public readonly readiness: string,
     public readonly gapCount: number,
-    public readonly createdAt: Date = new Date()
+    public readonly createdAt: Date = new Date(),
   ) {}
 }

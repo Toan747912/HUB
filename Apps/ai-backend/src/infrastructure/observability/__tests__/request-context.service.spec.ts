@@ -28,7 +28,7 @@ describe('RequestContextService', () => {
       service.run({ traceId: 'b' }, async () => {
         await new Promise((r) => setTimeout(r, 5));
         results.push(service.get()!.traceId);
-      })
+      }),
     ]);
 
     expect(results.sort()).toEqual(['a', 'b']);

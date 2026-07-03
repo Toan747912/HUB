@@ -8,7 +8,7 @@ export class RoadmapDomainError extends Error {
       | 'ROADMAP_NOT_FOUND'
       | 'ROADMAP_TASK_NOT_FOUND'
       | 'ROADMAP_PLAN_EMPTY',
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = 'RoadmapDomainError';

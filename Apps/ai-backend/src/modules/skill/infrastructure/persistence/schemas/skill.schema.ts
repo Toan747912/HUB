@@ -9,11 +9,11 @@ export const SkillSchema = new Schema(
     category: { type: String, required: true },
     parentSkillId: { type: String, required: false, default: null },
     aliases: { type: [String], required: true, default: [] },
-    metadata: { type: Schema.Types.Mixed, required: true, default: {} }
+    metadata: { type: Schema.Types.Mixed, required: true, default: {} },
   },
   {
     _id: false,
     timestamps: true,
-    collection: 'skills'
-  }
+    collection: 'skills',
+  },
 );

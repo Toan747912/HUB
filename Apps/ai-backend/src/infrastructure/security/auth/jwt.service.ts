@@ -35,7 +35,7 @@ export class AppJwtService {
   signAccessToken(payload: AccessTokenPayload): string {
     return this.jwt.sign(payload, {
       secret: getJwtSecret(),
-      expiresIn: getAccessTokenTtl() as unknown as number
+      expiresIn: getAccessTokenTtl() as unknown as number,
     });
   }
 

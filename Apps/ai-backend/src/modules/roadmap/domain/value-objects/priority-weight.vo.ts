@@ -4,7 +4,7 @@ const WEIGHT_BY_PRIORITY: Record<GoalPriorityValue, number> = {
   LOW: 1,
   MEDIUM: 2,
   HIGH: 3,
-  CRITICAL: 4
+  CRITICAL: 4,
 };
 
 export class PriorityWeight {

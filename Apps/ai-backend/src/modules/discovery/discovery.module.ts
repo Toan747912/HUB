@@ -3,6 +3,6 @@ import { DiscoveryService } from './discovery.service';
 
 @Module({
   providers: [DiscoveryService],
-  exports: [DiscoveryService]
+  exports: [DiscoveryService],
 })
 export class DiscoveryModule {}

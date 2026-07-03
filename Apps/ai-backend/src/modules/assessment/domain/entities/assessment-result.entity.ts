@@ -14,6 +14,6 @@ export class AssessmentResult {
     public readonly weakAreas: string[],
     public readonly strongAreas: string[],
     public readonly engineVersion: string,
-    public readonly computedAt: Date = new Date()
+    public readonly computedAt: Date = new Date(),
   ) {}
 }

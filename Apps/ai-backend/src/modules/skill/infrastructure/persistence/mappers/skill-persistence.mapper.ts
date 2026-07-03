@@ -19,7 +19,7 @@ export class SkillPersistenceMapper {
       aliases: skill.getAliases(),
       metadata: skill.getMetadata(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -30,7 +30,7 @@ export class SkillPersistenceMapper {
       category: SkillCategory.create(doc.category),
       parentSkillId: doc.parentSkillId ? SkillId.create(doc.parentSkillId) : null,
       aliases: doc.aliases,
-      metadata: doc.metadata
+      metadata: doc.metadata,
     });
   }
 }

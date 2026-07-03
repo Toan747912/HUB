@@ -5,5 +5,5 @@ export enum MigrationStatus {
   VERIFYING = 'VERIFYING',
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
-  ROLLED_BACK = 'ROLLED_BACK'
+  ROLLED_BACK = 'ROLLED_BACK',
 }

@@ -11,7 +11,7 @@ const COOLDOWN_MS = 30_000;
 export class RedisCircuitBreakerService {
   constructor(
     private readonly redis: RedisService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   private key(jobId: string): string {
@@ -61,7 +61,7 @@ export class RedisCircuitBreakerService {
     if (failures >= FAILURE_THRESHOLD) {
       await client.hset(this.key(jobId), {
         state: 'OPEN',
-        openedAt: Date.now().toString()
+        openedAt: Date.now().toString(),
       });
       this.metrics?.setCircuitBreakerState(jobId, 'OPEN');
       return;

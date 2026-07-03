@@ -25,9 +25,9 @@ import { AiRuntimeService } from './ai-runtime.service';
     AssessmentModule,
     RecommendationModule,
     DiscoveryModule,
-    TeachingModule
+    TeachingModule,
   ],
   controllers: [AiRuntimeController],
-  providers: [AiRuntimeService]
+  providers: [AiRuntimeService],
 })
 export class AiRuntimeModule {}

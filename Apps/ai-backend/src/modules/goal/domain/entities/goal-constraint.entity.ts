@@ -4,7 +4,7 @@ export class GoalConstraint {
     public readonly type: string,
     public readonly value: string,
     public readonly active: boolean = true,
-    public readonly createdAt: Date = new Date()
+    public readonly createdAt: Date = new Date(),
   ) {}
 
   deactivate(): GoalConstraint {
