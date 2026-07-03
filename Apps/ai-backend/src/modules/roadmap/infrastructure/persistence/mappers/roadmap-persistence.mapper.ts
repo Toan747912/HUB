@@ -1,10 +1,21 @@
-import { GoalId, LearnerId, MilestoneId, PhaseId, RoadmapId, TaskId } from '../../../../../shared/domain/identifiers';
+import {
+  GoalId,
+  LearnerId,
+  MilestoneId,
+  PhaseId,
+  RoadmapId,
+  SkillId,
+  TaskId,
+} from '../../../../../shared/domain/identifiers';
 import { Roadmap } from '../../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPhase } from '../../../domain/entities/roadmap-phase.entity';
 import { RoadmapMilestone } from '../../../domain/entities/roadmap-milestone.entity';
 import { RoadmapTask } from '../../../domain/entities/roadmap-task.entity';
 import { RoadmapProgress } from '../../../domain/entities/roadmap-progress.entity';
-import { RoadmapRevision, RoadmapRevisionReason } from '../../../domain/entities/roadmap-revision.entity';
+import {
+  RoadmapRevision,
+  RoadmapRevisionReason,
+} from '../../../domain/entities/roadmap-revision.entity';
 import { RoadmapStatus } from '../../../domain/value-objects/roadmap-status.vo';
 import { RoadmapDocument } from '../documents/roadmap.document';
 
@@ -27,10 +38,11 @@ export class RoadmapPersistenceMapper {
           dependsOn: task.dependsOn.map((id) => id.toString()),
           estimatedDurationDays: task.estimatedDurationDays,
           complexity: task.complexity,
+          skillId: task.skillId.toString(),
           completed: task.completed,
-          completedAt: task.completedAt
-        }))
-      }))
+          completedAt: task.completedAt,
+        })),
+      })),
     }));
 
     const revisions = roadmap.getRevisions().map((revision) => ({
@@ -42,7 +54,7 @@ export class RoadmapPersistenceMapper {
       taskCount: revision.taskCount,
       estimatedDurationDays: revision.estimatedDurationDays,
       complexity: revision.complexity,
-      createdAt: revision.createdAt
+      createdAt: revision.createdAt,
     }));
 
     const progress = roadmap.getProgress();
@@ -59,7 +71,7 @@ export class RoadmapPersistenceMapper {
       progress: {
         completionRatio: progress.completionRatio,
         completedTaskIds: [...progress.completedTaskIds],
-        updatedAt: progress.updatedAt
+        updatedAt: progress.updatedAt,
       },
       estimatedDurationDays: roadmap.getEstimatedDurationDays(),
       complexity: roadmap.getComplexity(),
@@ -67,7 +79,7 @@ export class RoadmapPersistenceMapper {
       goalSnapshot,
       invalidatedAt: roadmap.getInvalidatedAt(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -109,15 +121,16 @@ export class RoadmapPersistenceMapper {
                       task.dependsOn.map((id) => TaskId.create(id)),
                       task.estimatedDurationDays,
                       task.complexity,
+                      SkillId.create(task.skillId),
                       task.completed,
-                      task.completedAt
-                    )
+                      task.completedAt,
+                    ),
                 ),
                 milestone.reached,
-                milestone.reachedAt
-              )
-          )
-        )
+                milestone.reachedAt,
+              ),
+          ),
+        ),
     );
 
     (roadmap as any).revisions = doc.revisions.map(
@@ -131,14 +144,14 @@ export class RoadmapPersistenceMapper {
           revision.taskCount,
           revision.estimatedDurationDays,
           revision.complexity,
-          revision.createdAt
-        )
+          revision.createdAt,
+        ),
     );
 
     (roadmap as any).progress = new RoadmapProgress(
       doc.progress.completionRatio,
       doc.progress.completedTaskIds,
-      doc.progress.updatedAt
+      doc.progress.updatedAt,
     );
 
     return roadmap;

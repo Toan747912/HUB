@@ -1,6 +1,7 @@
 import { GoalId, LearnerId, RoadmapId, TaskId } from '../../../../../shared/domain/identifiers';
 import { RoadmapPlanningEngine } from '../../engine/roadmap-planning.engine';
 import { PlanningInput } from '../../engine/roadmap-planning.types';
+import { resolveTestPlan } from '../../engine/__tests__/resolve-test-plan';
 import { Roadmap } from '../roadmap.aggregate';
 
 const goalSnapshot: PlanningInput = {
@@ -12,17 +13,23 @@ const goalSnapshot: PlanningInput = {
   difficulty: 'BEGINNER',
   priority: 'MEDIUM',
   constraints: [],
-  targetDate: '2027-01-01'
+  targetDate: '2027-01-01',
 };
 
 const context = { traceId: 't', correlationId: 'c', causationId: 'ca' };
 const engine = new RoadmapPlanningEngine();
 
 const makeRoadmap = (): Roadmap => {
-  const plan = engine.generate(goalSnapshot);
+  const plan = resolveTestPlan(engine.generate(goalSnapshot));
   return Roadmap.create(
-    { roadmapId: RoadmapId.create('roadmap-1'), goalId: GoalId.create('goal-1'), learnerId: LearnerId.create('learner-1'), goalSnapshot, plan },
-    context
+    {
+      roadmapId: RoadmapId.create('roadmap-1'),
+      goalId: GoalId.create('goal-1'),
+      learnerId: LearnerId.create('learner-1'),
+      goalSnapshot,
+      plan,
+    },
+    context,
   );
 };
 
@@ -71,7 +78,9 @@ describe('Roadmap aggregate', () => {
 
     const allTaskIds = roadmap
       .getPhases()
-      .flatMap((phase) => phase.milestones.flatMap((milestone) => milestone.tasks.map((task) => task.id)));
+      .flatMap((phase) =>
+        phase.milestones.flatMap((milestone) => milestone.tasks.map((task) => task.id)),
+      );
 
     for (const taskId of allTaskIds.slice(0, -1)) {
       roadmap.completeTask(taskId, context, roadmap.getAggregateVersion());
@@ -91,7 +100,7 @@ describe('Roadmap aggregate', () => {
     const roadmap = makeRoadmap();
     roadmap.pullEvents();
 
-    const newPlan = engine.generate({ ...goalSnapshot, difficulty: 'EXPERT' });
+    const newPlan = resolveTestPlan(engine.generate({ ...goalSnapshot, difficulty: 'EXPERT' }));
     roadmap.regenerate(newPlan, context, roadmap.getAggregateVersion());
 
     expect(roadmap.getRevisions()).toHaveLength(2);
@@ -108,6 +117,8 @@ describe('Roadmap aggregate', () => {
     roadmap.pullEvents();
     roadmap.publish(context, roadmap.getAggregateVersion());
 
-    expect(() => roadmap.completeTask(TaskId.create('does-not-exist'), context, roadmap.getAggregateVersion())).toThrow();
+    expect(() =>
+      roadmap.completeTask(TaskId.create('does-not-exist'), context, roadmap.getAggregateVersion()),
+    ).toThrow();
   });
 });

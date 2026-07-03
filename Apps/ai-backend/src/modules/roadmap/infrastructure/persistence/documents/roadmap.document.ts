@@ -5,6 +5,7 @@ export interface RoadmapTaskDoc {
   dependsOn: string[];
   estimatedDurationDays: number;
   complexity: string;
+  skillId: string;
   completed: boolean;
   completedAt?: Date;
 }

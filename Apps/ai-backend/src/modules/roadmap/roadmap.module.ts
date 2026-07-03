@@ -26,6 +26,8 @@ import { TracerService } from '../../infrastructure/observability/tracer.service
 import { MetricsService } from '../../infrastructure/observability/metrics.service';
 import { LocksModule } from '../../infrastructure/locks/locks.module';
 import { RoadmapLockService } from '../../infrastructure/locks/roadmap-lock.service';
+import { SkillModule } from '../skill/skill.module';
+import { SkillCatalogService } from '../skill/application/services/skill-catalog.service';
 
 const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
 
@@ -36,7 +38,8 @@ const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
     QueueModule,
     AuditModule,
     TelemetryModule,
-    LocksModule
+    LocksModule,
+    SkillModule,
   ],
   controllers: [RoadmapController],
   providers: [
@@ -48,31 +51,48 @@ const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
     HttpExceptionFilter,
     {
       provide: ROADMAP_REPOSITORY,
-      useClass: MongoRoadmapRepository
+      useClass: MongoRoadmapRepository,
     },
     {
       provide: EVENT_PUBLISHER,
-      useFactory: (outbox: OutboxRepository, queue: QueueService, tracer: TracerService, metrics: MetricsService, auditLog: AuditLogService) =>
-        new RoadmapOutboxPublisherService(outbox, queue, tracer, metrics, auditLog),
-      inject: [OutboxRepository, QueueService, TracerService, MetricsService, AuditLogService]
+      useFactory: (
+        outbox: OutboxRepository,
+        queue: QueueService,
+        tracer: TracerService,
+        metrics: MetricsService,
+        auditLog: AuditLogService,
+      ) => new RoadmapOutboxPublisherService(outbox, queue, tracer, metrics, auditLog),
+      inject: [OutboxRepository, QueueService, TracerService, MetricsService, AuditLogService],
     },
     {
       provide: ROADMAP_LOCK_SERVICE,
-      useExisting: RoadmapLockService
+      useExisting: RoadmapLockService,
     },
     {
       provide: RoadmapCommandService,
-      useFactory: (repository: any, eventPublisher: any, roadmapLock: any, metrics: MetricsService) =>
-        new RoadmapCommandService(repository, eventPublisher, roadmapLock, metrics),
-      inject: [ROADMAP_REPOSITORY, EVENT_PUBLISHER, ROADMAP_LOCK_SERVICE, MetricsService]
+      useFactory: (
+        repository: any,
+        eventPublisher: any,
+        skillCatalog: SkillCatalogService,
+        roadmapLock: any,
+        metrics: MetricsService,
+      ) =>
+        new RoadmapCommandService(repository, eventPublisher, skillCatalog, roadmapLock, metrics),
+      inject: [
+        ROADMAP_REPOSITORY,
+        EVENT_PUBLISHER,
+        SkillCatalogService,
+        ROADMAP_LOCK_SERVICE,
+        MetricsService,
+      ],
     },
     {
       provide: RoadmapQueryService,
       useFactory: (repository: any) => new RoadmapQueryService(repository),
-      inject: [ROADMAP_REPOSITORY]
-    }
+      inject: [ROADMAP_REPOSITORY],
+    },
   ],
-  exports: [RoadmapService, RoadmapCommandService, RoadmapQueryService]
+  exports: [RoadmapService, RoadmapCommandService, RoadmapQueryService],
 })
 export class RoadmapModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

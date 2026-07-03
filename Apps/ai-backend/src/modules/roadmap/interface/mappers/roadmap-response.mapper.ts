@@ -4,7 +4,7 @@ import {
   RoadmapHistoryResponseDto,
   RoadmapListResponseDto,
   RoadmapProgressResponseDto,
-  RoadmapResponseDto
+  RoadmapResponseDto,
 } from '../dto/responses/roadmap.response.dto';
 
 @Injectable()
@@ -33,17 +33,18 @@ export class RoadmapResponseMapper {
             dependsOn: task.dependsOn.map((id) => id.toString()),
             estimatedDurationDays: task.estimatedDurationDays,
             complexity: task.complexity,
-            completed: task.completed
-          }))
-        }))
+            skillId: task.skillId.toString(),
+            completed: task.completed,
+          })),
+        })),
       })),
       estimatedDurationDays: roadmap.getEstimatedDurationDays(),
       complexity: roadmap.getComplexity(),
       plannerVersion: roadmap.getPlannerVersion(),
       progress: {
         completionRatio: progress.completionRatio,
-        completedTaskIds: [...progress.completedTaskIds]
-      }
+        completedTaskIds: [...progress.completedTaskIds],
+      },
     };
   }
 
@@ -58,7 +59,7 @@ export class RoadmapResponseMapper {
       roadmapId: roadmap.getId().toString(),
       status: roadmap.getStatus(),
       completionRatio: progress.completionRatio,
-      completedTaskIds: [...progress.completedTaskIds]
+      completedTaskIds: [...progress.completedTaskIds],
     };
   }
 
@@ -74,8 +75,8 @@ export class RoadmapResponseMapper {
         taskCount: revision.taskCount,
         estimatedDurationDays: revision.estimatedDurationDays,
         complexity: revision.complexity,
-        createdAt: revision.createdAt.toISOString()
-      }))
+        createdAt: revision.createdAt.toISOString(),
+      })),
     };
   }
 }

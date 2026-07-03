@@ -5,6 +5,7 @@ export class RoadmapTaskResponseDto {
   dependsOn!: string[];
   estimatedDurationDays!: number;
   complexity!: string;
+  skillId!: string;
   completed!: boolean;
 }
 

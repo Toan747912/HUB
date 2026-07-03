@@ -1,5 +1,13 @@
 import { randomUUID } from 'crypto';
-import { GoalId, LearnerId, MilestoneId, PhaseId, RoadmapId, TaskId } from '../../../../shared/domain/identifiers';
+import {
+  GoalId,
+  LearnerId,
+  MilestoneId,
+  PhaseId,
+  RoadmapId,
+  SkillId,
+  TaskId,
+} from '../../../../shared/domain/identifiers';
 import { RoadmapPhase } from '../entities/roadmap-phase.entity';
 import { RoadmapMilestone } from '../entities/roadmap-milestone.entity';
 import { RoadmapTask } from '../entities/roadmap-task.entity';
@@ -12,7 +20,7 @@ import {
   roadmapInvalidatedEvent,
   roadmapPublishedEvent,
   roadmapRegeneratedEvent,
-  roadmapUpdatedEvent
+  roadmapUpdatedEvent,
 } from '../events/roadmap-events';
 import { RoadmapDomainEvent, RoadmapEventMetadata } from '../events/roadmap-event-metadata';
 import { RoadmapDomainError } from '../errors/roadmap-domain.error';
@@ -20,7 +28,7 @@ import { ensureValidLifecycleTransition } from '../invariants/roadmap-lifecycle.
 import { ensureExpectedVersion } from '../invariants/roadmap-version.invariant';
 import { ensureNonEmptyPlan } from '../invariants/roadmap-structure.invariant';
 import { RoadmapStatus, RoadmapStatusValue } from '../value-objects/roadmap-status.vo';
-import { PlanningInput, PlanningResult } from '../engine/roadmap-planning.types';
+import { PlanningInput, ResolvedPlanningResult } from '../engine/roadmap-planning.types';
 
 type EventContext = {
   traceId: string;
@@ -33,7 +41,7 @@ type RoadmapCreateProps = {
   goalId: GoalId;
   learnerId: LearnerId;
   goalSnapshot: PlanningInput;
-  plan: PlanningResult;
+  plan: ResolvedPlanningResult;
 };
 
 export class Roadmap {
@@ -52,7 +60,7 @@ export class Roadmap {
   private constructor(
     private readonly roadmapId: RoadmapId,
     private readonly goalId: GoalId,
-    private readonly learnerId: LearnerId
+    private readonly learnerId: LearnerId,
   ) {}
 
   static create(props: RoadmapCreateProps, context: EventContext): Roadmap {
@@ -71,8 +79,8 @@ export class Roadmap {
         status: aggregate.status.getValue(),
         phaseCount: phases.length,
         estimatedDurationDays: aggregate.estimatedDurationDays,
-        complexity: aggregate.complexity
-      })
+        complexity: aggregate.complexity,
+      }),
     );
 
     return aggregate;
@@ -132,7 +140,11 @@ export class Roadmap {
     return events;
   }
 
-  updateDefinition(changes: Record<string, unknown>, context: EventContext, expectedVersion?: number): void {
+  updateDefinition(
+    changes: Record<string, unknown>,
+    context: EventContext,
+    expectedVersion?: number,
+  ): void {
     this.assertConcurrency(expectedVersion);
     this.assertNotTerminalMutation();
     this.bumpVersion();
@@ -158,14 +170,15 @@ export class Roadmap {
     this.recordEvent(roadmapArchivedEvent(this.buildMetadata(context), { previousStatus }));
   }
 
-  regenerate(plan: PlanningResult, context: EventContext, expectedVersion?: number): void {
+  regenerate(plan: ResolvedPlanningResult, context: EventContext, expectedVersion?: number): void {
     this.assertConcurrency(expectedVersion);
     this.assertNotTerminalMutation();
 
     const phases = toPhaseEntities(plan);
     ensureNonEmptyPlan(phases);
 
-    const fromVersion = this.revisions.length === 0 ? 0 : this.revisions[this.revisions.length - 1].version;
+    const fromVersion =
+      this.revisions.length === 0 ? 0 : this.revisions[this.revisions.length - 1].version;
     this.bumpVersion();
     this.applyPlan(plan, phases);
     this.progress = new RoadmapProgress(0, []);
@@ -178,8 +191,8 @@ export class Roadmap {
         plannerVersion: this.plannerVersion,
         phaseCount: phases.length,
         estimatedDurationDays: this.estimatedDurationDays,
-        complexity: this.complexity
-      })
+        complexity: this.complexity,
+      }),
     );
   }
 
@@ -211,7 +224,14 @@ export class Roadmap {
           }
           return task;
         });
-        return new RoadmapMilestone(milestone.id, milestone.title, milestone.order, updatedTasks, milestone.reached, milestone.reachedAt);
+        return new RoadmapMilestone(
+          milestone.id,
+          milestone.title,
+          milestone.order,
+          updatedTasks,
+          milestone.reached,
+          milestone.reachedAt,
+        );
       });
       return new RoadmapPhase(phase.id, phase.title, phase.order, updatedMilestones);
     });
@@ -224,22 +244,29 @@ export class Roadmap {
     this.phases = updatedPhases;
 
     const completedTaskIds = this.phases.flatMap((phase) =>
-      phase.milestones.flatMap((milestone) => milestone.tasks.filter((task) => task.completed).map((task) => task.id.toString()))
+      phase.milestones.flatMap((milestone) =>
+        milestone.tasks.filter((task) => task.completed).map((task) => task.id.toString()),
+      ),
     );
-    const completionRatio = totalTasks === 0 ? 0 : Math.round((completedTaskIds.length / totalTasks) * 100);
+    const completionRatio =
+      totalTasks === 0 ? 0 : Math.round((completedTaskIds.length / totalTasks) * 100);
     this.progress = this.progress.update(completionRatio, completedTaskIds);
 
     if (completionRatio === 100 && this.status.getValue() === 'PUBLISHED') {
       const previousStatus = this.status.getValue();
       this.status = RoadmapStatus.create('COMPLETED');
-      this.recordEvent(roadmapCompletedEvent(this.buildMetadata(context), { previousStatus, completionRatio }));
+      this.recordEvent(
+        roadmapCompletedEvent(this.buildMetadata(context), { previousStatus, completionRatio }),
+      );
       return;
     }
 
-    this.recordEvent(roadmapUpdatedEvent(this.buildMetadata(context), { changes: { completionRatio } }));
+    this.recordEvent(
+      roadmapUpdatedEvent(this.buildMetadata(context), { changes: { completionRatio } }),
+    );
   }
 
-  private applyPlan(plan: PlanningResult, phases: RoadmapPhase[]): void {
+  private applyPlan(plan: ResolvedPlanningResult, phases: RoadmapPhase[]): void {
     this.phases = phases;
     this.estimatedDurationDays = plan.estimatedDurationDays;
     this.complexity = plan.complexity;
@@ -249,8 +276,9 @@ export class Roadmap {
   private appendRevision(reason: 'CREATED' | 'UPDATED' | 'REGENERATED'): void {
     const milestoneCount = this.phases.reduce((sum, phase) => sum + phase.milestones.length, 0);
     const taskCount = this.phases.reduce(
-      (sum, phase) => sum + phase.milestones.reduce((mSum, milestone) => mSum + milestone.tasks.length, 0),
-      0
+      (sum, phase) =>
+        sum + phase.milestones.reduce((mSum, milestone) => mSum + milestone.tasks.length, 0),
+      0,
     );
 
     const revision = new RoadmapRevision(
@@ -261,14 +289,17 @@ export class Roadmap {
       milestoneCount,
       taskCount,
       this.estimatedDurationDays,
-      this.complexity
+      this.complexity,
     );
     this.revisions = [...this.revisions, revision];
   }
 
   private assertNotTerminalMutation(): void {
     if (this.status.isTerminal()) {
-      throw new RoadmapDomainError('ROADMAP_TERMINAL_STATE_MUTATION_FORBIDDEN', 'Roadmap is in a terminal state and cannot be mutated');
+      throw new RoadmapDomainError(
+        'ROADMAP_TERMINAL_STATE_MUTATION_FORBIDDEN',
+        'Roadmap is in a terminal state and cannot be mutated',
+      );
     }
   }
 
@@ -293,7 +324,7 @@ export class Roadmap {
       correlationId: context.correlationId,
       causationId: context.causationId,
       goalId: this.goalId,
-      plannerVersion: this.plannerVersion
+      plannerVersion: this.plannerVersion,
     };
   }
 
@@ -302,7 +333,7 @@ export class Roadmap {
   }
 }
 
-function toPhaseEntities(plan: PlanningResult): RoadmapPhase[] {
+function toPhaseEntities(plan: ResolvedPlanningResult): RoadmapPhase[] {
   return plan.phases.map(
     (phase) =>
       new RoadmapPhase(
@@ -323,11 +354,12 @@ function toPhaseEntities(plan: PlanningResult): RoadmapPhase[] {
                     task.order,
                     task.dependsOn.map((id) => TaskId.create(id)),
                     task.estimatedDurationDays,
-                    task.complexity
-                  )
-              )
-            )
-        )
-      )
+                    task.complexity,
+                    SkillId.create(task.skillId),
+                  ),
+              ),
+            ),
+        ),
+      ),
   );
 }

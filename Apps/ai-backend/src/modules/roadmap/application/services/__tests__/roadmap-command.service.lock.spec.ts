@@ -2,12 +2,14 @@ import { GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/ident
 import { Roadmap } from '../../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../../domain/engine/roadmap-planning.engine';
 import { PlanningInput } from '../../../domain/engine/roadmap-planning.types';
+import { resolveTestPlan } from '../../../domain/engine/__tests__/resolve-test-plan';
 import { IRoadmapRepository } from '../../contracts/roadmap-repository.contract';
 import { IEventPublisher } from '../../contracts/event-publisher.contract';
 import { PublishRoadmapCommand } from '../../commands/publish-roadmap.command';
 import { CreateRoadmapCommand } from '../../commands/create-roadmap.command';
 import { RoadmapNotFoundError, RoadmapStateTransitionError } from '../../errors/application.errors';
 import { IRoadmapLock, RoadmapCommandService } from '../roadmap-command.service';
+import { SkillCatalogService } from '../../../../skill/application/services/skill-catalog.service';
 
 const engine = new RoadmapPlanningEngine();
 
@@ -20,26 +22,35 @@ const goalSnapshot: PlanningInput = {
   difficulty: 'INTERMEDIATE',
   priority: 'HIGH',
   constraints: [],
-  targetDate: '2027-01-01'
+  targetDate: '2027-01-01',
 };
 
+const makeSkillCatalog = (): jest.Mocked<SkillCatalogService> =>
+  ({
+    findOrCreateByName: jest
+      .fn()
+      .mockImplementation(async (name: string) => ({ getId: () => ({ toString: () => `skill-${name}` }) })),
+    findById: jest.fn(),
+  }) as any;
+
 const makeRoadmap = (): Roadmap => {
-  const plan = engine.generate(goalSnapshot);
+  const plan = resolveTestPlan(engine.generate(goalSnapshot));
   return Roadmap.create(
     {
       roadmapId: RoadmapId.create('roadmap-lock-1'),
       goalId: GoalId.create(goalSnapshot.goalId),
       learnerId: LearnerId.create(goalSnapshot.learnerId),
       goalSnapshot,
-      plan
+      plan,
     },
-    { traceId: 't', correlationId: 'c', causationId: 'ca' }
+    { traceId: 't', correlationId: 'c', causationId: 'ca' },
   );
 };
 
 describe('RoadmapCommandService — distributed lock wiring', () => {
   let repository: jest.Mocked<IRoadmapRepository>;
   let eventPublisher: jest.Mocked<IEventPublisher>;
+  let skillCatalog: jest.Mocked<SkillCatalogService>;
   let roadmapLock: jest.Mocked<IRoadmapLock>;
   let service: RoadmapCommandService;
 
@@ -48,18 +59,28 @@ describe('RoadmapCommandService — distributed lock wiring', () => {
       save: jest.fn().mockResolvedValue(undefined),
       findById: jest.fn(),
       findAll: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as any;
     eventPublisher = { publish: jest.fn(), publishMany: jest.fn().mockResolvedValue(undefined) };
-    roadmapLock = { lock: jest.fn().mockResolvedValue({ token: 'tok' }), unlock: jest.fn().mockResolvedValue(undefined) };
-    service = new RoadmapCommandService(repository, eventPublisher, roadmapLock);
+    skillCatalog = makeSkillCatalog();
+    roadmapLock = {
+      lock: jest.fn().mockResolvedValue({ token: 'tok' }),
+      unlock: jest.fn().mockResolvedValue(undefined),
+    };
+    service = new RoadmapCommandService(repository, eventPublisher, skillCatalog, roadmapLock);
   });
 
   it('acquires and releases the lock around publishRoadmap', async () => {
     const roadmap = makeRoadmap();
     repository.findById.mockResolvedValue(roadmap);
 
-    const command = new PublishRoadmapCommand('roadmap-lock-1', roadmap.getAggregateVersion(), 't', 'c', 'ca');
+    const command = new PublishRoadmapCommand(
+      'roadmap-lock-1',
+      roadmap.getAggregateVersion(),
+      't',
+      'c',
+      'ca',
+    );
     await service.publishRoadmap(command);
 
     expect(roadmapLock.lock).toHaveBeenCalledWith('roadmap-lock-1');
@@ -79,9 +100,15 @@ describe('RoadmapCommandService — distributed lock wiring', () => {
   it('works without a lock service (backward compatible, lock is optional)', async () => {
     const roadmap = makeRoadmap();
     repository.findById.mockResolvedValue(roadmap);
-    const noLockService = new RoadmapCommandService(repository, eventPublisher);
+    const noLockService = new RoadmapCommandService(repository, eventPublisher, skillCatalog);
 
-    const command = new PublishRoadmapCommand('roadmap-lock-1', roadmap.getAggregateVersion(), 't', 'c', 'ca');
+    const command = new PublishRoadmapCommand(
+      'roadmap-lock-1',
+      roadmap.getAggregateVersion(),
+      't',
+      'c',
+      'ca',
+    );
     await expect(noLockService.publishRoadmap(command)).resolves.toBeDefined();
   });
 
@@ -99,7 +126,7 @@ describe('RoadmapCommandService — distributed lock wiring', () => {
       '2027-01-01',
       't',
       'c',
-      'ca'
+      'ca',
     );
 
     const roadmap = await service.createRoadmap(command);
@@ -113,11 +140,22 @@ describe('RoadmapCommandService — distributed lock wiring', () => {
 
   it('wraps an invalid lifecycle transition from the aggregate as RoadmapStateTransitionError', async () => {
     const roadmap = makeRoadmap();
-    roadmap.archive({ traceId: 't', correlationId: 'c', causationId: 'ca' }, roadmap.getAggregateVersion());
+    roadmap.archive(
+      { traceId: 't', correlationId: 'c', causationId: 'ca' },
+      roadmap.getAggregateVersion(),
+    );
     repository.findById.mockResolvedValue(roadmap);
 
-    const command = new PublishRoadmapCommand('roadmap-lock-1', roadmap.getAggregateVersion(), 't', 'c', 'ca');
+    const command = new PublishRoadmapCommand(
+      'roadmap-lock-1',
+      roadmap.getAggregateVersion(),
+      't',
+      'c',
+      'ca',
+    );
 
-    await expect(service.publishRoadmap(command)).rejects.toBeInstanceOf(RoadmapStateTransitionError);
+    await expect(service.publishRoadmap(command)).rejects.toBeInstanceOf(
+      RoadmapStateTransitionError,
+    );
   });
 });

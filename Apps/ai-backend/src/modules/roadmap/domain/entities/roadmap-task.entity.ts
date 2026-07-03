@@ -1,4 +1,4 @@
-import { TaskId } from '../../../../shared/domain/identifiers';
+import { SkillId, TaskId } from '../../../../shared/domain/identifiers';
 
 export class RoadmapTask {
   constructor(
@@ -8,8 +8,9 @@ export class RoadmapTask {
     public readonly dependsOn: TaskId[],
     public readonly estimatedDurationDays: number,
     public readonly complexity: string,
+    public readonly skillId: SkillId,
     public readonly completed: boolean = false,
-    public readonly completedAt?: Date
+    public readonly completedAt?: Date,
   ) {}
 
   markCompleted(): RoadmapTask {
@@ -20,8 +21,9 @@ export class RoadmapTask {
       this.dependsOn,
       this.estimatedDurationDays,
       this.complexity,
+      this.skillId,
       true,
-      new Date()
+      new Date(),
     );
   }
 }

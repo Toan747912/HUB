@@ -1,7 +1,12 @@
 import { GoalId, LearnerId, RoadmapId, TaskId } from '../../../../shared/domain/identifiers';
 import { Roadmap } from '../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../domain/engine/roadmap-planning.engine';
-import { PlanningInput } from '../../domain/engine/roadmap-planning.types';
+import {
+  PlanningInput,
+  PlanningResult,
+  ResolvedPlanningResult,
+} from '../../domain/engine/roadmap-planning.types';
+import { SkillCatalogService } from '../../../skill/application/services/skill-catalog.service';
 import { RoadmapDomainError } from '../../domain/errors/roadmap-domain.error';
 import { CreateRoadmapCommand } from '../commands/create-roadmap.command';
 import { UpdateRoadmapCommand } from '../commands/update-roadmap.command';
@@ -16,7 +21,7 @@ import {
   RoadmapNotFoundError,
   RoadmapStateTransitionError,
   RoadmapValidationError,
-  RoadmapVersionConflictError
+  RoadmapVersionConflictError,
 } from '../errors/application.errors';
 
 export interface IRoadmapLock {
@@ -34,15 +39,48 @@ export class RoadmapCommandService {
   constructor(
     private readonly repository: IRoadmapRepository,
     private readonly eventPublisher: IEventPublisher,
+    private readonly skillCatalog: SkillCatalogService,
     private readonly roadmapLock?: IRoadmapLock,
-    private readonly generationMetrics?: IRoadmapGenerationMetrics
+    private readonly generationMetrics?: IRoadmapGenerationMetrics,
   ) {}
 
-  private generatePlan(input: PlanningInput) {
+  private async generatePlan(input: PlanningInput): Promise<ResolvedPlanningResult> {
     const start = Date.now();
     const plan = this.planningEngine.generate(input);
+    const resolved = await this.resolveSkills(plan);
     this.generationMetrics?.recordRoadmapGenerationDuration((Date.now() - start) / 1000);
-    return plan;
+    return resolved;
+  }
+
+  // Resolves each task's deterministic skillLabel (e.g. "Foundations") to a
+  // real SkillCatalogService entry, caching per-label within one plan so a
+  // phase's skill is only looked up/created once instead of once per task.
+  private async resolveSkills(plan: PlanningResult): Promise<ResolvedPlanningResult> {
+    const cache = new Map<string, string>();
+    const skillIdFor = async (label: string): Promise<string> => {
+      const cached = cache.get(label);
+      if (cached) return cached;
+      const skill = await this.skillCatalog.findOrCreateByName(label);
+      const id = skill.getId().toString();
+      cache.set(label, id);
+      return id;
+    };
+
+    const phases = [];
+    for (const phase of plan.phases) {
+      const milestones = [];
+      for (const milestone of phase.milestones) {
+        const tasks = [];
+        for (const task of milestone.tasks) {
+          const { skillLabel, ...rest } = task;
+          tasks.push({ ...rest, skillId: await skillIdFor(skillLabel) });
+        }
+        milestones.push({ ...milestone, tasks });
+      }
+      phases.push({ ...phase, milestones });
+    }
+
+    return { ...plan, phases };
   }
 
   private async withLock<T>(roadmapId: string, fn: () => Promise<T>): Promise<T> {
@@ -69,10 +107,10 @@ export class RoadmapCommandService {
         difficulty: command.difficulty,
         priority: command.priority,
         constraints: command.constraints,
-        targetDate: command.targetDate
+        targetDate: command.targetDate,
       };
 
-      const plan = this.generatePlan(goalSnapshot);
+      const plan = await this.generatePlan(goalSnapshot);
 
       const roadmap = Roadmap.create(
         {
@@ -80,13 +118,13 @@ export class RoadmapCommandService {
           goalId: GoalId.create(command.goalId),
           learnerId: LearnerId.create(command.learnerId),
           goalSnapshot,
-          plan
+          plan,
         },
         {
           traceId: command.traceId,
           correlationId: command.correlationId,
-          causationId: command.causationId
-        }
+          causationId: command.causationId,
+        },
       );
 
       await this.repository.save(roadmap);
@@ -110,8 +148,12 @@ export class RoadmapCommandService {
 
         r.updateDefinition(
           command.changes,
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -136,8 +178,12 @@ export class RoadmapCommandService {
         if (!r) throw new RoadmapNotFoundError(command.roadmapId);
 
         r.publish(
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -162,8 +208,12 @@ export class RoadmapCommandService {
         if (!r) throw new RoadmapNotFoundError(command.roadmapId);
 
         r.archive(
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -187,11 +237,15 @@ export class RoadmapCommandService {
         const r = await this.repository.findById(command.roadmapId);
         if (!r) throw new RoadmapNotFoundError(command.roadmapId);
 
-        const plan = this.generatePlan(r.getGoalSnapshot());
+        const plan = await this.generatePlan(r.getGoalSnapshot());
         r.regenerate(
           plan,
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -217,8 +271,12 @@ export class RoadmapCommandService {
 
         r.completeTask(
           TaskId.create(command.taskId),
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -244,8 +302,12 @@ export class RoadmapCommandService {
 
         r.invalidate(
           command.reason,
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -267,7 +329,10 @@ export class RoadmapCommandService {
       if (error.code === 'ROADMAP_VERSION_CONFLICT') {
         return new RoadmapVersionConflictError(0, 0);
       }
-      if (error.code === 'ROADMAP_TERMINAL_STATE_MUTATION_FORBIDDEN' || error.code === 'INVALID_STATE_TRANSITION') {
+      if (
+        error.code === 'ROADMAP_TERMINAL_STATE_MUTATION_FORBIDDEN' ||
+        error.code === 'INVALID_STATE_TRANSITION'
+      ) {
         return new RoadmapStateTransitionError(error.message);
       }
       return new RoadmapValidationError(error.message);
@@ -276,7 +341,13 @@ export class RoadmapCommandService {
     return error instanceof Error ? error : new Error(String(error));
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'app',
@@ -285,8 +356,8 @@ export class RoadmapCommandService {
         latencyMs: Date.now() - startMs,
         status,
         errorType: error instanceof Error ? error.constructor.name : undefined,
-        timestamp: new Date().toISOString()
-      })
+        timestamp: new Date().toISOString(),
+      }),
     );
   }
 }

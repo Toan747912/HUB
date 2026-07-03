@@ -5,6 +5,7 @@ import { Model, disconnect } from 'mongoose';
 import { Roadmap } from '../../../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../../../domain/engine/roadmap-planning.engine';
 import { PlanningInput } from '../../../../domain/engine/roadmap-planning.types';
+import { resolveTestPlan } from '../../../../domain/engine/__tests__/resolve-test-plan';
 import { RoadmapDocument } from '../../documents/roadmap.document';
 import { RoadmapSchema } from '../../schemas/roadmap.schema';
 import { MongoRoadmapRepository } from '../mongo-roadmap.repository';
@@ -21,21 +22,23 @@ const goalSnapshot: PlanningInput = {
   difficulty: 'INTERMEDIATE',
   priority: 'HIGH',
   constraints: ['5 hours/week'],
-  targetDate: '2027-01-01'
+  targetDate: '2027-01-01',
 };
 
-const makeRoadmap = (overrides: Partial<{ roadmapId: string; learnerId: string }> = {}): Roadmap => {
+const makeRoadmap = (
+  overrides: Partial<{ roadmapId: string; learnerId: string }> = {},
+): Roadmap => {
   const snapshot = { ...goalSnapshot, learnerId: overrides.learnerId ?? goalSnapshot.learnerId };
-  const plan = engine.generate(snapshot);
+  const plan = resolveTestPlan(engine.generate(snapshot));
   return Roadmap.create(
     {
       roadmapId: RoadmapId.create(overrides.roadmapId ?? 'roadmap-1'),
       goalId: GoalId.create(snapshot.goalId),
       learnerId: LearnerId.create(snapshot.learnerId),
       goalSnapshot: snapshot,
-      plan
+      plan,
     },
-    { traceId: 't', correlationId: 'c', causationId: 'ca' }
+    { traceId: 't', correlationId: 'c', causationId: 'ca' },
   );
 };
 
@@ -55,15 +58,15 @@ describe('MongoRoadmapRepository — integration', () => {
     module = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'Roadmap', schema: RoadmapSchema }])
+        MongooseModule.forFeature([{ name: 'Roadmap', schema: RoadmapSchema }]),
       ],
       providers: [
         {
           provide: MongoRoadmapRepository,
           useFactory: (m: Model<RoadmapDocument>) => new MongoRoadmapRepository(m),
-          inject: [getModelToken('Roadmap')]
-        }
-      ]
+          inject: [getModelToken('Roadmap')],
+        },
+      ],
     }).compile();
 
     repository = module.get(MongoRoadmapRepository);
@@ -101,7 +104,10 @@ describe('MongoRoadmapRepository — integration', () => {
     const roadmap = makeRoadmap({ roadmapId: 'roadmap-t03' });
     await repository.save(roadmap);
 
-    roadmap.publish({ traceId: 't', correlationId: 'c', causationId: 'ca' }, roadmap.getAggregateVersion());
+    roadmap.publish(
+      { traceId: 't', correlationId: 'c', causationId: 'ca' },
+      roadmap.getAggregateVersion(),
+    );
     await repository.save(roadmap);
 
     const found = await repository.findById('roadmap-t03');
@@ -121,8 +127,12 @@ describe('MongoRoadmapRepository — integration', () => {
 
   it('preserves append-only revision history (versioning) across save/reload', async () => {
     const roadmap = makeRoadmap({ roadmapId: 'roadmap-t05' });
-    const regenerated = engine.generate({ ...goalSnapshot, difficulty: 'EXPERT' });
-    roadmap.regenerate(regenerated, { traceId: 't', correlationId: 'c', causationId: 'ca' }, roadmap.getAggregateVersion());
+    const regenerated = resolveTestPlan(engine.generate({ ...goalSnapshot, difficulty: 'EXPERT' }));
+    roadmap.regenerate(
+      regenerated,
+      { traceId: 't', correlationId: 'c', causationId: 'ca' },
+      roadmap.getAggregateVersion(),
+    );
     await repository.save(roadmap);
 
     const found = await repository.findById('roadmap-t05');
@@ -148,7 +158,7 @@ describe('MongoRoadmapRepository — integration', () => {
 
     const found = await repository.findById('roadmap-t07');
     expect(() =>
-      found!.publish({ traceId: 't', correlationId: 'c', causationId: 'ca' }, 999)
+      found!.publish({ traceId: 't', correlationId: 'c', causationId: 'ca' }, 999),
     ).toThrow();
   });
 
@@ -157,7 +167,7 @@ describe('MongoRoadmapRepository — integration', () => {
       findByIdAndUpdate: () => Promise.reject(new Error('DB_FAULT')),
       findById: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
       find: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
-      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) })
+      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }),
     } as any;
 
     const faultyRepo = new MongoRoadmapRepository(faultyModel);
