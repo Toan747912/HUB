@@ -36,7 +36,7 @@ const ASSESSMENT_LOCK_SERVICE = Symbol('AssessmentLockService');
     QueueModule,
     AuditModule,
     TelemetryModule,
-    LocksModule
+    LocksModule,
   ],
   controllers: [AssessmentController],
   providers: [
@@ -48,31 +48,40 @@ const ASSESSMENT_LOCK_SERVICE = Symbol('AssessmentLockService');
     HttpExceptionFilter,
     {
       provide: ASSESSMENT_REPOSITORY,
-      useClass: MongoAssessmentRepository
+      useClass: MongoAssessmentRepository,
     },
     {
       provide: EVENT_PUBLISHER,
-      useFactory: (outbox: OutboxRepository, queue: QueueService, tracer: TracerService, metrics: MetricsService, auditLog: AuditLogService) =>
-        new AssessmentOutboxPublisherService(outbox, queue, tracer, metrics, auditLog),
-      inject: [OutboxRepository, QueueService, TracerService, MetricsService, AuditLogService]
+      useFactory: (
+        outbox: OutboxRepository,
+        queue: QueueService,
+        tracer: TracerService,
+        metrics: MetricsService,
+        auditLog: AuditLogService,
+      ) => new AssessmentOutboxPublisherService(outbox, queue, tracer, metrics, auditLog),
+      inject: [OutboxRepository, QueueService, TracerService, MetricsService, AuditLogService],
     },
     {
       provide: ASSESSMENT_LOCK_SERVICE,
-      useExisting: AssessmentLockService
+      useExisting: AssessmentLockService,
     },
     {
       provide: AssessmentCommandService,
-      useFactory: (repository: any, eventPublisher: any, assessmentLock: any, metrics: MetricsService) =>
-        new AssessmentCommandService(repository, eventPublisher, assessmentLock, metrics),
-      inject: [ASSESSMENT_REPOSITORY, EVENT_PUBLISHER, ASSESSMENT_LOCK_SERVICE, MetricsService]
+      useFactory: (
+        repository: any,
+        eventPublisher: any,
+        assessmentLock: any,
+        metrics: MetricsService,
+      ) => new AssessmentCommandService(repository, eventPublisher, assessmentLock, metrics),
+      inject: [ASSESSMENT_REPOSITORY, EVENT_PUBLISHER, ASSESSMENT_LOCK_SERVICE, MetricsService],
     },
     {
       provide: AssessmentQueryService,
       useFactory: (repository: any) => new AssessmentQueryService(repository),
-      inject: [ASSESSMENT_REPOSITORY]
-    }
+      inject: [ASSESSMENT_REPOSITORY],
+    },
   ],
-  exports: [AssessmentService, AssessmentCommandService, AssessmentQueryService]
+  exports: [AssessmentService, AssessmentCommandService, AssessmentQueryService],
 })
 export class AssessmentModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

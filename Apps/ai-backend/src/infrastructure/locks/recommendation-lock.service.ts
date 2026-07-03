@@ -36,7 +36,7 @@ export class RecommendationLockService {
   constructor(
     private readonly redis: RedisService,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   private key(recommendationId: string): string {
@@ -46,7 +46,11 @@ export class RecommendationLockService {
   async lock(recommendationId: string): Promise<RecommendationLock> {
     const run = () => this.doLock(recommendationId);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.lock', SpanFactory.attributesFor({ operation: 'lock', aggregateId: recommendationId }), run);
+    return this.tracer.withSpan(
+      'redis.lock',
+      SpanFactory.attributesFor({ operation: 'lock', aggregateId: recommendationId }),
+      run,
+    );
   }
 
   private async doLock(recommendationId: string): Promise<RecommendationLock> {
@@ -76,7 +80,11 @@ export class RecommendationLockService {
   async unlock(lock: RecommendationLock): Promise<void> {
     const run = () => this.doUnlock(lock);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.unlock', SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.recommendationId }), run);
+    return this.tracer.withSpan(
+      'redis.unlock',
+      SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.recommendationId }),
+      run,
+    );
   }
 
   private async doUnlock(lock: RecommendationLock): Promise<void> {
@@ -96,8 +104,8 @@ export class RecommendationLockService {
           event: 'recommendation_lock_release_failed',
           recommendationId: lock.recommendationId,
           error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString()
-        })
+          timestamp: new Date().toISOString(),
+        }),
       );
     }
   }

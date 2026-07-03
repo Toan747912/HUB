@@ -5,11 +5,17 @@ const ALLOWED_TRANSITIONS: Record<AssessmentStatusValue, AssessmentStatusValue[]
   DRAFT: ['COMPLETED', 'ARCHIVED'],
   COMPLETED: ['APPROVED', 'ARCHIVED'],
   APPROVED: ['ARCHIVED'],
-  ARCHIVED: []
+  ARCHIVED: [],
 };
 
-export const ensureValidLifecycleTransition = (from: AssessmentStatusValue, to: AssessmentStatusValue): void => {
+export const ensureValidLifecycleTransition = (
+  from: AssessmentStatusValue,
+  to: AssessmentStatusValue,
+): void => {
   if (!ALLOWED_TRANSITIONS[from]?.includes(to)) {
-    throw new AssessmentDomainError('INVALID_STATE_TRANSITION', `Invalid transition from ${from} to ${to}`);
+    throw new AssessmentDomainError(
+      'INVALID_STATE_TRANSITION',
+      `Invalid transition from ${from} to ${to}`,
+    );
   }
 };

@@ -25,7 +25,7 @@ const GOAL_LOCK_SERVICE = Symbol('GoalLockService');
   imports: [
     MongooseModule.forFeature([{ name: 'Goal', schema: GoalSchema }]),
     OutboxModule,
-    LocksModule
+    LocksModule,
   ],
   controllers: [GoalController],
   providers: [
@@ -37,34 +37,32 @@ const GOAL_LOCK_SERVICE = Symbol('GoalLockService');
     HttpExceptionFilter,
     {
       provide: GOAL_REPOSITORY,
-      useClass: MongoGoalRepository
+      useClass: MongoGoalRepository,
     },
     {
       provide: EVENT_PUBLISHER,
-      useExisting: OutboxPublisherService
+      useExisting: OutboxPublisherService,
     },
     {
       provide: GOAL_LOCK_SERVICE,
-      useExisting: GoalLockService
+      useExisting: GoalLockService,
     },
     {
       provide: GoalCommandService,
       useFactory: (repository: any, eventPublisher: any, goalLock: any) =>
         new GoalCommandService(repository, eventPublisher, goalLock),
-      inject: [GOAL_REPOSITORY, EVENT_PUBLISHER, GOAL_LOCK_SERVICE]
+      inject: [GOAL_REPOSITORY, EVENT_PUBLISHER, GOAL_LOCK_SERVICE],
     },
     {
       provide: GoalQueryService,
       useFactory: (repository: any) => new GoalQueryService(repository),
-      inject: [GOAL_REPOSITORY]
-    }
+      inject: [GOAL_REPOSITORY],
+    },
   ],
-  exports: [GoalService, GoalCommandService, GoalQueryService]
+  exports: [GoalService, GoalCommandService, GoalQueryService],
 })
 export class GoalModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer
-      .apply(TraceMiddleware)
-      .forRoutes({ path: 'goal*', method: RequestMethod.ALL });
+    consumer.apply(TraceMiddleware).forRoutes({ path: 'goal*', method: RequestMethod.ALL });
   }
 }

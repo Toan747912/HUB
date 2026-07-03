@@ -9,7 +9,11 @@ export type ExplainablePayload = {
 @Injectable()
 export class ExplainabilityRulesService {
   validate(payload: ExplainablePayload): void {
-    if (typeof payload.confidence !== 'number' || payload.confidence < 0 || payload.confidence > 1) {
+    if (
+      typeof payload.confidence !== 'number' ||
+      payload.confidence < 0 ||
+      payload.confidence > 1
+    ) {
       throw new BadRequestException('confidence missing or out of range [0,1]');
     }
     if (!payload.reasoning || typeof payload.reasoning !== 'string') {

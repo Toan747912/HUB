@@ -1,6 +1,11 @@
 export type GoalDifficultyValue = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
 
-const ALLOWED_DIFFICULTIES: GoalDifficultyValue[] = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'];
+const ALLOWED_DIFFICULTIES: GoalDifficultyValue[] = [
+  'BEGINNER',
+  'INTERMEDIATE',
+  'ADVANCED',
+  'EXPERT',
+];
 
 export class GoalDifficulty {
   private constructor(private readonly value: GoalDifficultyValue) {}

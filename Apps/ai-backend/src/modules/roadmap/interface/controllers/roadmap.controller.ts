@@ -11,7 +11,7 @@ import {
   Req,
   UseFilters,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreateRoadmapCommand } from '../../application/commands/create-roadmap.command';
 import { UpdateRoadmapCommand } from '../../application/commands/update-roadmap.command';
@@ -45,7 +45,7 @@ export class RoadmapController {
   constructor(
     private readonly commandService: RoadmapCommandService,
     private readonly queryService: RoadmapQueryService,
-    private readonly mapper: RoadmapResponseMapper
+    private readonly mapper: RoadmapResponseMapper,
   ) {}
 
   @Post()
@@ -64,7 +64,7 @@ export class RoadmapController {
       body.targetDate,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:create-roadmap'
+      body.causationId ?? 'http:create-roadmap',
     );
 
     const roadmap = await this.commandService.createRoadmap(command);
@@ -108,7 +108,7 @@ export class RoadmapController {
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateRoadmapDto,
-    @Req() req: RoadmapRequestWithTrace
+    @Req() req: RoadmapRequestWithTrace,
   ) {
     const command = new UpdateRoadmapCommand(
       id,
@@ -116,7 +116,7 @@ export class RoadmapController {
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:update-roadmap'
+      body.causationId ?? 'http:update-roadmap',
     );
 
     const roadmap = await this.commandService.updateRoadmap(command);
@@ -126,7 +126,13 @@ export class RoadmapController {
   @Delete(':id')
   @RequirePermissions('Roadmap.Archive')
   async archive(@Param('id', new ParseUUIDPipe()) id: string, @Req() req: RoadmapRequestWithTrace) {
-    const command = new ArchiveRoadmapCommand(id, undefined, req.traceId ?? 'unknown', req.traceId ?? 'unknown', 'http:archive-roadmap');
+    const command = new ArchiveRoadmapCommand(
+      id,
+      undefined,
+      req.traceId ?? 'unknown',
+      req.traceId ?? 'unknown',
+      'http:archive-roadmap',
+    );
     const roadmap = await this.commandService.archiveRoadmap(command);
     return this.mapper.toResponse(roadmap);
   }
@@ -136,14 +142,14 @@ export class RoadmapController {
   async publish(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VersionGuardedDto,
-    @Req() req: RoadmapRequestWithTrace
+    @Req() req: RoadmapRequestWithTrace,
   ) {
     const command = new PublishRoadmapCommand(
       id,
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:publish-roadmap'
+      body.causationId ?? 'http:publish-roadmap',
     );
     const roadmap = await this.commandService.publishRoadmap(command);
     return this.mapper.toResponse(roadmap);
@@ -155,7 +161,7 @@ export class RoadmapController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('taskId') taskId: string,
     @Body() body: VersionGuardedDto,
-    @Req() req: RoadmapRequestWithTrace
+    @Req() req: RoadmapRequestWithTrace,
   ) {
     const command = new CompleteRoadmapTaskCommand(
       id,
@@ -163,7 +169,7 @@ export class RoadmapController {
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:complete-roadmap-task'
+      body.causationId ?? 'http:complete-roadmap-task',
     );
     const roadmap = await this.commandService.completeTask(command);
     return this.mapper.toResponse(roadmap);
@@ -174,14 +180,14 @@ export class RoadmapController {
   async regenerate(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VersionGuardedDto,
-    @Req() req: RoadmapRequestWithTrace
+    @Req() req: RoadmapRequestWithTrace,
   ) {
     const command = new RegenerateRoadmapCommand(
       id,
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:regenerate-roadmap'
+      body.causationId ?? 'http:regenerate-roadmap',
     );
     const roadmap = await this.commandService.regenerateRoadmap(command);
     return this.mapper.toResponse(roadmap);

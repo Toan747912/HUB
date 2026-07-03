@@ -10,24 +10,31 @@ describe('PermissionGuard', () => {
   let auditLog: jest.Mocked<Pick<AuditLogService, 'recordSecurityEvent'>>;
   let guard: PermissionGuard;
 
-  const makeContext = (user?: { sub: string; roles: string[]; permissions?: string[] }): ExecutionContext => {
+  const makeContext = (user?: {
+    sub: string;
+    roles: string[];
+    permissions?: string[];
+  }): ExecutionContext => {
     const request: Partial<AuthenticatedRequest> = {
       user: user as any,
       method: 'DELETE',
       originalUrl: '/goal/123',
-      route: { path: '/goal/:id' } as any
+      route: { path: '/goal/:id' } as any,
     };
     return {
       switchToHttp: () => ({ getRequest: () => request }),
       getHandler: () => ({}) as any,
-      getClass: () => ({}) as any
+      getClass: () => ({}) as any,
     } as unknown as ExecutionContext;
   };
 
   beforeEach(() => {
     reflector = { getAllAndOverride: jest.fn() };
     auditLog = { recordSecurityEvent: jest.fn().mockResolvedValue(undefined) };
-    guard = new PermissionGuard(reflector as unknown as Reflector, auditLog as unknown as AuditLogService);
+    guard = new PermissionGuard(
+      reflector as unknown as Reflector,
+      auditLog as unknown as AuditLogService,
+    );
   });
 
   it('allows access when no permissions are required on the route', async () => {
@@ -60,8 +67,8 @@ describe('PermissionGuard', () => {
       expect.objectContaining({
         userId: 'user-42',
         operation: 'PERMISSION_DENIED',
-        resource: 'DELETE /goal/:id'
-      })
+        resource: 'DELETE /goal/:id',
+      }),
     );
   });
 
@@ -86,7 +93,11 @@ describe('PermissionGuard', () => {
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-1', operation: 'PERMISSION_GRANTED', resource: 'DELETE /goal/:id' })
+      expect.objectContaining({
+        userId: 'user-1',
+        operation: 'PERMISSION_GRANTED',
+        resource: 'DELETE /goal/:id',
+      }),
     );
   });
 

@@ -13,7 +13,7 @@ import {
   GoalId,
   LearnerId,
   RecommendationId,
-  RoadmapId
+  RoadmapId,
 } from '../../../../../../shared/domain/identifiers';
 
 const engine = new RecommendationEngine();
@@ -30,14 +30,25 @@ const baseInput: RecommendationInput = {
   referenceDate: '2027-01-01T00:00:00.000Z',
   roadmapCompletionRatio: 60,
   revisionCount: 0,
-  tasks: [{ id: 't1', skillId: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 3 }],
+  tasks: [
+    {
+      id: 't1',
+      skillId: 'Foundations',
+      completed: false,
+      order: 1,
+      dependsOn: [],
+      estimatedDurationDays: 3,
+    },
+  ],
   competencies: [{ skillId: 'Foundations', score: 60, level: 'PROFICIENT' }],
   knowledgeGaps: [],
   confidenceScore: 70,
-  readiness: 'NOT_READY'
+  readiness: 'NOT_READY',
 };
 
-const makeRecommendation = (overrides: Partial<{ recommendationId: string; learnerId: string }> = {}): Recommendation => {
+const makeRecommendation = (
+  overrides: Partial<{ recommendationId: string; learnerId: string }> = {},
+): Recommendation => {
   const computation = engine.evaluate(baseInput);
   return Recommendation.create(
     {
@@ -46,9 +57,9 @@ const makeRecommendation = (overrides: Partial<{ recommendationId: string; learn
       roadmapId: RoadmapId.create('roadmap-1'),
       assessmentId: AssessmentId.create('assessment-1'),
       learnerId: LearnerId.create(overrides.learnerId ?? 'learner-1'),
-      computation
+      computation,
     },
-    context
+    context,
   );
 };
 
@@ -68,15 +79,15 @@ describe('MongoRecommendationRepository — integration', () => {
     module = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'Recommendation', schema: RecommendationSchema }])
+        MongooseModule.forFeature([{ name: 'Recommendation', schema: RecommendationSchema }]),
       ],
       providers: [
         {
           provide: MongoRecommendationRepository,
           useFactory: (m: Model<RecommendationDocument>) => new MongoRecommendationRepository(m),
-          inject: [getModelToken('Recommendation')]
-        }
-      ]
+          inject: [getModelToken('Recommendation')],
+        },
+      ],
     }).compile();
 
     repository = module.get(MongoRecommendationRepository);
@@ -141,8 +152,12 @@ describe('MongoRecommendationRepository — integration', () => {
   });
 
   it('findAll filters by learnerId', async () => {
-    await repository.save(makeRecommendation({ recommendationId: 'rec-a', learnerId: 'learner-a' }));
-    await repository.save(makeRecommendation({ recommendationId: 'rec-b', learnerId: 'learner-b' }));
+    await repository.save(
+      makeRecommendation({ recommendationId: 'rec-a', learnerId: 'learner-a' }),
+    );
+    await repository.save(
+      makeRecommendation({ recommendationId: 'rec-b', learnerId: 'learner-b' }),
+    );
 
     const forLearnerA = await repository.findAll('learner-a');
     expect(forLearnerA).toHaveLength(1);
@@ -165,7 +180,7 @@ describe('MongoRecommendationRepository — integration', () => {
       findByIdAndUpdate: () => Promise.reject(new Error('DB_FAULT')),
       findById: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
       find: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
-      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) })
+      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }),
     } as any;
 
     const faultyRepo = new MongoRecommendationRepository(faultyModel);

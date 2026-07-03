@@ -6,7 +6,7 @@ import {
   RecommendationId,
   RoadmapId,
   SkillId,
-  TaskId
+  TaskId,
 } from '../../../../shared/domain/identifiers';
 import { RecommendationItem } from '../entities/recommendation-item.entity';
 import { RecommendationReason } from '../entities/recommendation-reason.entity';
@@ -21,12 +21,18 @@ import {
   recommendationArchivedEvent,
   recommendationGeneratedEvent,
   recommendationInvalidatedEvent,
-  recommendationRejectedEvent
+  recommendationRejectedEvent,
 } from '../events/recommendation-events';
-import { RecommendationDomainEvent, RecommendationEventMetadata } from '../events/recommendation-event-metadata';
+import {
+  RecommendationDomainEvent,
+  RecommendationEventMetadata,
+} from '../events/recommendation-event-metadata';
 import { ensureValidLifecycleTransition } from '../invariants/recommendation-lifecycle.invariant';
 import { ensureExpectedVersion } from '../invariants/recommendation-version.invariant';
-import { RecommendationStatus, RecommendationStatusValue } from '../value-objects/recommendation-status.vo';
+import {
+  RecommendationStatus,
+  RecommendationStatusValue,
+} from '../value-objects/recommendation-status.vo';
 import { RecommendationComputation } from '../engine/recommendation-engine.types';
 
 type EventContext = {
@@ -61,11 +67,17 @@ export class Recommendation {
     private readonly goalId: GoalId,
     private readonly roadmapId: RoadmapId,
     private readonly assessmentId: AssessmentId,
-    private readonly learnerId: LearnerId
+    private readonly learnerId: LearnerId,
   ) {}
 
   static create(props: RecommendationCreateProps, context: EventContext): Recommendation {
-    const aggregate = new Recommendation(props.recommendationId, props.goalId, props.roadmapId, props.assessmentId, props.learnerId);
+    const aggregate = new Recommendation(
+      props.recommendationId,
+      props.goalId,
+      props.roadmapId,
+      props.assessmentId,
+      props.learnerId,
+    );
 
     aggregate.engineVersion = props.computation.engineVersion;
     aggregate.items = props.computation.items.map(
@@ -84,23 +96,31 @@ export class Recommendation {
             i.scores.difficultyScore,
             i.scores.confidenceScore,
             i.scores.riskScore,
-            i.scores.overallScore
+            i.scores.overallScore,
           ),
           new RecommendationReason(i.reason.summary, i.reason.evidence),
           GoalId.create(i.affectedGoalId),
           RoadmapId.create(i.affectedRoadmapId),
           AssessmentId.create(i.affectedAssessmentId),
-          i.logicalResourceRef
-        )
+          i.logicalResourceRef,
+        ),
     );
     aggregate.learningStrategies = props.computation.learningStrategies.map(
-      (s) => new LearningStrategyAssignment(SkillId.create(s.skillId), s.strategy, s.rationale)
+      (s) => new LearningStrategyAssignment(SkillId.create(s.skillId), s.strategy, s.rationale),
     );
     aggregate.reviewSchedules = props.computation.reviewSchedules.map(
-      (r) => new ReviewSchedule(SkillId.create(r.skillId), r.intervalDays, r.dueDate, r.reason)
+      (r) => new ReviewSchedule(SkillId.create(r.skillId), r.intervalDays, r.dueDate, r.reason),
     );
     aggregate.priorityDecisions = props.computation.priorityDecisions.map(
-      (p) => new PriorityDecision(p.taskId, p.priorityScore, p.originalOrder, p.suggestedOrder, p.blocked, p.rationale)
+      (p) =>
+        new PriorityDecision(
+          p.taskId,
+          p.priorityScore,
+          p.originalOrder,
+          p.suggestedOrder,
+          p.blocked,
+          p.rationale,
+        ),
     );
 
     aggregate.bumpVersion();
@@ -112,15 +132,19 @@ export class Recommendation {
         roadmapId: props.roadmapId.toString(),
         assessmentId: props.assessmentId.toString(),
         itemCount: aggregate.items.length,
-        averageConfidence: props.computation.overallConfidence
-      })
+        averageConfidence: props.computation.overallConfidence,
+      }),
     );
 
     if (aggregate.learningStrategies.length > 0) {
       aggregate.recordEvent(
         learningStrategyChangedEvent(aggregate.buildMetadata(context), {
-          strategies: aggregate.learningStrategies.map((s) => ({ skillId: s.skillId.toString(), strategy: s.strategy, rationale: s.rationale }))
-        })
+          strategies: aggregate.learningStrategies.map((s) => ({
+            skillId: s.skillId.toString(),
+            strategy: s.strategy,
+            rationale: s.rationale,
+          })),
+        }),
       );
     }
 
@@ -206,7 +230,9 @@ export class Recommendation {
     this.bumpVersion();
     this.status = RecommendationStatus.create('REJECTED');
     this.appendHistory('REJECTED');
-    this.recordEvent(recommendationRejectedEvent(this.buildMetadata(context), { previousStatus, reason }));
+    this.recordEvent(
+      recommendationRejectedEvent(this.buildMetadata(context), { previousStatus, reason }),
+    );
   }
 
   archive(context: EventContext, expectedVersion?: number): void {
@@ -230,11 +256,25 @@ export class Recommendation {
     this.recordEvent(recommendationInvalidatedEvent(this.buildMetadata(context), { reason }));
   }
 
-  private appendHistory(reason: 'GENERATED' | 'APPROVED' | 'REJECTED' | 'ARCHIVED', averageConfidenceOverride?: number): void {
+  private appendHistory(
+    reason: 'GENERATED' | 'APPROVED' | 'REJECTED' | 'ARCHIVED',
+    averageConfidenceOverride?: number,
+  ): void {
     const averageConfidence =
-      averageConfidenceOverride ?? (this.items.length === 0 ? 0 : Math.round(this.items.reduce((sum, i) => sum + i.scores.confidenceScore, 0) / this.items.length));
+      averageConfidenceOverride ??
+      (this.items.length === 0
+        ? 0
+        : Math.round(
+            this.items.reduce((sum, i) => sum + i.scores.confidenceScore, 0) / this.items.length,
+          ));
 
-    const entry = new RecommendationHistory(this.history.length + 1, reason, this.engineVersion, this.items.length, averageConfidence);
+    const entry = new RecommendationHistory(
+      this.history.length + 1,
+      reason,
+      this.engineVersion,
+      this.items.length,
+      averageConfidence,
+    );
     this.history = [...this.history, entry];
   }
 
@@ -261,7 +301,7 @@ export class Recommendation {
       goalId: this.goalId,
       roadmapId: this.roadmapId,
       assessmentId: this.assessmentId,
-      engineVersion: this.engineVersion
+      engineVersion: this.engineVersion,
     };
   }
 

@@ -1,4 +1,13 @@
-import { IsArray, IsDefined, IsIn, IsNotEmpty, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsDefined,
+  IsIn,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { DomainRoute } from '../../../domain/ai.types';
 
@@ -9,7 +18,17 @@ class AiInputDto {
 }
 
 export class AiExecuteDto {
-  @IsIn(['goal', 'roadmap', 'learning_session', 'knowledge', 'evidence', 'assessment', 'recommendation', 'discovery', 'teaching'])
+  @IsIn([
+    'goal',
+    'roadmap',
+    'learning_session',
+    'knowledge',
+    'evidence',
+    'assessment',
+    'recommendation',
+    'discovery',
+    'teaching',
+  ])
   route!: DomainRoute;
 
   @IsDefined()

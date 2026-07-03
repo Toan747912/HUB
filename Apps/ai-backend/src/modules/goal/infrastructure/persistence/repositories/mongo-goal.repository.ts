@@ -12,7 +12,7 @@ export class MongoGoalRepository implements IGoalRepository {
   constructor(
     @InjectModel('Goal') private readonly model: Model<GoalDocument>,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   async save(goal: Goal): Promise<void> {
@@ -26,9 +26,9 @@ export class MongoGoalRepository implements IGoalRepository {
           _id,
           {
             $set: { ...mutableFields, updatedAt: new Date() },
-            $setOnInsert: { createdAt: new Date() }
+            $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: 'after' }
+          { upsert: true, returnDocument: 'after' },
         );
         this.log('save', goal.getId().toString(), start, 'SUCCESS');
       } catch (error) {
@@ -79,7 +79,11 @@ export class MongoGoalRepository implements IGoalRepository {
     });
   }
 
-  private async instrumented<T>(operation: string, aggregateId: string, fn: () => Promise<T>): Promise<T> {
+  private async instrumented<T>(
+    operation: string,
+    aggregateId: string,
+    fn: () => Promise<T>,
+  ): Promise<T> {
     const start = Date.now();
     const run = async (): Promise<T> => {
       try {
@@ -95,10 +99,20 @@ export class MongoGoalRepository implements IGoalRepository {
     if (!this.tracer) {
       return run();
     }
-    return this.tracer.withSpan(`mongodb.${operation}`, SpanFactory.attributesFor({ operation, aggregateId }), run);
+    return this.tracer.withSpan(
+      `mongodb.${operation}`,
+      SpanFactory.attributesFor({ operation, aggregateId }),
+      run,
+    );
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'db',
@@ -107,8 +121,8 @@ export class MongoGoalRepository implements IGoalRepository {
         latencyMs: Date.now() - startMs,
         database: 'mongodb',
         status,
-        errorType: error instanceof Error ? error.constructor.name : undefined
-      })
+        errorType: error instanceof Error ? error.constructor.name : undefined,
+      }),
     );
   }
 }

@@ -5,11 +5,17 @@ const ALLOWED_TRANSITIONS: Record<RecommendationStatusValue, RecommendationStatu
   GENERATED: ['APPROVED', 'REJECTED', 'ARCHIVED'],
   APPROVED: ['ARCHIVED'],
   REJECTED: ['ARCHIVED'],
-  ARCHIVED: []
+  ARCHIVED: [],
 };
 
-export const ensureValidLifecycleTransition = (from: RecommendationStatusValue, to: RecommendationStatusValue): void => {
+export const ensureValidLifecycleTransition = (
+  from: RecommendationStatusValue,
+  to: RecommendationStatusValue,
+): void => {
   if (!ALLOWED_TRANSITIONS[from]?.includes(to)) {
-    throw new RecommendationDomainError('INVALID_STATE_TRANSITION', `Invalid transition from ${from} to ${to}`);
+    throw new RecommendationDomainError(
+      'INVALID_STATE_TRANSITION',
+      `Invalid transition from ${from} to ${to}`,
+    );
   }
 };

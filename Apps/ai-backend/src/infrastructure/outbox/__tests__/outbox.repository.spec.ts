@@ -20,10 +20,10 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
     correlationId: 'corr-1',
-    causationId: 'cause-1'
+    causationId: 'cause-1',
   },
   payload: { foo: 'bar' },
-  ...overrides
+  ...overrides,
 });
 
 describe('OutboxRepository — integration', () => {
@@ -40,15 +40,15 @@ describe('OutboxRepository — integration', () => {
     module = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }])
+        MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }]),
       ],
       providers: [
         {
           provide: OutboxRepository,
           useFactory: (m: Model<OutboxEventDocument>) => new OutboxRepository(m),
-          inject: [getModelToken('OutboxEvent')]
-        }
-      ]
+          inject: [getModelToken('OutboxEvent')],
+        },
+      ],
     }).compile();
 
     repository = module.get(OutboxRepository);
@@ -67,7 +67,9 @@ describe('OutboxRepository — integration', () => {
 
   // Evidence #6: Outbox persistence
   it('persists events as PENDING and is queryable via findPending', async () => {
-    await repository.saveMany([makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-a' } })]);
+    await repository.saveMany([
+      makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-a' } }),
+    ]);
 
     const pending = await repository.findPending();
     expect(pending).toHaveLength(1);
@@ -86,8 +88,8 @@ describe('OutboxRepository — integration', () => {
         eventId: 'evt-roundtrip',
         traceId: 'trace-original',
         correlationId: 'corr-original',
-        causationId: 'cause-original'
-      }
+        causationId: 'cause-original',
+      },
     });
     await repository.saveMany([event]);
 
@@ -110,8 +112,8 @@ describe('OutboxRepository — integration', () => {
         ...makeEvent().metadata,
         eventId: 'evt-extra-metadata',
         goalId: 'goal-1',
-        plannerVersion: 'v2'
-      } as DomainEvent['metadata']
+        plannerVersion: 'v2',
+      } as DomainEvent['metadata'],
     };
     await repository.saveMany([event]);
 
@@ -130,7 +132,9 @@ describe('OutboxRepository — integration', () => {
   });
 
   it('markPublished transitions status and sets publishedAt', async () => {
-    await repository.saveMany([makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-b' } })]);
+    await repository.saveMany([
+      makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-b' } }),
+    ]);
     await repository.markPublished('evt-b');
 
     const pending = await repository.findPending();
@@ -139,7 +143,9 @@ describe('OutboxRepository — integration', () => {
   });
 
   it('markFailed transitions status to FAILED', async () => {
-    await repository.saveMany([makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-c' } })]);
+    await repository.saveMany([
+      makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-c' } }),
+    ]);
     await repository.markFailed('evt-c');
 
     expect(await repository.countByStatus('FAILED')).toBe(1);
@@ -147,7 +153,9 @@ describe('OutboxRepository — integration', () => {
 
   // Evidence #10: Restart survival
   it('outbox rows survive a disconnect/reconnect cycle (process restart simulation)', async () => {
-    await repository.saveMany([makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-restart' } })]);
+    await repository.saveMany([
+      makeEvent({ metadata: { ...makeEvent().metadata, eventId: 'evt-restart' } }),
+    ]);
 
     // Simulate a process restart with a fresh, independent connection to the same
     // MongoDB instance, without disturbing the test module's own connection.

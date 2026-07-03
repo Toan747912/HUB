@@ -3,7 +3,10 @@ import { OutboxRelayService } from '../outbox-relay.service';
 import { OutboxRepository } from '../outbox.repository';
 import { QueueService } from '../../jobs/queue.service';
 
-const pendingDoc = (eventId: string, overrides: Partial<OutboxEventDocument> = {}): OutboxEventDocument => ({
+const pendingDoc = (
+  eventId: string,
+  overrides: Partial<OutboxEventDocument> = {},
+): OutboxEventDocument => ({
   _id: eventId,
   eventId,
   aggregateId: 'goal-1',
@@ -18,7 +21,7 @@ const pendingDoc = (eventId: string, overrides: Partial<OutboxEventDocument> = {
   correlationId: 'corr-1',
   causationId: 'cause-1',
   metadata: {},
-  ...overrides
+  ...overrides,
 });
 
 describe('OutboxRelayService', () => {
@@ -29,12 +32,15 @@ describe('OutboxRelayService', () => {
   beforeEach(() => {
     outbox = {
       findPending: jest.fn(),
-      markPublished: jest.fn().mockResolvedValue(undefined)
+      markPublished: jest.fn().mockResolvedValue(undefined),
     };
     queue = {
-      enqueue: jest.fn().mockResolvedValue(undefined)
+      enqueue: jest.fn().mockResolvedValue(undefined),
     };
-    relay = new OutboxRelayService(outbox as unknown as OutboxRepository, queue as unknown as QueueService);
+    relay = new OutboxRelayService(
+      outbox as unknown as OutboxRepository,
+      queue as unknown as QueueService,
+    );
   });
 
   // Evidence #7: Outbox replay
@@ -48,8 +54,8 @@ describe('OutboxRelayService', () => {
     expect(queue.enqueue).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'GoalCreated',
-        metadata: expect.objectContaining({ eventId: 'evt-1' })
-      })
+        metadata: expect.objectContaining({ eventId: 'evt-1' }),
+      }),
     );
     const [firstCall] = queue.enqueue.mock.calls[0];
     expect(firstCall.metadata.aggregateId.toString()).toBe('goal-1');
@@ -88,8 +94,8 @@ describe('OutboxRelayService', () => {
         traceId: 'trace-original',
         correlationId: 'corr-original',
         causationId: 'cause-original',
-        metadata: { goalId: 'goal-1', plannerVersion: 'v2' }
-      })
+        metadata: { goalId: 'goal-1', plannerVersion: 'v2' },
+      }),
     ]);
 
     await relay.relayPending();

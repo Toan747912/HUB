@@ -18,7 +18,7 @@ import {
   GoalNotFoundError,
   GoalVersionConflictError,
   GoalStateTransitionError,
-  GoalValidationError
+  GoalValidationError,
 } from '../errors/application.errors';
 
 export interface IGoalLock {
@@ -30,7 +30,7 @@ export class GoalCommandService {
   constructor(
     private readonly repository: IGoalRepository,
     private readonly eventPublisher: IEventPublisher,
-    private readonly goalLock?: IGoalLock
+    private readonly goalLock?: IGoalLock,
   ) {}
 
   private async withLock<T>(goalId: string, fn: () => Promise<T>): Promise<T> {
@@ -57,13 +57,13 @@ export class GoalCommandService {
           type: GoalType.create(command.type as any),
           difficulty: GoalDifficulty.create(command.difficulty as any),
           priority: Priority.create(command.priority as any),
-          targetDate: TargetDate.create(command.targetDate)
+          targetDate: TargetDate.create(command.targetDate),
         },
         {
           traceId: command.traceId,
           correlationId: command.correlationId,
-          causationId: command.causationId
-        }
+          causationId: command.causationId,
+        },
       );
 
       await this.repository.save(goal);
@@ -95,9 +95,9 @@ export class GoalCommandService {
           {
             traceId: command.traceId,
             correlationId: command.correlationId,
-            causationId: command.causationId
+            causationId: command.causationId,
           },
-          command.expectedVersion
+          command.expectedVersion,
         );
 
         await this.repository.save(g);
@@ -126,9 +126,9 @@ export class GoalCommandService {
           {
             traceId: command.traceId,
             correlationId: command.correlationId,
-            causationId: command.causationId
+            causationId: command.causationId,
           },
-          command.expectedVersion
+          command.expectedVersion,
         );
 
         await this.repository.save(g);
@@ -157,9 +157,9 @@ export class GoalCommandService {
           {
             traceId: command.traceId,
             correlationId: command.correlationId,
-            causationId: command.causationId
+            causationId: command.causationId,
           },
-          command.expectedVersion
+          command.expectedVersion,
         );
 
         await this.repository.save(g);
@@ -183,7 +183,10 @@ export class GoalCommandService {
         const g = await this.repository.findById(command.goalId);
         if (!g) throw new GoalNotFoundError(command.goalId);
 
-        const milestone = new GoalMilestone(MilestoneId.create(command.milestoneId), command.description);
+        const milestone = new GoalMilestone(
+          MilestoneId.create(command.milestoneId),
+          command.description,
+        );
         g.addMilestone(milestone, command.expectedVersion);
 
         await this.repository.save(g);
@@ -219,7 +222,7 @@ export class GoalCommandService {
     aggregateId: string,
     startMs: number,
     status: string,
-    error?: unknown
+    error?: unknown,
   ): void {
     const entry = {
       traceId: 'app',
@@ -228,7 +231,7 @@ export class GoalCommandService {
       latencyMs: Date.now() - startMs,
       status,
       errorType: error instanceof Error ? error.constructor.name : undefined,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     console.log(JSON.stringify(entry));
   }

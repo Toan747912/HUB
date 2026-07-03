@@ -17,7 +17,7 @@ jest.mock('bullmq', () => {
     constructor(
       public name: string,
       public processor: (job: any) => Promise<void>,
-      public opts: any
+      public opts: any,
     ) {
       instances.workers.push(this);
     }
@@ -47,13 +47,15 @@ const makeEvent = (): GoalDomainEvent => ({
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
     correlationId: 'corr-1',
-    causationId: 'cause-1'
+    causationId: 'cause-1',
   },
-  payload: {}
+  payload: {},
 });
 
 describe('QueueService — observability wiring', () => {
-  let breaker: jest.Mocked<Pick<RedisCircuitBreakerService, 'canExecute' | 'onSuccess' | 'onFailure'>>;
+  let breaker: jest.Mocked<
+    Pick<RedisCircuitBreakerService, 'canExecute' | 'onSuccess' | 'onFailure'>
+  >;
   let tracer: { withSpan: jest.Mock };
   let metrics: MetricsService;
   let service: QueueService;
@@ -68,12 +70,16 @@ describe('QueueService — observability wiring', () => {
     breaker = {
       canExecute: jest.fn().mockResolvedValue(true),
       onSuccess: jest.fn().mockResolvedValue(undefined),
-      onFailure: jest.fn().mockResolvedValue(undefined)
+      onFailure: jest.fn().mockResolvedValue(undefined),
     } as any;
     tracer = { withSpan: jest.fn(async (_name, _attrs, fn) => fn()) };
     metrics = new MetricsService();
 
-    service = new QueueService(breaker as unknown as RedisCircuitBreakerService, tracer as unknown as TracerService, metrics);
+    service = new QueueService(
+      breaker as unknown as RedisCircuitBreakerService,
+      tracer as unknown as TracerService,
+      metrics,
+    );
     service.onModuleInit();
   });
 
@@ -87,7 +93,7 @@ describe('QueueService — observability wiring', () => {
     expect(tracer.withSpan).toHaveBeenCalledWith(
       'bullmq.enqueue',
       expect.objectContaining({ operation: 'enqueue', aggregateId: 'goal-1' }),
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 
@@ -99,7 +105,13 @@ describe('QueueService — observability wiring', () => {
 
   it('increments bullmq_jobs_total{status="processed"} on successful processing', async () => {
     const [worker] = bullmq.__instances.workers;
-    await worker.processor({ id: '1', data: makeEvent(), attemptsMade: 0, opts: { attempts: 5 }, timestamp: Date.now() - 50 });
+    await worker.processor({
+      id: '1',
+      data: makeEvent(),
+      attemptsMade: 0,
+      opts: { attempts: 5 },
+      timestamp: Date.now() - 50,
+    });
 
     const text = await metrics.getMetricsText();
     expect(text).toMatch(/bullmq_jobs_total\{status="processed"\} 1/);
@@ -108,7 +120,10 @@ describe('QueueService — observability wiring', () => {
 
   it('increments bullmq_jobs_total{status="dead_lettered"} once attempts are exhausted', async () => {
     const [worker] = bullmq.__instances.workers;
-    await worker.handlers['failed']({ id: '1', data: makeEvent(), attemptsMade: 5, opts: { attempts: 5 } }, new Error('boom'));
+    await worker.handlers['failed'](
+      { id: '1', data: makeEvent(), attemptsMade: 5, opts: { attempts: 5 } },
+      new Error('boom'),
+    );
 
     const text = await metrics.getMetricsText();
     expect(text).toMatch(/bullmq_jobs_total\{status="failed"\} 1/);

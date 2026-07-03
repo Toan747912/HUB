@@ -1,6 +1,12 @@
 export type CompetencyLevelValue = 'NOVICE' | 'DEVELOPING' | 'PROFICIENT' | 'ADVANCED' | 'EXPERT';
 
-const ALLOWED_LEVELS: CompetencyLevelValue[] = ['NOVICE', 'DEVELOPING', 'PROFICIENT', 'ADVANCED', 'EXPERT'];
+const ALLOWED_LEVELS: CompetencyLevelValue[] = [
+  'NOVICE',
+  'DEVELOPING',
+  'PROFICIENT',
+  'ADVANCED',
+  'EXPERT',
+];
 
 const ORDER: CompetencyLevelValue[] = ['NOVICE', 'DEVELOPING', 'PROFICIENT', 'ADVANCED', 'EXPERT'];
 

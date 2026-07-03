@@ -1,6 +1,12 @@
 export type GoalStatusValue = 'DRAFT' | 'ACTIVE' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
 
-const ALLOWED_STATUSES: GoalStatusValue[] = ['DRAFT', 'ACTIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'];
+const ALLOWED_STATUSES: GoalStatusValue[] = [
+  'DRAFT',
+  'ACTIVE',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'ARCHIVED',
+];
 
 export class GoalStatus {
   private constructor(private readonly value: GoalStatusValue) {}

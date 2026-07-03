@@ -39,17 +39,19 @@ describe('ObservabilityHttpInterceptor', () => {
     await tracer.onModuleDestroy();
   });
 
-  function makeContext(overrides: { headers?: Record<string, string>; method?: string } = {}): ExecutionContext {
+  function makeContext(
+    overrides: { headers?: Record<string, string>; method?: string } = {},
+  ): ExecutionContext {
     const req = {
       method: overrides.method ?? 'GET',
       originalUrl: '/goal',
       url: '/goal',
       route: { path: '/goal' },
-      headers: overrides.headers ?? {}
+      headers: overrides.headers ?? {},
     };
     const res = { statusCode: 201 };
     return {
-      switchToHttp: () => ({ getRequest: () => req, getResponse: () => res })
+      switchToHttp: () => ({ getRequest: () => req, getResponse: () => res }),
     } as unknown as ExecutionContext;
   }
 
@@ -87,7 +89,7 @@ describe('ObservabilityHttpInterceptor', () => {
       handle: () => {
         observedUserId = requestContext.get()?.userId;
         return of({ ok: true });
-      }
+      },
     };
 
     await new Promise((resolve, reject) => {
@@ -104,7 +106,7 @@ describe('ObservabilityHttpInterceptor', () => {
     await expect(
       new Promise((resolve, reject) => {
         interceptor.intercept(context, next as any).subscribe({ next: resolve, error: reject });
-      })
+      }),
     ).rejects.toThrow('handler failed');
 
     const line = JSON.parse(consoleErrorSpy.mock.calls[0][0]);
@@ -114,7 +116,9 @@ describe('ObservabilityHttpInterceptor', () => {
 
   it('honors an incoming traceparent header for trace propagation', async () => {
     const remoteTraceId = '4bf92f3577b34da6a3ce929d0e0e4736';
-    const context = makeContext({ headers: { traceparent: `00-${remoteTraceId}-00f067aa0ba902b7-01` } });
+    const context = makeContext({
+      headers: { traceparent: `00-${remoteTraceId}-00f067aa0ba902b7-01` },
+    });
     const next = { handle: () => of({ ok: true }) };
 
     await new Promise((resolve, reject) => {

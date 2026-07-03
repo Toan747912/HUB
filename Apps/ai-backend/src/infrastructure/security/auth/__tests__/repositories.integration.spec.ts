@@ -29,18 +29,26 @@ describe('Security repositories — integration', () => {
         MongooseModule.forFeature([
           { name: 'User', schema: UserSchema },
           { name: 'RefreshToken', schema: RefreshTokenSchema },
-          { name: 'ApiKey', schema: ApiKeySchema }
-        ])
+          { name: 'ApiKey', schema: ApiKeySchema },
+        ]),
       ],
       providers: [
-        { provide: UserRepository, useFactory: (m: Model<UserDocument>) => new UserRepository(m), inject: [getModelToken('User')] },
+        {
+          provide: UserRepository,
+          useFactory: (m: Model<UserDocument>) => new UserRepository(m),
+          inject: [getModelToken('User')],
+        },
         {
           provide: RefreshTokenRepository,
           useFactory: (m: Model<RefreshTokenDocument>) => new RefreshTokenRepository(m),
-          inject: [getModelToken('RefreshToken')]
+          inject: [getModelToken('RefreshToken')],
         },
-        { provide: ApiKeyRepository, useFactory: (m: Model<ApiKeyDocument>) => new ApiKeyRepository(m), inject: [getModelToken('ApiKey')] }
-      ]
+        {
+          provide: ApiKeyRepository,
+          useFactory: (m: Model<ApiKeyDocument>) => new ApiKeyRepository(m),
+          inject: [getModelToken('ApiKey')],
+        },
+      ],
     }).compile();
 
     userRepo = module.get(UserRepository);
@@ -88,7 +96,13 @@ describe('Security repositories — integration', () => {
     it('save + findById round-trips a token record', async () => {
       const issuedAt = new Date();
       const expiresAt = new Date(issuedAt.getTime() + 60_000);
-      await refreshRepo.save({ jti: 'jti-1', userId: 'user-1', familyId: 'fam-1', issuedAt, expiresAt });
+      await refreshRepo.save({
+        jti: 'jti-1',
+        userId: 'user-1',
+        familyId: 'fam-1',
+        issuedAt,
+        expiresAt,
+      });
 
       const found = await refreshRepo.findById('jti-1');
       expect(found).not.toBeNull();
@@ -99,7 +113,13 @@ describe('Security repositories — integration', () => {
     it('markConsumed prevents isActive from being true', async () => {
       const issuedAt = new Date();
       const expiresAt = new Date(issuedAt.getTime() + 60_000);
-      await refreshRepo.save({ jti: 'jti-2', userId: 'user-1', familyId: 'fam-2', issuedAt, expiresAt });
+      await refreshRepo.save({
+        jti: 'jti-2',
+        userId: 'user-1',
+        familyId: 'fam-2',
+        issuedAt,
+        expiresAt,
+      });
       await refreshRepo.markConsumed('jti-2', 'jti-3');
 
       expect(await refreshRepo.isActive('jti-2')).toBe(false);
@@ -108,8 +128,20 @@ describe('Security repositories — integration', () => {
     it('revokeFamily revokes every token sharing the familyId', async () => {
       const issuedAt = new Date();
       const expiresAt = new Date(issuedAt.getTime() + 60_000);
-      await refreshRepo.save({ jti: 'jti-a', userId: 'user-1', familyId: 'fam-x', issuedAt, expiresAt });
-      await refreshRepo.save({ jti: 'jti-b', userId: 'user-1', familyId: 'fam-x', issuedAt, expiresAt });
+      await refreshRepo.save({
+        jti: 'jti-a',
+        userId: 'user-1',
+        familyId: 'fam-x',
+        issuedAt,
+        expiresAt,
+      });
+      await refreshRepo.save({
+        jti: 'jti-b',
+        userId: 'user-1',
+        familyId: 'fam-x',
+        issuedAt,
+        expiresAt,
+      });
 
       await refreshRepo.revokeFamily('fam-x');
 
@@ -120,7 +152,13 @@ describe('Security repositories — integration', () => {
     it('isActive is false for an expired token', async () => {
       const issuedAt = new Date(Date.now() - 120_000);
       const expiresAt = new Date(Date.now() - 60_000);
-      await refreshRepo.save({ jti: 'jti-expired', userId: 'user-1', familyId: 'fam-e', issuedAt, expiresAt });
+      await refreshRepo.save({
+        jti: 'jti-expired',
+        userId: 'user-1',
+        familyId: 'fam-e',
+        issuedAt,
+        expiresAt,
+      });
 
       expect(await refreshRepo.isActive('jti-expired')).toBe(false);
     });

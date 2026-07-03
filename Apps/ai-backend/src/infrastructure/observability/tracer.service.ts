@@ -1,6 +1,10 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Context, Span, SpanStatusCode, Tracer, context, trace } from '@opentelemetry/api';
-import { ConsoleSpanExporter, InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import {
+  ConsoleSpanExporter,
+  InMemorySpanExporter,
+  SimpleSpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import { resourceFromAttributes } from '@opentelemetry/resources';
@@ -28,13 +32,21 @@ export class TracerService implements OnModuleInit, OnModuleDestroy {
     // endpoint is confirmed reachable — see ObservabilityReadinessReview.md.
     this.provider = new NodeTracerProvider({
       resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName }),
-      spanProcessors: [new SimpleSpanProcessor(this.inMemoryExporter), new SimpleSpanProcessor(new ConsoleSpanExporter())]
+      spanProcessors: [
+        new SimpleSpanProcessor(this.inMemoryExporter),
+        new SimpleSpanProcessor(new ConsoleSpanExporter()),
+      ],
     });
     this.provider.register();
     this.tracer = trace.getTracer(serviceName);
 
     this.logger.log(
-      JSON.stringify({ event: 'telemetry_initialized', serviceName, otlpConfigured: otlpEndpoint !== null, timestamp: new Date().toISOString() })
+      JSON.stringify({
+        event: 'telemetry_initialized',
+        serviceName,
+        otlpConfigured: otlpEndpoint !== null,
+        timestamp: new Date().toISOString(),
+      }),
     );
   }
 
@@ -46,7 +58,11 @@ export class TracerService implements OnModuleInit, OnModuleDestroy {
     return this.tracer !== null;
   }
 
-  startSpan(name: string, attributes: Record<string, string | number | boolean> = {}, parentContext?: Context): Span {
+  startSpan(
+    name: string,
+    attributes: Record<string, string | number | boolean> = {},
+    parentContext?: Context,
+  ): Span {
     const tracer = this.tracer ?? trace.getTracer('ai-backend');
     return tracer.startSpan(name, { attributes }, parentContext ?? context.active());
   }
@@ -55,7 +71,7 @@ export class TracerService implements OnModuleInit, OnModuleDestroy {
     name: string,
     attributes: Record<string, string | number | boolean>,
     fn: (span: Span) => Promise<T> | T,
-    parentContext?: Context
+    parentContext?: Context,
   ): Promise<T> {
     const baseContext = parentContext ?? context.active();
     const span = this.startSpan(name, attributes, baseContext);
@@ -65,7 +81,10 @@ export class TracerService implements OnModuleInit, OnModuleDestroy {
       return await context.with(activeContext, () => fn(span));
     } catch (error) {
       span.recordException(error instanceof Error ? error : new Error(String(error)));
-      span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : String(error) });
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     } finally {
       span.end();
@@ -97,7 +116,7 @@ export class TracerService implements OnModuleInit, OnModuleDestroy {
       traceId,
       spanId,
       traceFlags: parseInt(flags, 16) || 0,
-      isRemote: true
+      isRemote: true,
     };
     return trace.setSpanContext(context.active(), remoteSpanContext);
   }

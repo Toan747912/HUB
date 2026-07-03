@@ -1,5 +1,11 @@
 import { randomUUID } from 'crypto';
-import { AssessmentId, GoalId, LearnerId, RoadmapId, SkillId } from '../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RoadmapId,
+  SkillId,
+} from '../../../../shared/domain/identifiers';
 import { AssessmentResult } from '../entities/assessment-result.entity';
 import { Competency } from '../entities/competency.entity';
 import { KnowledgeGap } from '../entities/knowledge-gap.entity';
@@ -11,9 +17,12 @@ import {
   assessmentCreatedEvent,
   assessmentInvalidatedEvent,
   competencyUpdatedEvent,
-  knowledgeGapDetectedEvent
+  knowledgeGapDetectedEvent,
 } from '../events/assessment-events';
-import { AssessmentDomainEvent, AssessmentEventMetadata } from '../events/assessment-event-metadata';
+import {
+  AssessmentDomainEvent,
+  AssessmentEventMetadata,
+} from '../events/assessment-event-metadata';
 import { AssessmentDomainError } from '../errors/assessment-domain.error';
 import { ensureValidLifecycleTransition } from '../invariants/assessment-lifecycle.invariant';
 import { ensureExpectedVersion } from '../invariants/assessment-version.invariant';
@@ -45,11 +54,16 @@ export class Assessment {
     private readonly assessmentId: AssessmentId,
     private readonly goalId: GoalId,
     private readonly roadmapId: RoadmapId,
-    private readonly learnerId: LearnerId
+    private readonly learnerId: LearnerId,
   ) {}
 
   static create(props: AssessmentCreateProps, context: EventContext): Assessment {
-    const aggregate = new Assessment(props.assessmentId, props.goalId, props.roadmapId, props.learnerId);
+    const aggregate = new Assessment(
+      props.assessmentId,
+      props.goalId,
+      props.roadmapId,
+      props.learnerId,
+    );
     aggregate.bumpVersion();
     aggregate.appendHistory('CREATED');
 
@@ -58,8 +72,8 @@ export class Assessment {
         goalId: props.goalId.toString(),
         roadmapId: props.roadmapId.toString(),
         learnerId: props.learnerId.toString(),
-        status: aggregate.status.getValue()
-      })
+        status: aggregate.status.getValue(),
+      }),
     );
 
     return aggregate;
@@ -111,7 +125,10 @@ export class Assessment {
     this.assertConcurrency(expectedVersion);
 
     if (this.status.isLockedForRun()) {
-      throw new AssessmentDomainError('ASSESSMENT_LOCKED_FOR_RUN', 'Assessment is APPROVED or ARCHIVED and cannot be re-run');
+      throw new AssessmentDomainError(
+        'ASSESSMENT_LOCKED_FOR_RUN',
+        'Assessment is APPROVED or ARCHIVED and cannot be re-run',
+      );
     }
 
     if (this.status.getValue() === 'DRAFT') {
@@ -122,14 +139,21 @@ export class Assessment {
     this.bumpVersion();
 
     this.latestResult = new AssessmentResult(
-      computation.skillScores.map((s) => new SkillScore(SkillId.create(s.skillId), s.rawScore, s.taskCount, s.completedTaskCount)),
-      computation.competencies.map((c) => new Competency(SkillId.create(c.skillId), c.score, c.level)),
-      computation.knowledgeGaps.map((g) => new KnowledgeGap(g.id, SkillId.create(g.skillId), g.weight, g.reason)),
+      computation.skillScores.map(
+        (s) =>
+          new SkillScore(SkillId.create(s.skillId), s.rawScore, s.taskCount, s.completedTaskCount),
+      ),
+      computation.competencies.map(
+        (c) => new Competency(SkillId.create(c.skillId), c.score, c.level),
+      ),
+      computation.knowledgeGaps.map(
+        (g) => new KnowledgeGap(g.id, SkillId.create(g.skillId), g.weight, g.reason),
+      ),
       computation.confidenceScore,
       computation.readiness,
       computation.weakAreas,
       computation.strongAreas,
-      computation.engineVersion
+      computation.engineVersion,
     );
 
     this.appendHistory('RUN');
@@ -138,23 +162,27 @@ export class Assessment {
       assessmentCompletedEvent(this.buildMetadata(context), {
         confidenceScore: computation.confidenceScore,
         readiness: computation.readiness,
-        gapCount: computation.knowledgeGaps.length
-      })
+        gapCount: computation.knowledgeGaps.length,
+      }),
     );
 
     this.recordEvent(
       competencyUpdatedEvent(this.buildMetadata(context), {
         competencies: computation.competencies,
         weakAreas: computation.weakAreas,
-        strongAreas: computation.strongAreas
-      })
+        strongAreas: computation.strongAreas,
+      }),
     );
 
     if (computation.knowledgeGaps.length > 0) {
       this.recordEvent(
         knowledgeGapDetectedEvent(this.buildMetadata(context), {
-          gaps: computation.knowledgeGaps.map((g) => ({ skillId: g.skillId, weight: g.weight, reason: g.reason }))
-        })
+          gaps: computation.knowledgeGaps.map((g) => ({
+            skillId: g.skillId,
+            weight: g.weight,
+            reason: g.reason,
+          })),
+        }),
       );
     }
   }
@@ -163,7 +191,10 @@ export class Assessment {
     this.assertConcurrency(expectedVersion);
 
     if (!this.latestResult) {
-      throw new AssessmentDomainError('ASSESSMENT_NOT_RUN_YET', 'Assessment must be run at least once before it can be approved');
+      throw new AssessmentDomainError(
+        'ASSESSMENT_NOT_RUN_YET',
+        'Assessment must be run at least once before it can be approved',
+      );
     }
 
     ensureValidLifecycleTransition(this.status.getValue(), 'APPROVED');
@@ -201,7 +232,7 @@ export class Assessment {
       this.latestResult?.engineVersion ?? '',
       this.latestResult?.confidenceScore ?? 0,
       this.latestResult?.readiness ?? 'NOT_READY',
-      this.latestResult?.knowledgeGaps.length ?? 0
+      this.latestResult?.knowledgeGaps.length ?? 0,
     );
     this.history = [...this.history, entry];
   }
@@ -228,7 +259,7 @@ export class Assessment {
       causationId: context.causationId,
       goalId: this.goalId,
       roadmapId: this.roadmapId,
-      engineVersion: this.latestResult?.engineVersion ?? ''
+      engineVersion: this.latestResult?.engineVersion ?? '',
     };
   }
 

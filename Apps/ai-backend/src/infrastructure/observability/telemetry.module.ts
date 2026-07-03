@@ -12,7 +12,19 @@ import { TracerService } from './tracer.service';
 @Module({
   imports: [HealthModule, QueueModule],
   controllers: [MetricsController],
-  providers: [TracerService, MetricsService, RequestContextService, StructuredLoggerService, ObservabilityHttpInterceptor],
-  exports: [TracerService, MetricsService, RequestContextService, StructuredLoggerService, ObservabilityHttpInterceptor]
+  providers: [
+    TracerService,
+    MetricsService,
+    RequestContextService,
+    StructuredLoggerService,
+    ObservabilityHttpInterceptor,
+  ],
+  exports: [
+    TracerService,
+    MetricsService,
+    RequestContextService,
+    StructuredLoggerService,
+    ObservabilityHttpInterceptor,
+  ],
 })
 export class TelemetryModule {}

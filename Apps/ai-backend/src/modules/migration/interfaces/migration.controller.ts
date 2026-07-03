@@ -31,7 +31,10 @@ export class MigrationController {
   }
 
   @Post('validate')
-  async validate(@Body() dto: ValidateMigrationDto, @Req() req: Request): Promise<ControllerEnvelope> {
+  async validate(
+    @Body() dto: ValidateMigrationDto,
+    @Req() req: Request,
+  ): Promise<ControllerEnvelope> {
     const traceId = this.extractTraceId(req);
 
     try {
@@ -43,7 +46,10 @@ export class MigrationController {
   }
 
   @Post('rollback')
-  async rollback(@Body() dto: RollbackMigrationDto, @Req() req: Request): Promise<ControllerEnvelope> {
+  async rollback(
+    @Body() dto: RollbackMigrationDto,
+    @Req() req: Request,
+  ): Promise<ControllerEnvelope> {
     const traceId = this.extractTraceId(req);
 
     try {
@@ -81,9 +87,9 @@ export class MigrationController {
         error: normalized.error,
         message: normalized.message,
         details: normalized.details,
-        traceId
+        traceId,
       },
-      status
+      status,
     );
   }
 
@@ -94,7 +100,7 @@ export class MigrationController {
 
     if (error instanceof Error) {
       return new MigrationError('MIGRATION_CONTROLLER_ERROR', 'Migration request failed', {
-        name: error.name
+        name: error.name,
       });
     }
 

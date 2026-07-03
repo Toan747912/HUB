@@ -1,4 +1,9 @@
-import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RoadmapId,
+} from '../../../../../shared/domain/identifiers';
 import { AssessmentEngine } from '../../engine/assessment.engine';
 import { AssessmentInput } from '../../engine/assessment-engine.types';
 import { Assessment } from '../assessment.aggregate';
@@ -11,9 +16,17 @@ const baseInput: AssessmentInput = {
   roadmapId: 'roadmap-1',
   learnerId: 'learner-1',
   roadmapCompletionRatio: 95,
-  tasks: [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
+  tasks: [
+    {
+      id: 't1',
+      skillId: 'Solid',
+      completed: true,
+      estimatedDurationDays: 2,
+      actualDurationDays: 2,
+    },
+  ],
   revisionCount: 0,
-  previousRuns: []
+  previousRuns: [],
 };
 
 const makeAssessment = (): Assessment =>
@@ -22,9 +35,9 @@ const makeAssessment = (): Assessment =>
       assessmentId: AssessmentId.create('assessment-1'),
       goalId: GoalId.create('goal-1'),
       roadmapId: RoadmapId.create('roadmap-1'),
-      learnerId: LearnerId.create('learner-1')
+      learnerId: LearnerId.create('learner-1'),
     },
-    context
+    context,
   );
 
 describe('Assessment aggregate', () => {
@@ -60,13 +73,17 @@ describe('Assessment aggregate', () => {
 
     const gapInput: AssessmentInput = {
       ...baseInput,
-      tasks: [{ id: 't1', skillId: 'Weak', completed: false, estimatedDurationDays: 2 }]
+      tasks: [{ id: 't1', skillId: 'Weak', completed: false, estimatedDurationDays: 2 }],
     };
     const computation = engine.evaluate(gapInput);
     assessment.run(computation, context, assessment.getAggregateVersion());
 
     const events = assessment.pullEvents();
-    expect(events.map((e) => e.type)).toEqual(['AssessmentCompleted', 'CompetencyUpdated', 'KnowledgeGapDetected']);
+    expect(events.map((e) => e.type)).toEqual([
+      'AssessmentCompleted',
+      'CompetencyUpdated',
+      'KnowledgeGapDetected',
+    ]);
   });
 
   it('run() can be repeated while COMPLETED, appending history each time (deterministic outputs, no data loss)', () => {
@@ -108,7 +125,9 @@ describe('Assessment aggregate', () => {
     assessment.run(engine.evaluate(baseInput), context, assessment.getAggregateVersion());
     assessment.approve(context, assessment.getAggregateVersion());
 
-    expect(() => assessment.run(engine.evaluate(baseInput), context, assessment.getAggregateVersion())).toThrow();
+    expect(() =>
+      assessment.run(engine.evaluate(baseInput), context, assessment.getAggregateVersion()),
+    ).toThrow();
   });
 
   it('archive() transitions to ARCHIVED and emits AssessmentArchived, from DRAFT/COMPLETED/APPROVED', () => {
@@ -119,6 +138,8 @@ describe('Assessment aggregate', () => {
     expect(assessment.getStatus()).toBe('ARCHIVED');
     const events = assessment.pullEvents();
     expect(events[0].type).toBe('AssessmentArchived');
-    expect(() => assessment.run(engine.evaluate(baseInput), context, assessment.getAggregateVersion())).toThrow();
+    expect(() =>
+      assessment.run(engine.evaluate(baseInput), context, assessment.getAggregateVersion()),
+    ).toThrow();
   });
 });

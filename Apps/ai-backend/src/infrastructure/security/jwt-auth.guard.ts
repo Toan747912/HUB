@@ -26,13 +26,13 @@ export class JwtAuthGuard implements CanActivate {
     private readonly jwt: AppJwtService,
     private readonly apiKeys?: ApiKeyService,
     private readonly requestContext?: RequestContextService,
-    private readonly reflector?: Reflector
+    private readonly reflector?: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector?.getAllAndOverride<boolean>(IS_PUBLIC_METADATA_KEY, [
       context.getHandler(),
-      context.getClass()
+      context.getClass(),
     ]);
     if (isPublic) {
       return true;
@@ -44,16 +44,28 @@ export class JwtAuthGuard implements CanActivate {
     if (apiKey) {
       const verifiedKey = await this.apiKeys?.verify(apiKey);
       if (!verifiedKey) {
-        throw new UnauthorizedException({ success: false, error: 'INVALID_API_KEY', message: 'Invalid or revoked API key' });
+        throw new UnauthorizedException({
+          success: false,
+          error: 'INVALID_API_KEY',
+          message: 'Invalid or revoked API key',
+        });
       }
-      request.user = { sub: 'system', roles: ['SYSTEM'], permissions: verifiedKey.permissions ?? [] };
+      request.user = {
+        sub: 'system',
+        roles: ['SYSTEM'],
+        permissions: verifiedKey.permissions ?? [],
+      };
       this.setUserId('system');
       return true;
     }
 
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException({ success: false, error: 'UNAUTHENTICATED', message: 'Missing or malformed Authorization header' });
+      throw new UnauthorizedException({
+        success: false,
+        error: 'UNAUTHENTICATED',
+        message: 'Missing or malformed Authorization header',
+      });
     }
 
     const token = authHeader.slice('Bearer '.length);
@@ -65,7 +77,10 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid access token';
-      const code = error instanceof Error && error.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN';
+      const code =
+        error instanceof Error && error.name === 'TokenExpiredError'
+          ? 'TOKEN_EXPIRED'
+          : 'INVALID_TOKEN';
       throw new UnauthorizedException({ success: false, error: code, message });
     }
   }

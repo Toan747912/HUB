@@ -26,14 +26,17 @@ const KNOWN_METRICS = [
   'bullmq_queue_delay_ms',
   'outbox_pending_total',
   'circuit_breaker_state',
-  'service_dependency_up'
+  'service_dependency_up',
 ];
 
 describe('Dashboard configuration', () => {
   let dashboard: Dashboard;
 
   beforeAll(() => {
-    const raw = readFileSync(join(__dirname, '..', 'dashboards', 'ai-backend-overview.json'), 'utf-8');
+    const raw = readFileSync(
+      join(__dirname, '..', 'dashboards', 'ai-backend-overview.json'),
+      'utf-8',
+    );
     dashboard = JSON.parse(raw);
   });
 

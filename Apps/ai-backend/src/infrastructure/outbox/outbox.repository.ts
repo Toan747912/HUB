@@ -18,21 +18,25 @@ const BASE_METADATA_KEYS = new Set<keyof DomainEventMetadata>([
   'occurredAt',
   'traceId',
   'correlationId',
-  'causationId'
+  'causationId',
 ]);
 
 @Injectable()
 export class OutboxRepository {
   constructor(
     @InjectModel('OutboxEvent') private readonly model: Model<OutboxEventDocument>,
-    private readonly tracer?: TracerService
+    private readonly tracer?: TracerService,
   ) {}
 
   async saveMany(events: DomainEvent[]): Promise<void> {
     if (events.length === 0) return;
     const run = () => this.doSaveMany(events);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('outbox.saveMany', SpanFactory.attributesFor({ operation: 'saveMany' }), run);
+    return this.tracer.withSpan(
+      'outbox.saveMany',
+      SpanFactory.attributesFor({ operation: 'saveMany' }),
+      run,
+    );
   }
 
   private async doSaveMany(events: DomainEvent[]): Promise<void> {
@@ -58,7 +62,7 @@ export class OutboxRepository {
         traceId: event.metadata.traceId,
         correlationId: event.metadata.correlationId,
         causationId: event.metadata.causationId,
-        metadata: extraMetadata
+        metadata: extraMetadata,
       };
     });
 
@@ -68,22 +72,27 @@ export class OutboxRepository {
         updateOne: {
           filter: { _id: doc._id },
           update: { $setOnInsert: doc },
-          upsert: true
-        }
-      }))
+          upsert: true,
+        },
+      })),
     );
   }
 
   async findPending(limit = 100): Promise<OutboxEventDocument[]> {
-    const run = () => this.model.find({ status: 'PENDING' }).limit(limit).lean<OutboxEventDocument[]>().exec();
+    const run = () =>
+      this.model.find({ status: 'PENDING' }).limit(limit).lean<OutboxEventDocument[]>().exec();
     if (!this.tracer) return run();
-    return this.tracer.withSpan('outbox.findPending', SpanFactory.attributesFor({ operation: 'findPending' }), run);
+    return this.tracer.withSpan(
+      'outbox.findPending',
+      SpanFactory.attributesFor({ operation: 'findPending' }),
+      run,
+    );
   }
 
   async markPublished(eventId: string): Promise<void> {
     await this.model.updateOne(
       { _id: eventId },
-      { $set: { status: 'PUBLISHED', publishedAt: new Date() } }
+      { $set: { status: 'PUBLISHED', publishedAt: new Date() } },
     );
   }
 

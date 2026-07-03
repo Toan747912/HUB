@@ -12,7 +12,7 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
   constructor(
     @InjectModel('Assessment') private readonly model: Model<AssessmentDocument>,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   async save(assessment: Assessment): Promise<void> {
@@ -25,9 +25,9 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
           _id,
           {
             $set: { ...mutableFields, updatedAt: new Date() },
-            $setOnInsert: { createdAt: new Date() }
+            $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: 'after' }
+          { upsert: true, returnDocument: 'after' },
         );
         this.log('save', assessment.getId().toString(), start, 'SUCCESS');
       } catch (error) {
@@ -93,7 +93,11 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
     });
   }
 
-  private async instrumented<T>(operation: string, aggregateId: string, fn: () => Promise<T>): Promise<T> {
+  private async instrumented<T>(
+    operation: string,
+    aggregateId: string,
+    fn: () => Promise<T>,
+  ): Promise<T> {
     const start = Date.now();
     const run = async (): Promise<T> => {
       try {
@@ -109,10 +113,20 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
     if (!this.tracer) {
       return run();
     }
-    return this.tracer.withSpan(`mongodb.${operation}`, SpanFactory.attributesFor({ operation, aggregateId }), run);
+    return this.tracer.withSpan(
+      `mongodb.${operation}`,
+      SpanFactory.attributesFor({ operation, aggregateId }),
+      run,
+    );
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'db',
@@ -121,8 +135,8 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
         latencyMs: Date.now() - startMs,
         database: 'mongodb',
         status,
-        errorType: error instanceof Error ? error.constructor.name : undefined
-      })
+        errorType: error instanceof Error ? error.constructor.name : undefined,
+      }),
     );
   }
 }

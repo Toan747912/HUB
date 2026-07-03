@@ -30,16 +30,25 @@ describe('AuthService', () => {
     const passwordHash = await passwords.hash('Str0ng!Passw0rd');
 
     users = {
-      findByUsername: jest.fn().mockResolvedValue({ _id: 'user-1', username: 'alice', passwordHash, roles: ['STUDENT'] }),
-      findById: jest.fn().mockResolvedValue({ _id: 'user-1', username: 'alice', passwordHash, roles: ['STUDENT'] }),
-      create: jest.fn()
+      findByUsername: jest
+        .fn()
+        .mockResolvedValue({ _id: 'user-1', username: 'alice', passwordHash, roles: ['STUDENT'] }),
+      findById: jest
+        .fn()
+        .mockResolvedValue({ _id: 'user-1', username: 'alice', passwordHash, roles: ['STUDENT'] }),
+      create: jest.fn(),
     };
 
     jwt = new AppJwtService();
 
     refreshTokens = {
       save: jest.fn().mockImplementation(async (input) => {
-        storedTokens.set(input.jti, { ...input, consumedAt: null, revokedAt: null, replacedByTokenId: null });
+        storedTokens.set(input.jti, {
+          ...input,
+          consumedAt: null,
+          revokedAt: null,
+          replacedByTokenId: null,
+        });
       }),
       findById: jest.fn().mockImplementation(async (jti) => storedTokens.get(jti) ?? null),
       markConsumed: jest.fn().mockImplementation(async (jti, replacedByTokenId) => {
@@ -54,10 +63,14 @@ describe('AuthService', () => {
         for (const doc of storedTokens.values()) {
           if (doc.familyId === familyId) doc.revokedAt = new Date();
         }
-      })
+      }),
     };
 
-    bruteForce = { isLocked: jest.fn().mockResolvedValue(false), recordFailure: jest.fn(), reset: jest.fn() };
+    bruteForce = {
+      isLocked: jest.fn().mockResolvedValue(false),
+      recordFailure: jest.fn(),
+      reset: jest.fn(),
+    };
     auditLog = { recordSecurityEvent: jest.fn().mockResolvedValue(undefined) };
 
     auth = new AuthService(
@@ -66,7 +79,7 @@ describe('AuthService', () => {
       jwt,
       refreshTokens as unknown as RefreshTokenRepository,
       bruteForce as unknown as BruteForceService,
-      auditLog as unknown as AuditLogService
+      auditLog as unknown as AuditLogService,
     );
   });
 
@@ -79,14 +92,19 @@ describe('AuthService', () => {
     expect(pair.accessToken.split('.')).toHaveLength(3);
     expect(pair.refreshToken.split('.')).toHaveLength(3);
     expect(bruteForce.reset).toHaveBeenCalledWith('alice');
-    expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'LOGIN_SUCCESS' }));
+    expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'LOGIN_SUCCESS' }),
+    );
   });
 
   it('login() fails with wrong password and records a brute-force failure', async () => {
     await expect(auth.login('alice', 'WrongPassword1!')).rejects.toThrow(UnauthorizedException);
     expect(bruteForce.recordFailure).toHaveBeenCalledWith('alice');
     expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'LOGIN_FAILED', after: { reason: 'INVALID_CREDENTIALS' } })
+      expect.objectContaining({
+        operation: 'LOGIN_FAILED',
+        after: { reason: 'INVALID_CREDENTIALS' },
+      }),
     );
   });
 
@@ -106,8 +124,12 @@ describe('AuthService', () => {
 
     expect(newPayload.jti).not.toBe(oldPayload.jti);
     expect(storedTokens.get(oldPayload.jti).consumedAt).not.toBeNull();
-    expect(storedTokens.get(newPayload.jti).familyId).toBe(storedTokens.get(oldPayload.jti).familyId);
-    expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'TOKEN_REFRESHED' }));
+    expect(storedTokens.get(newPayload.jti).familyId).toBe(
+      storedTokens.get(oldPayload.jti).familyId,
+    );
+    expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'TOKEN_REFRESHED' }),
+    );
   });
 
   // Evidence: Refresh replay detection
@@ -118,7 +140,7 @@ describe('AuthService', () => {
     await expect(auth.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
     expect(refreshTokens.revokeFamily).toHaveBeenCalled();
     expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'REFRESH_TOKEN_REUSE_DETECTED' })
+      expect.objectContaining({ operation: 'REFRESH_TOKEN_REUSE_DETECTED' }),
     );
   });
 
@@ -142,14 +164,21 @@ describe('AuthService', () => {
 
     expect(refreshTokens.revokeFamily).toHaveBeenCalled();
     await expect(auth.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
-    expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'LOGOUT' }));
+    expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'LOGOUT' }),
+    );
   });
 
   // Evidence: configurable registration policy
   describe('register()', () => {
     beforeEach(() => {
       users.findByUsername.mockResolvedValue(null as any);
-      users.create.mockResolvedValue({ _id: 'user-new', username: 'bob', passwordHash: 'x', roles: ['STUDENT'] } as any);
+      users.create.mockResolvedValue({
+        _id: 'user-new',
+        username: 'bob',
+        passwordHash: 'x',
+        roles: ['STUDENT'],
+      } as any);
     });
 
     it('forces STUDENT and audits the blocked attempt when self-assigned roles are disallowed (default)', async () => {
@@ -161,10 +190,12 @@ describe('AuthService', () => {
       expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED',
-          after: expect.objectContaining({ requestedRoles: ['ADMIN'], grantedRoles: ['STUDENT'] })
-        })
+          after: expect.objectContaining({ requestedRoles: ['ADMIN'], grantedRoles: ['STUDENT'] }),
+        }),
       );
-      expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'USER_REGISTERED' }));
+      expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'USER_REGISTERED' }),
+      );
     });
 
     it('does not audit an escalation-blocked event when no elevated role was requested', async () => {
@@ -174,7 +205,7 @@ describe('AuthService', () => {
 
       expect(users.create).toHaveBeenCalledWith('bob', expect.any(String), ['STUDENT']);
       expect(auditLog.recordSecurityEvent).not.toHaveBeenCalledWith(
-        expect.objectContaining({ operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED' })
+        expect.objectContaining({ operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED' }),
       );
     });
 
@@ -185,9 +216,11 @@ describe('AuthService', () => {
 
       expect(users.create).toHaveBeenCalledWith('bob', expect.any(String), ['ADMIN']);
       expect(auditLog.recordSecurityEvent).not.toHaveBeenCalledWith(
-        expect.objectContaining({ operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED' })
+        expect.objectContaining({ operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED' }),
       );
-      expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ operation: 'USER_REGISTERED' }));
+      expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'USER_REGISTERED' }),
+      );
     });
   });
 });

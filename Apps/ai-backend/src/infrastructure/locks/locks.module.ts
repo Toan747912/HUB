@@ -7,7 +7,12 @@ import { RecommendationLockService } from './recommendation-lock.service';
 
 @Module({
   imports: [RedisModule],
-  providers: [GoalLockService, RoadmapLockService, AssessmentLockService, RecommendationLockService],
-  exports: [GoalLockService, RoadmapLockService, AssessmentLockService, RecommendationLockService]
+  providers: [
+    GoalLockService,
+    RoadmapLockService,
+    AssessmentLockService,
+    RecommendationLockService,
+  ],
+  exports: [GoalLockService, RoadmapLockService, AssessmentLockService, RecommendationLockService],
 })
 export class LocksModule {}

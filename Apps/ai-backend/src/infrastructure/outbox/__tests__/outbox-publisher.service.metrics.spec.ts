@@ -17,9 +17,9 @@ const makeEvent = (type: GoalDomainEvent['type'], eventId: string): GoalDomainEv
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
     correlationId: 'corr-1',
-    causationId: 'cause-1'
+    causationId: 'cause-1',
   },
-  payload: { foo: 'bar' }
+  payload: { foo: 'bar' },
 });
 
 describe('OutboxPublisherService — observability wiring', () => {
@@ -31,7 +31,10 @@ describe('OutboxPublisherService — observability wiring', () => {
   let publisher: OutboxPublisherService;
 
   beforeEach(() => {
-    outbox = { saveMany: jest.fn().mockResolvedValue(undefined), markPublished: jest.fn().mockResolvedValue(undefined) };
+    outbox = {
+      saveMany: jest.fn().mockResolvedValue(undefined),
+      markPublished: jest.fn().mockResolvedValue(undefined),
+    };
     queue = { enqueue: jest.fn().mockResolvedValue(undefined) };
     tracer = { withSpan: jest.fn(async (_name, _attrs, fn) => fn()) };
     metrics = new MetricsService();
@@ -42,13 +45,17 @@ describe('OutboxPublisherService — observability wiring', () => {
       queue as unknown as QueueService,
       tracer as unknown as TracerService,
       metrics,
-      auditLog as unknown as AuditLogService
+      auditLog as unknown as AuditLogService,
     );
   });
 
   it('wraps publishMany in a span', async () => {
     await publisher.publishMany([makeEvent('GoalCreated', 'evt-1')]);
-    expect(tracer.withSpan).toHaveBeenCalledWith('outbox.publishMany', expect.objectContaining({ operation: 'publishMany' }), expect.any(Function));
+    expect(tracer.withSpan).toHaveBeenCalledWith(
+      'outbox.publishMany',
+      expect.objectContaining({ operation: 'publishMany' }),
+      expect.any(Function),
+    );
   });
 
   it('increments goal_created_total for a GoalCreated event', async () => {
@@ -78,11 +85,16 @@ describe('OutboxPublisherService — observability wiring', () => {
 
   it('does not fail publishMany if audit logging throws', async () => {
     auditLog.recordFromDomainEvent.mockRejectedValueOnce(new Error('audit db down'));
-    await expect(publisher.publishMany([makeEvent('GoalCreated', 'evt-5')])).resolves.toBeUndefined();
+    await expect(
+      publisher.publishMany([makeEvent('GoalCreated', 'evt-5')]),
+    ).resolves.toBeUndefined();
   });
 
   it('works with no observability params provided (backward compatible)', async () => {
-    const plain = new OutboxPublisherService(outbox as unknown as OutboxRepository, queue as unknown as QueueService);
+    const plain = new OutboxPublisherService(
+      outbox as unknown as OutboxRepository,
+      queue as unknown as QueueService,
+    );
     await expect(plain.publishMany([makeEvent('GoalCreated', 'evt-6')])).resolves.toBeUndefined();
   });
 });

@@ -4,7 +4,14 @@ import { GoalConstraint } from '../entities/goal-constraint.entity';
 import { GoalMilestone } from '../entities/goal-milestone.entity';
 import { GoalProgress } from '../entities/goal-progress.entity';
 import { GoalVersion } from '../entities/goal-version.entity';
-import { goalArchivedEvent, goalCompletedEvent, goalConstraintChangedEvent, goalCreatedEvent, goalMilestoneReachedEvent, goalUpdatedEvent } from '../events/goal-events';
+import {
+  goalArchivedEvent,
+  goalCompletedEvent,
+  goalConstraintChangedEvent,
+  goalCreatedEvent,
+  goalMilestoneReachedEvent,
+  goalUpdatedEvent,
+} from '../events/goal-events';
 import { GoalDomainEvent, GoalEventMetadata } from '../events/goal-event-metadata';
 import { GoalDomainError } from '../errors/goal-domain.error';
 import { ensureValidLifecycleTransition } from '../invariants/goal-lifecycle.invariant';
@@ -41,17 +48,27 @@ export class Goal {
   private progress: GoalProgress = new GoalProgress(0, []);
   private pendingEvents: GoalDomainEvent[] = [];
 
-  private constructor(private readonly goalId: GoalId, private readonly learnerId: LearnerId) {}
+  private constructor(
+    private readonly goalId: GoalId,
+    private readonly learnerId: LearnerId,
+  ) {}
 
   static create(props: GoalCreateProps, context: EventContext): Goal {
     const aggregate = new Goal(props.goalId, props.learnerId);
-    aggregate.appendVersion(props.title, props.description, props.type, props.difficulty, props.priority, props.targetDate);
+    aggregate.appendVersion(
+      props.title,
+      props.description,
+      props.type,
+      props.difficulty,
+      props.priority,
+      props.targetDate,
+    );
     aggregate.recordEvent(
       goalCreatedEvent(aggregate.buildMetadata(context), {
         learnerId: props.learnerId.toString(),
         status: aggregate.status.getValue(),
-        title: props.title
-      })
+        title: props.title,
+      }),
     );
     return aggregate;
   }
@@ -101,8 +118,8 @@ export class Goal {
     if (nextStatus === 'ARCHIVED') {
       this.recordEvent(
         goalArchivedEvent(this.buildMetadata(context), {
-          previousStatus: currentStatus
-        })
+          previousStatus: currentStatus,
+        }),
       );
       return;
     }
@@ -111,8 +128,8 @@ export class Goal {
       this.recordEvent(
         goalCompletedEvent(this.buildMetadata(context), {
           previousStatus: currentStatus,
-          completionRatio: this.progress.completionRatio
-        })
+          completionRatio: this.progress.completionRatio,
+        }),
       );
       return;
     }
@@ -122,10 +139,10 @@ export class Goal {
         changes: {
           status: {
             from: currentStatus,
-            to: nextStatus
-          }
-        }
-      })
+            to: nextStatus,
+          },
+        },
+      }),
     );
   }
 
@@ -137,7 +154,7 @@ export class Goal {
     priority: Priority,
     targetDate: TargetDate,
     context: EventContext,
-    expectedVersion?: number
+    expectedVersion?: number,
   ): void {
     this.assertConcurrency(expectedVersion);
     this.assertNotTerminalMutation();
@@ -150,9 +167,9 @@ export class Goal {
           type: type.getValue(),
           difficulty: difficulty.getValue(),
           priority: priority.getValue(),
-          targetDate: targetDate.toISOString()
-        }
-      })
+          targetDate: targetDate.toISOString(),
+        },
+      }),
     );
   }
 
@@ -164,8 +181,8 @@ export class Goal {
     this.recordEvent(
       goalConstraintChangedEvent(this.buildMetadata(context), {
         constraintId: constraint.id,
-        changeType: 'ADDED'
-      })
+        changeType: 'ADDED',
+      }),
     );
   }
 
@@ -174,7 +191,10 @@ export class Goal {
     this.assertNotTerminalMutation();
     const found = this.constraints.some((c) => c.id === constraintId);
     if (!found) {
-      throw new GoalDomainError('GOAL_CONSTRAINT_NOT_FOUND', `Constraint ${constraintId} not found`);
+      throw new GoalDomainError(
+        'GOAL_CONSTRAINT_NOT_FOUND',
+        `Constraint ${constraintId} not found`,
+      );
     }
 
     this.bumpVersion();
@@ -182,8 +202,8 @@ export class Goal {
     this.recordEvent(
       goalConstraintChangedEvent(this.buildMetadata(context), {
         constraintId,
-        changeType: 'REMOVED'
-      })
+        changeType: 'REMOVED',
+      }),
     );
   }
 
@@ -199,24 +219,36 @@ export class Goal {
     this.assertNotTerminalMutation();
     const index = this.milestones.findIndex((m) => m.id.equals(milestoneId));
     if (index < 0) {
-      throw new GoalDomainError('GOAL_MILESTONE_NOT_FOUND', `Milestone ${milestoneId.toString()} not found`);
+      throw new GoalDomainError(
+        'GOAL_MILESTONE_NOT_FOUND',
+        `Milestone ${milestoneId.toString()} not found`,
+      );
     }
 
     const current = this.milestones[index];
     if (!current.reached) {
       this.bumpVersion();
       const updated = current.markReached();
-      this.milestones = [...this.milestones.slice(0, index), updated, ...this.milestones.slice(index + 1)];
+      this.milestones = [
+        ...this.milestones.slice(0, index),
+        updated,
+        ...this.milestones.slice(index + 1),
+      ];
 
-      const reachedMilestones = this.milestones.filter((m) => m.reached).map((m) => m.id.toString());
-      const completionRatio = this.milestones.length === 0 ? 0 : Math.round((reachedMilestones.length / this.milestones.length) * 100);
+      const reachedMilestones = this.milestones
+        .filter((m) => m.reached)
+        .map((m) => m.id.toString());
+      const completionRatio =
+        this.milestones.length === 0
+          ? 0
+          : Math.round((reachedMilestones.length / this.milestones.length) * 100);
       this.progress = this.progress.update(completionRatio, reachedMilestones);
 
       this.recordEvent(
         goalMilestoneReachedEvent(this.buildMetadata(context), {
           milestoneId: milestoneId.toString(),
-          completionRatio
-        })
+          completionRatio,
+        }),
       );
     }
   }
@@ -229,9 +261,9 @@ export class Goal {
     this.recordEvent(
       goalUpdatedEvent(this.buildMetadata(context), {
         changes: {
-          completionRatio
-        }
-      })
+          completionRatio,
+        },
+      }),
     );
   }
 
@@ -241,7 +273,7 @@ export class Goal {
     type: GoalType,
     difficulty: GoalDifficulty,
     priority: Priority,
-    targetDate: TargetDate
+    targetDate: TargetDate,
   ): void {
     this.bumpVersion();
     const version = new GoalVersion(
@@ -251,14 +283,17 @@ export class Goal {
       type,
       difficulty,
       priority,
-      targetDate
+      targetDate,
     );
     this.versions = [...this.versions, version];
   }
 
   private assertNotTerminalMutation(): void {
     if (this.status.isTerminal()) {
-      throw new GoalDomainError('GOAL_TERMINAL_STATE_MUTATION_FORBIDDEN', 'Goal is in a terminal state and cannot be mutated');
+      throw new GoalDomainError(
+        'GOAL_TERMINAL_STATE_MUTATION_FORBIDDEN',
+        'Goal is in a terminal state and cannot be mutated',
+      );
     }
   }
 
@@ -281,7 +316,7 @@ export class Goal {
       occurredAt: new Date().toISOString(),
       traceId: context.traceId,
       correlationId: context.correlationId,
-      causationId: context.causationId
+      causationId: context.causationId,
     };
   }
 

@@ -1,6 +1,11 @@
 export type RecommendationStatusValue = 'GENERATED' | 'APPROVED' | 'REJECTED' | 'ARCHIVED';
 
-const ALLOWED_STATUSES: RecommendationStatusValue[] = ['GENERATED', 'APPROVED', 'REJECTED', 'ARCHIVED'];
+const ALLOWED_STATUSES: RecommendationStatusValue[] = [
+  'GENERATED',
+  'APPROVED',
+  'REJECTED',
+  'ARCHIVED',
+];
 
 export class RecommendationStatus {
   private constructor(private readonly value: RecommendationStatusValue) {}

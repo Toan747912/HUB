@@ -73,7 +73,13 @@ export class RoadmapQueryService {
     }
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'app',
@@ -82,8 +88,8 @@ export class RoadmapQueryService {
         latencyMs: Date.now() - startMs,
         status,
         errorType: error instanceof Error ? error.constructor.name : undefined,
-        timestamp: new Date().toISOString()
-      })
+        timestamp: new Date().toISOString(),
+      }),
     );
   }
 }

@@ -1,4 +1,12 @@
-import { ArrayUnique, IsArray, IsDateString, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateRoadmapDto {
   @IsUUID()

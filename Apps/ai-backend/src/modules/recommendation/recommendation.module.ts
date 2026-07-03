@@ -36,7 +36,7 @@ const RECOMMENDATION_LOCK_SERVICE = Symbol('RecommendationLockService');
     QueueModule,
     AuditModule,
     TelemetryModule,
-    LocksModule
+    LocksModule,
   ],
   controllers: [RecommendationController],
   providers: [
@@ -48,34 +48,51 @@ const RECOMMENDATION_LOCK_SERVICE = Symbol('RecommendationLockService');
     HttpExceptionFilter,
     {
       provide: RECOMMENDATION_REPOSITORY,
-      useClass: MongoRecommendationRepository
+      useClass: MongoRecommendationRepository,
     },
     {
       provide: EVENT_PUBLISHER,
-      useFactory: (outbox: OutboxRepository, queue: QueueService, tracer: TracerService, metrics: MetricsService, auditLog: AuditLogService) =>
-        new RecommendationOutboxPublisherService(outbox, queue, tracer, metrics, auditLog),
-      inject: [OutboxRepository, QueueService, TracerService, MetricsService, AuditLogService]
+      useFactory: (
+        outbox: OutboxRepository,
+        queue: QueueService,
+        tracer: TracerService,
+        metrics: MetricsService,
+        auditLog: AuditLogService,
+      ) => new RecommendationOutboxPublisherService(outbox, queue, tracer, metrics, auditLog),
+      inject: [OutboxRepository, QueueService, TracerService, MetricsService, AuditLogService],
     },
     {
       provide: RECOMMENDATION_LOCK_SERVICE,
-      useExisting: RecommendationLockService
+      useExisting: RecommendationLockService,
     },
     {
       provide: RecommendationCommandService,
-      useFactory: (repository: any, eventPublisher: any, recommendationLock: any, metrics: MetricsService) =>
+      useFactory: (
+        repository: any,
+        eventPublisher: any,
+        recommendationLock: any,
+        metrics: MetricsService,
+      ) =>
         new RecommendationCommandService(repository, eventPublisher, recommendationLock, metrics),
-      inject: [RECOMMENDATION_REPOSITORY, EVENT_PUBLISHER, RECOMMENDATION_LOCK_SERVICE, MetricsService]
+      inject: [
+        RECOMMENDATION_REPOSITORY,
+        EVENT_PUBLISHER,
+        RECOMMENDATION_LOCK_SERVICE,
+        MetricsService,
+      ],
     },
     {
       provide: RecommendationQueryService,
       useFactory: (repository: any) => new RecommendationQueryService(repository),
-      inject: [RECOMMENDATION_REPOSITORY]
-    }
+      inject: [RECOMMENDATION_REPOSITORY],
+    },
   ],
-  exports: [RecommendationService, RecommendationCommandService, RecommendationQueryService]
+  exports: [RecommendationService, RecommendationCommandService, RecommendationQueryService],
 })
 export class RecommendationModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(TraceMiddleware).forRoutes({ path: 'recommendation*', method: RequestMethod.ALL });
+    consumer
+      .apply(TraceMiddleware)
+      .forRoutes({ path: 'recommendation*', method: RequestMethod.ALL });
   }
 }

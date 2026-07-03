@@ -36,5 +36,9 @@ export interface IMigrationValidator {
 }
 
 export interface IRollbackHandler {
-  rollback(job: MigrationJob, executedSteps: MigrationStep[], traceId: string): Promise<RollbackResult>;
+  rollback(
+    job: MigrationJob,
+    executedSteps: MigrationStep[],
+    traceId: string,
+  ): Promise<RollbackResult>;
 }

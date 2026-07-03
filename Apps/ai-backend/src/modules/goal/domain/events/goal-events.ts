@@ -30,47 +30,56 @@ export type GoalMilestoneReachedPayload = {
   completionRatio: number;
 };
 
-export const goalCreatedEvent = (metadata: GoalEventMetadata, payload: GoalCreatedPayload): GoalDomainEvent<GoalCreatedPayload> => ({
+export const goalCreatedEvent = (
+  metadata: GoalEventMetadata,
+  payload: GoalCreatedPayload,
+): GoalDomainEvent<GoalCreatedPayload> => ({
   type: 'GoalCreated',
   metadata,
-  payload
+  payload,
 });
 
-export const goalUpdatedEvent = (metadata: GoalEventMetadata, payload: GoalUpdatedPayload): GoalDomainEvent<GoalUpdatedPayload> => ({
+export const goalUpdatedEvent = (
+  metadata: GoalEventMetadata,
+  payload: GoalUpdatedPayload,
+): GoalDomainEvent<GoalUpdatedPayload> => ({
   type: 'GoalUpdated',
   metadata,
-  payload
+  payload,
 });
 
-export const goalArchivedEvent = (metadata: GoalEventMetadata, payload: GoalArchivedPayload): GoalDomainEvent<GoalArchivedPayload> => ({
+export const goalArchivedEvent = (
+  metadata: GoalEventMetadata,
+  payload: GoalArchivedPayload,
+): GoalDomainEvent<GoalArchivedPayload> => ({
   type: 'GoalArchived',
   metadata,
-  payload
+  payload,
 });
 
 export const goalCompletedEvent = (
   metadata: GoalEventMetadata,
-  payload: GoalCompletedPayload
+  payload: GoalCompletedPayload,
 ): GoalDomainEvent<GoalCompletedPayload> => ({
   type: 'GoalCompleted',
   metadata,
-  payload
+  payload,
 });
 
 export const goalConstraintChangedEvent = (
   metadata: GoalEventMetadata,
-  payload: GoalConstraintChangedPayload
+  payload: GoalConstraintChangedPayload,
 ): GoalDomainEvent<GoalConstraintChangedPayload> => ({
   type: 'GoalConstraintChanged',
   metadata,
-  payload
+  payload,
 });
 
 export const goalMilestoneReachedEvent = (
   metadata: GoalEventMetadata,
-  payload: GoalMilestoneReachedPayload
+  payload: GoalMilestoneReachedPayload,
 ): GoalDomainEvent<GoalMilestoneReachedPayload> => ({
   type: 'GoalMilestoneReached',
   metadata,
-  payload
+  payload,
 });

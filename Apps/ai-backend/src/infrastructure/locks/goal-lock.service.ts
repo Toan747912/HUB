@@ -36,7 +36,7 @@ export class GoalLockService {
   constructor(
     private readonly redis: RedisService,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   private key(goalId: string): string {
@@ -46,7 +46,11 @@ export class GoalLockService {
   async lock(goalId: string): Promise<GoalLock> {
     const run = () => this.doLock(goalId);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.lock', SpanFactory.attributesFor({ operation: 'lock', aggregateId: goalId }), run);
+    return this.tracer.withSpan(
+      'redis.lock',
+      SpanFactory.attributesFor({ operation: 'lock', aggregateId: goalId }),
+      run,
+    );
   }
 
   private async doLock(goalId: string): Promise<GoalLock> {
@@ -77,7 +81,11 @@ export class GoalLockService {
   async unlock(lock: GoalLock): Promise<void> {
     const run = () => this.doUnlock(lock);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.unlock', SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.goalId }), run);
+    return this.tracer.withSpan(
+      'redis.unlock',
+      SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.goalId }),
+      run,
+    );
   }
 
   private async doUnlock(lock: GoalLock): Promise<void> {
@@ -97,8 +105,8 @@ export class GoalLockService {
           event: 'goal_lock_release_failed',
           goalId: lock.goalId,
           error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString()
-        })
+          timestamp: new Date().toISOString(),
+        }),
       );
     }
   }

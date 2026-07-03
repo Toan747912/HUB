@@ -19,9 +19,9 @@ const makeGoal = (): Goal => {
       type: GoalType.create('SKILL'),
       difficulty: GoalDifficulty.create('INTERMEDIATE'),
       priority: Priority.create('HIGH'),
-      targetDate: TargetDate.create('2027-01-01')
+      targetDate: TargetDate.create('2027-01-01'),
     },
-    { traceId: 't', correlationId: 'c', causationId: 'ca' }
+    { traceId: 't', correlationId: 'c', causationId: 'ca' },
   );
   // completeGoal requires IN_PROGRESS -> COMPLETED; walk the lifecycle forward.
   goal.transitionTo('ACTIVE', { traceId: 't', correlationId: 'c', causationId: 'ca' });
@@ -40,10 +40,13 @@ describe('GoalCommandService — distributed lock wiring', () => {
       save: jest.fn().mockResolvedValue(undefined),
       findById: jest.fn(),
       findAll: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as any;
     eventPublisher = { publish: jest.fn(), publishMany: jest.fn().mockResolvedValue(undefined) };
-    goalLock = { lock: jest.fn().mockResolvedValue({ token: 'tok' }), unlock: jest.fn().mockResolvedValue(undefined) };
+    goalLock = {
+      lock: jest.fn().mockResolvedValue({ token: 'tok' }),
+      unlock: jest.fn().mockResolvedValue(undefined),
+    };
     service = new GoalCommandService(repository, eventPublisher, goalLock);
   });
 
@@ -51,7 +54,13 @@ describe('GoalCommandService — distributed lock wiring', () => {
     const goal = makeGoal();
     repository.findById.mockResolvedValue(goal);
 
-    const command = new CompleteGoalCommand('goal-lock-1', goal.getAggregateVersion(), 't', 'c', 'ca');
+    const command = new CompleteGoalCommand(
+      'goal-lock-1',
+      goal.getAggregateVersion(),
+      't',
+      'c',
+      'ca',
+    );
 
     await service.completeGoal(command);
 
@@ -75,7 +84,13 @@ describe('GoalCommandService — distributed lock wiring', () => {
     repository.findById.mockResolvedValue(goal);
     const noLockService = new GoalCommandService(repository, eventPublisher);
 
-    const command = new CompleteGoalCommand('goal-lock-1', goal.getAggregateVersion(), 't', 'c', 'ca');
+    const command = new CompleteGoalCommand(
+      'goal-lock-1',
+      goal.getAggregateVersion(),
+      't',
+      'c',
+      'ca',
+    );
 
     await expect(noLockService.completeGoal(command)).resolves.toBeDefined();
   });

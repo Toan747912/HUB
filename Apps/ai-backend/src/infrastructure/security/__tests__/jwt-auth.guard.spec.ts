@@ -19,19 +19,26 @@ describe('JwtAuthGuard', () => {
     apiKeys = { verify: jest.fn() };
     requestContext = new RequestContextService();
     reflector = { getAllAndOverride: jest.fn().mockReturnValue(false) };
-    guard = new JwtAuthGuard(jwt, apiKeys as unknown as ApiKeyService, requestContext, reflector as unknown as Reflector);
+    guard = new JwtAuthGuard(
+      jwt,
+      apiKeys as unknown as ApiKeyService,
+      requestContext,
+      reflector as unknown as Reflector,
+    );
   });
 
   afterEach(() => {
     process.env = OLD_ENV;
   });
 
-  const makeContext = (headers: Record<string, string>): { context: ExecutionContext; request: Partial<AuthenticatedRequest> } => {
+  const makeContext = (
+    headers: Record<string, string>,
+  ): { context: ExecutionContext; request: Partial<AuthenticatedRequest> } => {
     const request: Partial<AuthenticatedRequest> = { headers: headers as any };
     const context = {
       switchToHttp: () => ({ getRequest: () => request }),
       getHandler: () => ({}) as any,
-      getClass: () => ({}) as any
+      getClass: () => ({}) as any,
     } as unknown as ExecutionContext;
     return { context, request };
   };
@@ -84,7 +91,7 @@ describe('JwtAuthGuard', () => {
       label: 'ci',
       createdAt: new Date(),
       revokedAt: null,
-      permissions: ['Goal.Read']
+      permissions: ['Goal.Read'],
     } as any);
     const { context, request } = makeContext({ 'x-api-key': 'valid-raw-key' });
 

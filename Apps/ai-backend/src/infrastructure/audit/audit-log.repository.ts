@@ -21,11 +21,16 @@ export class AuditLogRepository {
     await this.model.create({
       _id: randomUUID(),
       ...entry,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
   async findByResource(resource: string, limit = 100): Promise<AuditEventDocument[]> {
-    return this.model.find({ resource }).sort({ timestamp: -1 }).limit(limit).lean<AuditEventDocument[]>().exec();
+    return this.model
+      .find({ resource })
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .lean<AuditEventDocument[]>()
+      .exec();
   }
 }

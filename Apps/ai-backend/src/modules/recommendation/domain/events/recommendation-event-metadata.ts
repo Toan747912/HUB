@@ -1,4 +1,9 @@
-import { AssessmentId, GoalId, RecommendationId, RoadmapId } from '../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  RecommendationId,
+  RoadmapId,
+} from '../../../../shared/domain/identifiers';
 
 export type RecommendationEventMetadata = {
   eventId: string;

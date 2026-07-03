@@ -13,8 +13,18 @@ export class ApiKeyRepository {
     return this.model.findOne({ keyHash, revokedAt: null }).lean<ApiKeyDocument>().exec();
   }
 
-  async create(keyHash: string, label: string, permissions: Permission[] = []): Promise<ApiKeyDocument> {
-    const doc = await this.model.create({ _id: randomUUID(), keyHash, label, revokedAt: null, permissions });
+  async create(
+    keyHash: string,
+    label: string,
+    permissions: Permission[] = [],
+  ): Promise<ApiKeyDocument> {
+    const doc = await this.model.create({
+      _id: randomUUID(),
+      keyHash,
+      label,
+      revokedAt: null,
+      permissions,
+    });
     return doc.toObject();
   }
 

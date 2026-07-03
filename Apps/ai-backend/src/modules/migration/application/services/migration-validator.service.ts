@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { IMigrationValidator, ValidationIssue, ValidationResult } from '../../domain/contracts/migration.contracts';
+import {
+  IMigrationValidator,
+  ValidationIssue,
+  ValidationResult,
+} from '../../domain/contracts/migration.contracts';
 import { MigrationJob } from '../../domain/entities/migration-job.entity';
 
 @Injectable()
@@ -11,7 +15,7 @@ export class MigrationValidatorService implements IMigrationValidator {
       issues.push({
         stepId: 'N/A',
         code: 'EMPTY_STEPS',
-        message: 'Migration job must contain at least one step'
+        message: 'Migration job must contain at least one step',
       });
     }
 
@@ -21,7 +25,7 @@ export class MigrationValidatorService implements IMigrationValidator {
         issues.push({
           stepId: step.id,
           code: 'DUPLICATE_STEP_ID',
-          message: `Duplicate step id detected: ${step.id}`
+          message: `Duplicate step id detected: ${step.id}`,
         });
       }
       ids.add(step.id);
@@ -30,7 +34,7 @@ export class MigrationValidatorService implements IMigrationValidator {
         issues.push({
           stepId: step.id,
           code: 'EMPTY_UP_BATCH',
-          message: 'Up migration SQL batch cannot be empty'
+          message: 'Up migration SQL batch cannot be empty',
         });
       }
 
@@ -39,7 +43,7 @@ export class MigrationValidatorService implements IMigrationValidator {
           issues.push({
             stepId: step.id,
             code: 'MISSING_DEPENDENCY',
-            message: `Dependency ${dep} not found`
+            message: `Dependency ${dep} not found`,
           });
         }
       }
@@ -47,7 +51,7 @@ export class MigrationValidatorService implements IMigrationValidator {
 
     return {
       valid: issues.length === 0,
-      issues
+      issues,
     };
   }
 }

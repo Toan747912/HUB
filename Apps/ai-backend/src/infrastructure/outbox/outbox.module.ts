@@ -8,8 +8,12 @@ import { OutboxRelayService } from './outbox-relay.service';
 import { OutboxRepository } from './outbox.repository';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }]), QueueModule, AuditModule],
+  imports: [
+    MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }]),
+    QueueModule,
+    AuditModule,
+  ],
   providers: [OutboxRepository, OutboxPublisherService, OutboxRelayService],
-  exports: [OutboxRepository, OutboxPublisherService, OutboxRelayService]
+  exports: [OutboxRepository, OutboxPublisherService, OutboxRelayService],
 })
 export class OutboxModule {}

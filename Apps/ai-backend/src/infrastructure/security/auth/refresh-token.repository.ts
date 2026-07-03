@@ -24,7 +24,7 @@ export class RefreshTokenRepository {
       expiresAt: input.expiresAt,
       consumedAt: null,
       revokedAt: null,
-      replacedByTokenId: null
+      replacedByTokenId: null,
     });
   }
 
@@ -33,7 +33,10 @@ export class RefreshTokenRepository {
   }
 
   async markConsumed(jti: string, replacedByTokenId: string): Promise<void> {
-    await this.model.updateOne({ _id: jti }, { $set: { consumedAt: new Date(), replacedByTokenId } });
+    await this.model.updateOne(
+      { _id: jti },
+      { $set: { consumedAt: new Date(), replacedByTokenId } },
+    );
   }
 
   async revoke(jti: string): Promise<void> {
@@ -41,10 +44,7 @@ export class RefreshTokenRepository {
   }
 
   async revokeFamily(familyId: string): Promise<void> {
-    await this.model.updateMany(
-      { familyId, revokedAt: null },
-      { $set: { revokedAt: new Date() } }
-    );
+    await this.model.updateMany({ familyId, revokedAt: null }, { $set: { revokedAt: new Date() } });
   }
 
   /** Active = exists, not consumed, not revoked, not expired. */

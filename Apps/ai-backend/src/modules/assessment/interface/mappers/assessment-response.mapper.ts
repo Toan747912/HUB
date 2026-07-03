@@ -4,7 +4,7 @@ import {
   AssessmentListResponseDto,
   AssessmentResponseDto,
   CompetencyProfileResponseDto,
-  KnowledgeGapsResponseDto
+  KnowledgeGapsResponseDto,
 } from '../dto/responses/assessment.response.dto';
 
 @Injectable()
@@ -24,17 +24,26 @@ export class AssessmentResponseMapper {
               skillId: s.skillId.toString(),
               rawScore: s.rawScore,
               taskCount: s.taskCount,
-              completedTaskCount: s.completedTaskCount
+              completedTaskCount: s.completedTaskCount,
             })),
-            competencies: result.competencies.map((c) => ({ skillId: c.skillId.toString(), score: c.score, level: c.level })),
-            knowledgeGaps: result.knowledgeGaps.map((g) => ({ id: g.id, skillId: g.skillId.toString(), weight: g.weight, reason: g.reason })),
+            competencies: result.competencies.map((c) => ({
+              skillId: c.skillId.toString(),
+              score: c.score,
+              level: c.level,
+            })),
+            knowledgeGaps: result.knowledgeGaps.map((g) => ({
+              id: g.id,
+              skillId: g.skillId.toString(),
+              weight: g.weight,
+              reason: g.reason,
+            })),
             confidenceScore: result.confidenceScore,
             readiness: result.readiness,
             weakAreas: [...result.weakAreas],
             strongAreas: [...result.strongAreas],
-            engineVersion: result.engineVersion
+            engineVersion: result.engineVersion,
           }
-        : null
+        : null,
     };
   }
 
@@ -47,11 +56,17 @@ export class AssessmentResponseMapper {
     const result = assessment.getLatestResult();
     return {
       assessmentId: assessment.getId().toString(),
-      competencies: result ? result.competencies.map((c) => ({ skillId: c.skillId.toString(), score: c.score, level: c.level })) : [],
+      competencies: result
+        ? result.competencies.map((c) => ({
+            skillId: c.skillId.toString(),
+            score: c.score,
+            level: c.level,
+          }))
+        : [],
       weakAreas: result ? [...result.weakAreas] : [],
       strongAreas: result ? [...result.strongAreas] : [],
       confidenceScore: result ? result.confidenceScore : 0,
-      readiness: result ? result.readiness : 'NOT_READY'
+      readiness: result ? result.readiness : 'NOT_READY',
     };
   }
 
@@ -59,7 +74,14 @@ export class AssessmentResponseMapper {
     const result = assessment.getLatestResult();
     return {
       assessmentId: assessment.getId().toString(),
-      gaps: result ? result.knowledgeGaps.map((g) => ({ id: g.id, skillId: g.skillId.toString(), weight: g.weight, reason: g.reason })) : []
+      gaps: result
+        ? result.knowledgeGaps.map((g) => ({
+            id: g.id,
+            skillId: g.skillId.toString(),
+            weight: g.weight,
+            reason: g.reason,
+          }))
+        : [],
     };
   }
 }

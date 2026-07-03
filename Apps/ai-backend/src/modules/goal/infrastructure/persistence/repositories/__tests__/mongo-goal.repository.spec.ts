@@ -24,9 +24,9 @@ const makeGoal = (overrides: Partial<{ goalId: string; learnerId: string }> = {}
       type: GoalType.create('SKILL'),
       difficulty: GoalDifficulty.create('INTERMEDIATE'),
       priority: Priority.create('HIGH'),
-      targetDate: TargetDate.create('2027-01-01')
+      targetDate: TargetDate.create('2027-01-01'),
     },
-    { traceId: 'test-trace', correlationId: 'test-corr', causationId: 'test-cause' }
+    { traceId: 'test-trace', correlationId: 'test-corr', causationId: 'test-cause' },
   );
 
 // First run: MongoMemoryServer downloads the MongoDB binary (~780 MB).
@@ -46,15 +46,15 @@ describe('MongoGoalRepository — integration', () => {
     module = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'Goal', schema: GoalSchema }])
+        MongooseModule.forFeature([{ name: 'Goal', schema: GoalSchema }]),
       ],
       providers: [
         {
           provide: MongoGoalRepository,
           useFactory: (m: Model<GoalDocument>) => new MongoGoalRepository(m),
-          inject: [getModelToken('Goal')]
-        }
-      ]
+          inject: [getModelToken('Goal')],
+        },
+      ],
     }).compile();
 
     repository = module.get(MongoGoalRepository);
@@ -130,7 +130,11 @@ describe('MongoGoalRepository — integration', () => {
 
     // Verify optimistic locking still works after reload
     expect(() =>
-      found!.transitionTo('IN_PROGRESS', { traceId: 't', correlationId: 'c', causationId: 'ca' }, 999)
+      found!.transitionTo(
+        'IN_PROGRESS',
+        { traceId: 't', correlationId: 'c', causationId: 'ca' },
+        999,
+      ),
     ).toThrow();
   });
 
@@ -142,7 +146,11 @@ describe('MongoGoalRepository — integration', () => {
     const milestone = new GoalMilestone(MilestoneId.create(randomUUID()), 'Complete module 1');
     goal.addMilestone(milestone, goal.getAggregateVersion());
 
-    goal.transitionTo('ACTIVE', { traceId: 't', correlationId: 'c', causationId: 'ca' }, goal.getAggregateVersion());
+    goal.transitionTo(
+      'ACTIVE',
+      { traceId: 't', correlationId: 'c', causationId: 'ca' },
+      goal.getAggregateVersion(),
+    );
 
     await repository.save(goal);
 
@@ -182,7 +190,7 @@ describe('MongoGoalRepository — integration', () => {
       findByIdAndUpdate: () => Promise.reject(new Error('DB_FAULT')),
       findById: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
       find: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
-      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) })
+      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }),
     } as any;
 
     const faultyRepo = new MongoGoalRepository(faultyModel);

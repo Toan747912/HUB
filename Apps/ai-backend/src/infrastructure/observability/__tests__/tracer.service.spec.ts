@@ -59,7 +59,11 @@ describe('TracerService', () => {
   });
 
   it('every span carries the operation and aggregateId attributes', async () => {
-    await tracer.withSpan('mongodb.save', { operation: 'save', aggregateId: 'goal-1' }, async () => undefined);
+    await tracer.withSpan(
+      'mongodb.save',
+      { operation: 'save', aggregateId: 'goal-1' },
+      async () => undefined,
+    );
 
     const [span] = tracer.getFinishedSpansForTesting();
     expect(span.attributes['operation']).toBe('save');
@@ -70,7 +74,7 @@ describe('TracerService', () => {
     await expect(
       tracer.withSpan('failing-op', { operation: 'failing-op' }, async () => {
         throw new Error('boom');
-      })
+      }),
     ).rejects.toThrow('boom');
 
     const [span] = tracer.getFinishedSpansForTesting();
@@ -84,11 +88,13 @@ describe('TracerService', () => {
     const ctx = tracer.extractContextFromHeaders({ traceparent: `00-${traceId}-${spanId}-01` });
 
     // Starting a span within this context should chain to the remote parent's traceId.
-    return tracer.withSpan('downstream-op', { operation: 'downstream-op' }, async () => undefined, ctx).then(() => {
-      const span = tracer.getFinishedSpansForTesting().find((s) => s.name === 'downstream-op')!;
-      expect(span.spanContext().traceId).toBe(traceId);
-      expect(span.parentSpanContext?.spanId).toBe(spanId);
-    });
+    return tracer
+      .withSpan('downstream-op', { operation: 'downstream-op' }, async () => undefined, ctx)
+      .then(() => {
+        const span = tracer.getFinishedSpansForTesting().find((s) => s.name === 'downstream-op')!;
+        expect(span.spanContext().traceId).toBe(traceId);
+        expect(span.parentSpanContext?.spanId).toBe(spanId);
+      });
   });
 
   it('extractContextFromHeaders falls back to the active context when the header is missing/malformed', () => {

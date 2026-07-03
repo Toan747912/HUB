@@ -1,5 +1,8 @@
 import { Recommendation } from '../../domain/aggregates/recommendation.aggregate';
-import { LEARNING_STRATEGY_CATALOG, LearningStrategyCatalogEntry } from '../../domain/engine/learning-strategy-catalog';
+import {
+  LEARNING_STRATEGY_CATALOG,
+  LearningStrategyCatalogEntry,
+} from '../../domain/engine/learning-strategy-catalog';
 import { IRecommendationRepository } from '../contracts/recommendation-repository.contract';
 import { RecommendationNotFoundError } from '../errors/application.errors';
 import { GetRecommendationQuery } from '../queries/get-recommendation.query';
@@ -55,7 +58,9 @@ export class RecommendationQueryService {
     return LEARNING_STRATEGY_CATALOG;
   }
 
-  async getRecommendationsByAssessmentId(query: GetRecommendationsByAssessmentIdQuery): Promise<Recommendation[]> {
+  async getRecommendationsByAssessmentId(
+    query: GetRecommendationsByAssessmentIdQuery,
+  ): Promise<Recommendation[]> {
     const start = Date.now();
     try {
       const recommendations = await this.repository.findByAssessmentId(query.assessmentId);
@@ -67,7 +72,13 @@ export class RecommendationQueryService {
     }
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'app',
@@ -76,8 +87,8 @@ export class RecommendationQueryService {
         latencyMs: Date.now() - startMs,
         status,
         errorType: error instanceof Error ? error.constructor.name : undefined,
-        timestamp: new Date().toISOString()
-      })
+        timestamp: new Date().toISOString(),
+      }),
     );
   }
 }

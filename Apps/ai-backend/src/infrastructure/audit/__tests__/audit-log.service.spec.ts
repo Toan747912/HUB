@@ -14,10 +14,10 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
     correlationId: 'corr-1',
-    causationId: 'cause-1'
+    causationId: 'cause-1',
   },
   payload: { title: 'Learn TS' },
-  ...overrides
+  ...overrides,
 });
 
 describe('AuditLogService', () => {
@@ -38,7 +38,7 @@ describe('AuditLogService', () => {
       operation: 'GoalCreated',
       resource: 'Goal:goal-1',
       before: null,
-      after: { title: 'Learn TS' }
+      after: { title: 'Learn TS' },
     });
   });
 
@@ -51,9 +51,14 @@ describe('AuditLogService', () => {
 
   it('pulls userId from RequestContextService when available', async () => {
     const requestContext = new RequestContextService();
-    const withContext = new AuditLogService(repository as unknown as AuditLogRepository, requestContext);
+    const withContext = new AuditLogService(
+      repository as unknown as AuditLogRepository,
+      requestContext,
+    );
 
-    await requestContext.run({ traceId: 'trace-1', userId: 'user-7' }, () => withContext.recordFromDomainEvent(makeEvent()));
+    await requestContext.run({ traceId: 'trace-1', userId: 'user-7' }, () =>
+      withContext.recordFromDomainEvent(makeEvent()),
+    );
 
     expect(repository.record).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-7' }));
   });

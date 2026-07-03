@@ -16,13 +16,20 @@ import { UserSchema } from './user.schema';
   imports: [
     MongooseModule.forFeature([
       { name: 'User', schema: UserSchema },
-      { name: 'RefreshToken', schema: RefreshTokenSchema }
+      { name: 'RefreshToken', schema: RefreshTokenSchema },
     ]),
     RedisModule,
-    AuditModule
+    AuditModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, UserRepository, PasswordService, AppJwtService, RefreshTokenRepository, BruteForceService],
-  exports: [AuthService, UserRepository, AppJwtService, RefreshTokenRepository, PasswordService]
+  providers: [
+    AuthService,
+    UserRepository,
+    PasswordService,
+    AppJwtService,
+    RefreshTokenRepository,
+    BruteForceService,
+  ],
+  exports: [AuthService, UserRepository, AppJwtService, RefreshTokenRepository, PasswordService],
 })
 export class AuthModule {}

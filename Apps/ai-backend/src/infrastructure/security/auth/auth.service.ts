@@ -24,18 +24,26 @@ export class AuthService {
     private readonly refreshTokens: RefreshTokenRepository,
     private readonly bruteForce: BruteForceService,
     private readonly auditLog?: AuditLogService,
-    private readonly requestContext?: RequestContextService
+    private readonly requestContext?: RequestContextService,
   ) {}
 
   private traceId(): string {
     return this.requestContext?.get()?.traceId ?? 'unknown';
   }
 
-  async register(username: string, password: string, requestedRoles: Role[] = ['STUDENT']): Promise<void> {
+  async register(
+    username: string,
+    password: string,
+    requestedRoles: Role[] = ['STUDENT'],
+  ): Promise<void> {
     this.passwords.validatePolicy(password);
     const existing = await this.users.findByUsername(username);
     if (existing) {
-      throw new ForbiddenException({ success: false, error: 'USERNAME_TAKEN', message: 'Username already exists' });
+      throw new ForbiddenException({
+        success: false,
+        error: 'USERNAME_TAKEN',
+        message: 'Username already exists',
+      });
     }
 
     const selfAssignedRolesAllowed = isSelfAssignedRolesAllowed();
@@ -48,7 +56,7 @@ export class AuthService {
         userId: null,
         operation: 'REGISTRATION_ROLE_ESCALATION_BLOCKED',
         resource: `User:${username}`,
-        after: { requestedRoles, grantedRoles: roles }
+        after: { requestedRoles, grantedRoles: roles },
       });
     }
 
@@ -60,7 +68,7 @@ export class AuthService {
       userId: created?._id ?? null,
       operation: 'USER_REGISTERED',
       resource: `User:${created?._id ?? username}`,
-      after: { username, roles }
+      after: { username, roles },
     });
   }
 
@@ -71,9 +79,13 @@ export class AuthService {
         userId: null,
         operation: 'LOGIN_FAILED',
         resource: `User:${username}`,
-        after: { reason: 'ACCOUNT_LOCKED' }
+        after: { reason: 'ACCOUNT_LOCKED' },
       });
-      throw new UnauthorizedException({ success: false, error: 'ACCOUNT_LOCKED', message: 'Too many failed attempts. Try again later.' });
+      throw new UnauthorizedException({
+        success: false,
+        error: 'ACCOUNT_LOCKED',
+        message: 'Too many failed attempts. Try again later.',
+      });
     }
 
     const user = await this.users.findByUsername(username);
@@ -86,9 +98,13 @@ export class AuthService {
         userId: user?._id ?? null,
         operation: 'LOGIN_FAILED',
         resource: `User:${username}`,
-        after: { reason: 'INVALID_CREDENTIALS' }
+        after: { reason: 'INVALID_CREDENTIALS' },
       });
-      throw new UnauthorizedException({ success: false, error: 'INVALID_CREDENTIALS', message: 'Invalid username or password' });
+      throw new UnauthorizedException({
+        success: false,
+        error: 'INVALID_CREDENTIALS',
+        message: 'Invalid username or password',
+      });
     }
 
     await this.bruteForce.reset(username);
@@ -99,7 +115,7 @@ export class AuthService {
       traceId: this.traceId(),
       userId: user._id,
       operation: 'LOGIN_SUCCESS',
-      resource: `User:${user._id}`
+      resource: `User:${user._id}`,
     });
 
     return pair;
@@ -110,7 +126,11 @@ export class AuthService {
     const stored = await this.refreshTokens.findById(payload.jti);
 
     if (!stored) {
-      throw new UnauthorizedException({ success: false, error: 'INVALID_REFRESH_TOKEN', message: 'Refresh token not recognized' });
+      throw new UnauthorizedException({
+        success: false,
+        error: 'INVALID_REFRESH_TOKEN',
+        message: 'Refresh token not recognized',
+      });
     }
 
     if (stored.consumedAt || stored.revokedAt) {
@@ -122,22 +142,31 @@ export class AuthService {
         userId: stored.userId,
         operation: 'REFRESH_TOKEN_REUSE_DETECTED',
         resource: `User:${stored.userId}`,
-        after: { familyId: stored.familyId, jti: payload.jti }
+        after: { familyId: stored.familyId, jti: payload.jti },
       });
       throw new UnauthorizedException({
         success: false,
         error: 'REFRESH_TOKEN_REUSE_DETECTED',
-        message: 'This refresh token has already been used. All sessions in this family have been revoked.'
+        message:
+          'This refresh token has already been used. All sessions in this family have been revoked.',
       });
     }
 
     if (stored.expiresAt.getTime() < Date.now()) {
-      throw new UnauthorizedException({ success: false, error: 'REFRESH_TOKEN_EXPIRED', message: 'Refresh token has expired' });
+      throw new UnauthorizedException({
+        success: false,
+        error: 'REFRESH_TOKEN_EXPIRED',
+        message: 'Refresh token has expired',
+      });
     }
 
     const user = await this.users.findById(stored.userId);
     if (!user) {
-      throw new UnauthorizedException({ success: false, error: 'INVALID_REFRESH_TOKEN', message: 'User no longer exists' });
+      throw new UnauthorizedException({
+        success: false,
+        error: 'INVALID_REFRESH_TOKEN',
+        message: 'User no longer exists',
+      });
     }
 
     const newPair = await this.issueTokenPair(stored.userId, user.roles as Role[], stored.familyId);
@@ -148,7 +177,7 @@ export class AuthService {
       traceId: this.traceId(),
       userId: stored.userId,
       operation: 'TOKEN_REFRESHED',
-      resource: `User:${stored.userId}`
+      resource: `User:${stored.userId}`,
     });
 
     return newPair;
@@ -165,11 +194,15 @@ export class AuthService {
       traceId: this.traceId(),
       userId: stored?.userId ?? null,
       operation: 'LOGOUT',
-      resource: `User:${stored?.userId ?? 'unknown'}`
+      resource: `User:${stored?.userId ?? 'unknown'}`,
     });
   }
 
-  private async issueTokenPair(userId: string, roles: Role[], familyId: string): Promise<TokenPair> {
+  private async issueTokenPair(
+    userId: string,
+    roles: Role[],
+    familyId: string,
+  ): Promise<TokenPair> {
     const jti = randomUUID();
     const ttlSeconds = getRefreshTokenTtlSeconds();
     const issuedAt = new Date();
@@ -179,7 +212,7 @@ export class AuthService {
 
     return {
       accessToken: this.jwt.signAccessToken({ sub: userId, roles }),
-      refreshToken: this.jwt.signRefreshToken({ sub: userId, jti }, ttlSeconds)
+      refreshToken: this.jwt.signRefreshToken({ sub: userId, jti }, ttlSeconds),
     };
   }
 }

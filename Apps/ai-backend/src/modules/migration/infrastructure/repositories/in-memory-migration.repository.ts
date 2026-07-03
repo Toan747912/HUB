@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { IMigrationLogRepository, IMigrationRepository, MigrationLogRecord } from '../../domain/contracts/migration-repository.contract';
+import {
+  IMigrationLogRepository,
+  IMigrationRepository,
+  MigrationLogRecord,
+} from '../../domain/contracts/migration-repository.contract';
 import { MigrationJob } from '../../domain/entities/migration-job.entity';
 import { MigrationState } from '../../domain/enums/migration-state.enum';
 import { MigrationStep } from '../../domain/entities/migration-step.entity';
@@ -17,8 +21,8 @@ export class InMemoryMigrationRepository implements IMigrationRepository {
         'create base table for migration engine smoke test',
         ['CREATE TABLE IF NOT EXISTS migration_example(id INT PRIMARY KEY)'],
         ['DROP TABLE IF EXISTS migration_example'],
-        []
-      )
+        [],
+      ),
     ]);
 
     const smokeJob = new MigrationJob('job-1', [
@@ -29,8 +33,8 @@ export class InMemoryMigrationRepository implements IMigrationRepository {
         'create base table for migration engine smoke test',
         ['CREATE TABLE IF NOT EXISTS migration_example(id INT PRIMARY KEY)'],
         ['DROP TABLE IF EXISTS migration_example'],
-        []
-      )
+        [],
+      ),
     ]);
 
     this.jobs.set(bootstrapJob.jobId, bootstrapJob);

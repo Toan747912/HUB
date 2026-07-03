@@ -10,7 +10,7 @@ import {
   Req,
   UseFilters,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { GenerateRecommendationsCommand } from '../../application/commands/generate-recommendations.command';
 import { ApproveRecommendationCommand } from '../../application/commands/approve-recommendation.command';
@@ -42,12 +42,15 @@ export class RecommendationController {
   constructor(
     private readonly commandService: RecommendationCommandService,
     private readonly queryService: RecommendationQueryService,
-    private readonly mapper: RecommendationResponseMapper
+    private readonly mapper: RecommendationResponseMapper,
   ) {}
 
   @Post('generate')
   @RequirePermissions('Recommendation.Generate')
-  async generate(@Body() body: GenerateRecommendationsDto, @Req() req: RecommendationRequestWithTrace) {
+  async generate(
+    @Body() body: GenerateRecommendationsDto,
+    @Req() req: RecommendationRequestWithTrace,
+  ) {
     const command = new GenerateRecommendationsCommand(
       body.recommendationId,
       body.goalId,
@@ -67,7 +70,7 @@ export class RecommendationController {
       body.readiness,
       req.traceId ?? 'unknown',
       req.traceId ?? 'unknown',
-      'http:generate-recommendations'
+      'http:generate-recommendations',
     );
 
     const recommendation = await this.commandService.generateRecommendations(command);
@@ -111,14 +114,14 @@ export class RecommendationController {
   async approve(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VersionGuardedDto,
-    @Req() req: RecommendationRequestWithTrace
+    @Req() req: RecommendationRequestWithTrace,
   ) {
     const command = new ApproveRecommendationCommand(
       id,
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:approve-recommendation'
+      body.causationId ?? 'http:approve-recommendation',
     );
     const recommendation = await this.commandService.approveRecommendation(command);
     return this.mapper.toResponse(recommendation);
@@ -129,7 +132,7 @@ export class RecommendationController {
   async reject(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: RejectRecommendationDto,
-    @Req() req: RecommendationRequestWithTrace
+    @Req() req: RecommendationRequestWithTrace,
   ) {
     const command = new RejectRecommendationCommand(
       id,
@@ -137,7 +140,7 @@ export class RecommendationController {
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:reject-recommendation'
+      body.causationId ?? 'http:reject-recommendation',
     );
     const recommendation = await this.commandService.rejectRecommendation(command);
     return this.mapper.toResponse(recommendation);
@@ -145,13 +148,16 @@ export class RecommendationController {
 
   @Delete(':id')
   @RequirePermissions('Recommendation.Archive')
-  async archive(@Param('id', new ParseUUIDPipe()) id: string, @Req() req: RecommendationRequestWithTrace) {
+  async archive(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: RecommendationRequestWithTrace,
+  ) {
     const command = new ArchiveRecommendationCommand(
       id,
       undefined,
       req.traceId ?? 'unknown',
       req.traceId ?? 'unknown',
-      'http:archive-recommendation'
+      'http:archive-recommendation',
     );
     const recommendation = await this.commandService.archiveRecommendation(command);
     return this.mapper.toResponse(recommendation);

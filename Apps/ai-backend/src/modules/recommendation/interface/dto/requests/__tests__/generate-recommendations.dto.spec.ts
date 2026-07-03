@@ -16,11 +16,20 @@ const validPayload = () => ({
   referenceDate: '2027-01-01T00:00:00.000Z',
   roadmapCompletionRatio: 60,
   revisionCount: 0,
-  tasks: [{ id: 't1', skillId: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 3 }],
+  tasks: [
+    {
+      id: 't1',
+      skillId: 'Foundations',
+      completed: false,
+      order: 1,
+      dependsOn: [],
+      estimatedDurationDays: 3,
+    },
+  ],
   competencies: [{ skillId: 'Foundations', score: 60, level: 'PROFICIENT' }],
   knowledgeGaps: [],
   confidenceScore: 70,
-  readiness: 'NOT_READY'
+  readiness: 'NOT_READY',
 });
 
 describe('GenerateRecommendationsDto validation', () => {
@@ -31,13 +40,19 @@ describe('GenerateRecommendationsDto validation', () => {
   });
 
   it('rejects a non-UUID recommendationId', async () => {
-    const dto = plainToInstance(GenerateRecommendationsDto, { ...validPayload(), recommendationId: 'not-a-uuid' });
+    const dto = plainToInstance(GenerateRecommendationsDto, {
+      ...validPayload(),
+      recommendationId: 'not-a-uuid',
+    });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'recommendationId')).toBe(true);
   });
 
   it('rejects roadmapCompletionRatio outside [0, 100]', async () => {
-    const dto = plainToInstance(GenerateRecommendationsDto, { ...validPayload(), roadmapCompletionRatio: 200 });
+    const dto = plainToInstance(GenerateRecommendationsDto, {
+      ...validPayload(),
+      roadmapCompletionRatio: 200,
+    });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'roadmapCompletionRatio')).toBe(true);
   });
@@ -51,7 +66,7 @@ describe('GenerateRecommendationsDto validation', () => {
   it('rejects a malformed nested competency (score out of bounds)', async () => {
     const dto = plainToInstance(GenerateRecommendationsDto, {
       ...validPayload(),
-      competencies: [{ skillId: 'Foundations', score: 150, level: 'PROFICIENT' }]
+      competencies: [{ skillId: 'Foundations', score: 150, level: 'PROFICIENT' }],
     });
     const errors = await validate(dto);
     const competencyErrors = errors.find((e) => e.property === 'competencies');
@@ -59,13 +74,19 @@ describe('GenerateRecommendationsDto validation', () => {
   });
 
   it('rejects an invalid targetDate', async () => {
-    const dto = plainToInstance(GenerateRecommendationsDto, { ...validPayload(), targetDate: 'not-a-date' });
+    const dto = plainToInstance(GenerateRecommendationsDto, {
+      ...validPayload(),
+      targetDate: 'not-a-date',
+    });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'targetDate')).toBe(true);
   });
 
   it('rejects a negative revisionCount', async () => {
-    const dto = plainToInstance(GenerateRecommendationsDto, { ...validPayload(), revisionCount: -1 });
+    const dto = plainToInstance(GenerateRecommendationsDto, {
+      ...validPayload(),
+      revisionCount: -1,
+    });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'revisionCount')).toBe(true);
   });

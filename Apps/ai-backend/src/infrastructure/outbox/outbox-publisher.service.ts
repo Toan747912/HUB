@@ -18,7 +18,7 @@ export class OutboxPublisherService implements IEventPublisher {
     private readonly queue: QueueService,
     private readonly tracer?: TracerService,
     private readonly metrics?: MetricsService,
-    private readonly auditLog?: AuditLogService
+    private readonly auditLog?: AuditLogService,
   ) {}
 
   async publish(event: GoalDomainEvent): Promise<void> {
@@ -32,7 +32,11 @@ export class OutboxPublisherService implements IEventPublisher {
       await run();
       return;
     }
-    await this.tracer.withSpan('outbox.publishMany', SpanFactory.attributesFor({ operation: 'publishMany' }), run);
+    await this.tracer.withSpan(
+      'outbox.publishMany',
+      SpanFactory.attributesFor({ operation: 'publishMany' }),
+      run,
+    );
   }
 
   private async doPublishMany(events: GoalDomainEvent[]): Promise<void> {
@@ -55,8 +59,8 @@ export class OutboxPublisherService implements IEventPublisher {
             eventId: event.metadata.eventId,
             aggregateId: event.metadata.aggregateId,
             error: error instanceof Error ? error.message : String(error),
-            timestamp: new Date().toISOString()
-          })
+            timestamp: new Date().toISOString(),
+          }),
         );
       }
     }

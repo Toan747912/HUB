@@ -27,14 +27,18 @@ export class TraceLoggingInterceptor implements NestInterceptor {
             latencyMs,
             status: res.statusCode,
             errorType: null,
-            confidence: typeof data?.output?.confidence === 'number' ? data.output.confidence : null
-          })
+            confidence:
+              typeof data?.output?.confidence === 'number' ? data.output.confidence : null,
+          }),
         );
       }),
       catchError((err: unknown) => {
         const latencyMs = Date.now() - startedAt;
         const errorType =
-          err && typeof err === 'object' && 'name' in err && typeof (err as { name?: unknown }).name === 'string'
+          err &&
+          typeof err === 'object' &&
+          'name' in err &&
+          typeof (err as { name?: unknown }).name === 'string'
             ? (err as { name: string }).name
             : 'UnknownError';
 
@@ -45,12 +49,12 @@ export class TraceLoggingInterceptor implements NestInterceptor {
             latencyMs,
             status: res.statusCode >= 400 ? res.statusCode : 500,
             errorType,
-            confidence: null
-          })
+            confidence: null,
+          }),
         );
 
         return throwError(() => err);
-      })
+      }),
     );
   }
 }

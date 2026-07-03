@@ -1,10 +1,18 @@
-import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RoadmapId,
+} from '../../../../../shared/domain/identifiers';
 import { Assessment } from '../../../domain/aggregates/assessment.aggregate';
 import { IAssessmentRepository } from '../../contracts/assessment-repository.contract';
 import { IEventPublisher } from '../../contracts/event-publisher.contract';
 import { CreateAssessmentCommand } from '../../commands/create-assessment.command';
 import { RunAssessmentCommand } from '../../commands/run-assessment.command';
-import { AssessmentNotFoundError, AssessmentStateTransitionError } from '../../errors/application.errors';
+import {
+  AssessmentNotFoundError,
+  AssessmentStateTransitionError,
+} from '../../errors/application.errors';
 import { AssessmentCommandService, IAssessmentLock } from '../assessment-command.service';
 
 const context = { traceId: 't', correlationId: 'c', causationId: 'ca' };
@@ -15,9 +23,9 @@ const makeAssessment = (): Assessment =>
       assessmentId: AssessmentId.create('assessment-lock-1'),
       goalId: GoalId.create('goal-1'),
       roadmapId: RoadmapId.create('roadmap-1'),
-      learnerId: LearnerId.create('learner-1')
+      learnerId: LearnerId.create('learner-1'),
     },
-    context
+    context,
   );
 
 describe('AssessmentCommandService — distributed lock wiring', () => {
@@ -31,10 +39,13 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
       save: jest.fn().mockResolvedValue(undefined),
       findById: jest.fn(),
       findAll: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as any;
     eventPublisher = { publish: jest.fn(), publishMany: jest.fn().mockResolvedValue(undefined) };
-    assessmentLock = { lock: jest.fn().mockResolvedValue({ token: 'tok' }), unlock: jest.fn().mockResolvedValue(undefined) };
+    assessmentLock = {
+      lock: jest.fn().mockResolvedValue({ token: 'tok' }),
+      unlock: jest.fn().mockResolvedValue(undefined),
+    };
     service = new AssessmentCommandService(repository, eventPublisher, assessmentLock);
   });
 
@@ -42,13 +53,21 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
     new RunAssessmentCommand(
       assessment.getId().toString(),
       80,
-      [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
+      [
+        {
+          id: 't1',
+          skillId: 'Solid',
+          completed: true,
+          estimatedDurationDays: 2,
+          actualDurationDays: 2,
+        },
+      ],
       0,
       [],
       assessment.getAggregateVersion(),
       't',
       'c',
-      'ca'
+      'ca',
     );
 
   it('acquires and releases the lock around runAssessment', async () => {
@@ -64,7 +83,17 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
   it('releases the lock even when the command fails (assessment not found)', async () => {
     repository.findById.mockResolvedValue(null);
 
-    const command = new RunAssessmentCommand('missing-assessment', 80, [], 0, [], 1, 't', 'c', 'ca');
+    const command = new RunAssessmentCommand(
+      'missing-assessment',
+      80,
+      [],
+      0,
+      [],
+      1,
+      't',
+      'c',
+      'ca',
+    );
     await expect(service.runAssessment(command)).rejects.toThrow(AssessmentNotFoundError);
 
     expect(assessmentLock.lock).toHaveBeenCalledWith('missing-assessment');
@@ -80,7 +109,15 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
   });
 
   it('createAssessment persists a DRAFT assessment and publishes AssessmentCreated', async () => {
-    const command = new CreateAssessmentCommand('assessment-new-1', 'goal-1', 'roadmap-1', 'learner-1', 't', 'c', 'ca');
+    const command = new CreateAssessmentCommand(
+      'assessment-new-1',
+      'goal-1',
+      'roadmap-1',
+      'learner-1',
+      't',
+      'c',
+      'ca',
+    );
 
     const assessment = await service.createAssessment(command);
 
@@ -100,20 +137,33 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
     repository.findById.mockResolvedValue(assessment2);
     const result2 = await service.runAssessment(runCommand(assessment2));
 
-    expect(result1.getLatestResult()!.confidenceScore).toBe(result2.getLatestResult()!.confidenceScore);
+    expect(result1.getLatestResult()!.confidenceScore).toBe(
+      result2.getLatestResult()!.confidenceScore,
+    );
     expect(result1.getLatestResult()!.readiness).toBe(result2.getLatestResult()!.readiness);
   });
 
   it('wraps a lock-forbidden re-run (APPROVED) as AssessmentStateTransitionError', async () => {
     const assessment = makeAssessment();
     assessment.run(
-      { skillScores: [], competencies: [], knowledgeGaps: [], confidenceScore: 90, readiness: 'READY', weakAreas: [], strongAreas: [], engineVersion: 'v1' },
+      {
+        skillScores: [],
+        competencies: [],
+        knowledgeGaps: [],
+        confidenceScore: 90,
+        readiness: 'READY',
+        weakAreas: [],
+        strongAreas: [],
+        engineVersion: 'v1',
+      },
       context,
-      assessment.getAggregateVersion()
+      assessment.getAggregateVersion(),
     );
     assessment.approve(context, assessment.getAggregateVersion());
     repository.findById.mockResolvedValue(assessment);
 
-    await expect(service.runAssessment(runCommand(assessment))).rejects.toBeInstanceOf(AssessmentStateTransitionError);
+    await expect(service.runAssessment(runCommand(assessment))).rejects.toBeInstanceOf(
+      AssessmentStateTransitionError,
+    );
   });
 });

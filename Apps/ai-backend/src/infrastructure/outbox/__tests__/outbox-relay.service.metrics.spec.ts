@@ -18,7 +18,7 @@ const pendingDoc = (eventId: string): OutboxEventDocument => ({
   traceId: 'trace-1',
   correlationId: 'corr-1',
   causationId: 'cause-1',
-  metadata: {}
+  metadata: {},
 });
 
 describe('OutboxRelayService — observability wiring', () => {
@@ -31,11 +31,19 @@ describe('OutboxRelayService — observability wiring', () => {
     outbox = { findPending: jest.fn(), markPublished: jest.fn().mockResolvedValue(undefined) };
     queue = { enqueue: jest.fn().mockResolvedValue(undefined) };
     metrics = new MetricsService();
-    relay = new OutboxRelayService(outbox as unknown as OutboxRepository, queue as unknown as QueueService, metrics);
+    relay = new OutboxRelayService(
+      outbox as unknown as OutboxRepository,
+      queue as unknown as QueueService,
+      metrics,
+    );
   });
 
   it('sets outbox_pending_total to the count of pending rows found at sweep time', async () => {
-    outbox.findPending.mockResolvedValue([pendingDoc('evt-1'), pendingDoc('evt-2'), pendingDoc('evt-3')]);
+    outbox.findPending.mockResolvedValue([
+      pendingDoc('evt-1'),
+      pendingDoc('evt-2'),
+      pendingDoc('evt-3'),
+    ]);
 
     await relay.relayPending();
 

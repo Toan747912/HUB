@@ -16,9 +16,7 @@ export abstract class Identifier<Brand extends string> {
 
   protected constructor(value: string) {
     if (value === undefined || value === null || value.trim().length === 0) {
-      throw new Error(
-        `${new.target.name}: identifier value must be a non-empty string`,
-      );
+      throw new Error(`${new.target.name}: identifier value must be a non-empty string`);
     }
     this.value = value;
   }

@@ -1,7 +1,9 @@
 export function getJwtSecret(): string {
   const secret = process.env['JWT_SECRET'];
   if (!secret) {
-    throw new Error('JWT_SECRET environment variable is required. Application cannot start without it.');
+    throw new Error(
+      'JWT_SECRET environment variable is required. Application cannot start without it.',
+    );
   }
   return secret;
 }
@@ -9,7 +11,9 @@ export function getJwtSecret(): string {
 export function getRefreshSecret(): string {
   const secret = process.env['REFRESH_SECRET'];
   if (!secret) {
-    throw new Error('REFRESH_SECRET environment variable is required. Application cannot start without it.');
+    throw new Error(
+      'REFRESH_SECRET environment variable is required. Application cannot start without it.',
+    );
   }
   return secret;
 }

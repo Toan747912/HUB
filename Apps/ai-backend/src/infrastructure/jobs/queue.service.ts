@@ -23,7 +23,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly circuitBreaker: RedisCircuitBreakerService,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   onModuleInit(): void {
@@ -38,7 +38,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     this.worker = new Worker<DomainEvent>(
       GOAL_EVENTS_QUEUE,
       async (job: Job<DomainEvent>) => this.process(job),
-      { connection }
+      { connection },
     );
 
     this.worker.on('failed', async (job, err) => {
@@ -80,8 +80,11 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     if (!this.tracer) return run();
     return this.tracer.withSpan(
       'bullmq.enqueue',
-      SpanFactory.attributesFor({ operation: 'enqueue', aggregateId: event.metadata.aggregateId.toString() }),
-      run
+      SpanFactory.attributesFor({
+        operation: 'enqueue',
+        aggregateId: event.metadata.aggregateId.toString(),
+      }),
+      run,
     );
   }
 
@@ -96,7 +99,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
       attempts: 5,
       backoff: { type: 'exponential', delay: 1000 },
       removeOnComplete: true,
-      removeOnFail: false
+      removeOnFail: false,
     });
 
     this.log('enqueued', event);
@@ -153,8 +156,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
         aggregateId: domainEvent.metadata?.aggregateId,
         eventType: domainEvent.type,
         timestamp: new Date().toISOString(),
-        ...extra
-      })
+        ...extra,
+      }),
     );
   }
 }

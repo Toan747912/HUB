@@ -12,7 +12,7 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
   constructor(
     @InjectModel('Recommendation') private readonly model: Model<RecommendationDocument>,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   async save(recommendation: Recommendation): Promise<void> {
@@ -25,9 +25,9 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
           _id,
           {
             $set: { ...mutableFields, updatedAt: new Date() },
-            $setOnInsert: { createdAt: new Date() }
+            $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: 'after' }
+          { upsert: true, returnDocument: 'after' },
         );
         this.log('save', recommendation.getId().toString(), start, 'SUCCESS');
       } catch (error) {
@@ -70,7 +70,10 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
     return this.instrumented('findByAssessmentId', assessmentId, async () => {
       const start = Date.now();
       try {
-        const docs = await this.model.find({ assessmentId }).lean<RecommendationDocument[]>().exec();
+        const docs = await this.model
+          .find({ assessmentId })
+          .lean<RecommendationDocument[]>()
+          .exec();
         this.log('findByAssessmentId', assessmentId, start, 'SUCCESS');
         return docs.map((d) => RecommendationPersistenceMapper.toDomain(d));
       } catch (error) {
@@ -93,7 +96,11 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
     });
   }
 
-  private async instrumented<T>(operation: string, aggregateId: string, fn: () => Promise<T>): Promise<T> {
+  private async instrumented<T>(
+    operation: string,
+    aggregateId: string,
+    fn: () => Promise<T>,
+  ): Promise<T> {
     const start = Date.now();
     const run = async (): Promise<T> => {
       try {
@@ -109,10 +116,20 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
     if (!this.tracer) {
       return run();
     }
-    return this.tracer.withSpan(`mongodb.${operation}`, SpanFactory.attributesFor({ operation, aggregateId }), run);
+    return this.tracer.withSpan(
+      `mongodb.${operation}`,
+      SpanFactory.attributesFor({ operation, aggregateId }),
+      run,
+    );
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'db',
@@ -121,8 +138,8 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
         latencyMs: Date.now() - startMs,
         database: 'mongodb',
         status,
-        errorType: error instanceof Error ? error.constructor.name : undefined
-      })
+        errorType: error instanceof Error ? error.constructor.name : undefined,
+      }),
     );
   }
 }

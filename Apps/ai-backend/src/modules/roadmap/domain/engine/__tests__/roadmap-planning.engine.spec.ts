@@ -10,7 +10,7 @@ const baseInput: PlanningInput = {
   difficulty: 'INTERMEDIATE',
   priority: 'MEDIUM',
   constraints: ['5 hours/week'],
-  targetDate: '2027-01-01'
+  targetDate: '2027-01-01',
 };
 
 describe('RoadmapPlanningEngine', () => {
@@ -44,7 +44,9 @@ describe('RoadmapPlanningEngine', () => {
 
   it('orders tasks with a single linear dependency chain across the whole roadmap', () => {
     const plan = engine.generate(baseInput);
-    const allTasks = plan.phases.flatMap((phase) => phase.milestones.flatMap((milestone) => milestone.tasks));
+    const allTasks = plan.phases.flatMap((phase) =>
+      phase.milestones.flatMap((milestone) => milestone.tasks),
+    );
 
     expect(allTasks[0].dependsOn).toEqual([]);
     for (let i = 1; i < allTasks.length; i++) {
@@ -72,10 +74,12 @@ describe('RoadmapPlanningEngine', () => {
     const fewConstraints = engine.generate({ ...baseInput, constraints: [] });
     const manyConstraints = engine.generate({
       ...baseInput,
-      constraints: ['a', 'b', 'c', 'd', 'e']
+      constraints: ['a', 'b', 'c', 'd', 'e'],
     });
 
     const rank = (value: string) => ['LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH'].indexOf(value);
-    expect(rank(manyConstraints.complexity)).toBeGreaterThanOrEqual(rank(fewConstraints.complexity));
+    expect(rank(manyConstraints.complexity)).toBeGreaterThanOrEqual(
+      rank(fewConstraints.complexity),
+    );
   });
 });

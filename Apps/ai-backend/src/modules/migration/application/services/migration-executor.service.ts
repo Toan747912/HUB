@@ -24,14 +24,14 @@ export class MigrationExecutorService implements IMigrationExecutor {
           executedStepIds,
           failedStepId: step.id,
           errorCode: normalized.error,
-          errorMessage: normalized.message
+          errorMessage: normalized.message,
         };
       }
     }
 
     return {
       success: true,
-      executedStepIds
+      executedStepIds,
     };
   }
 
@@ -42,10 +42,16 @@ export class MigrationExecutorService implements IMigrationExecutor {
     for (const step of sorted) {
       for (const dep of step.dependencies) {
         if (!known.has(dep)) {
-          throw new MigrationError('DEPENDENCY_NOT_FOUND', `Missing dependency ${dep} for step ${step.id}`);
+          throw new MigrationError(
+            'DEPENDENCY_NOT_FOUND',
+            `Missing dependency ${dep} for step ${step.id}`,
+          );
         }
         if (sorted.findIndex((s) => s.id === dep) > sorted.findIndex((s) => s.id === step.id)) {
-          throw new MigrationError('INVALID_DEPENDENCY_ORDER', `Dependency ${dep} appears after ${step.id}`);
+          throw new MigrationError(
+            'INVALID_DEPENDENCY_ORDER',
+            `Dependency ${dep} appears after ${step.id}`,
+          );
         }
       }
     }
@@ -60,7 +66,7 @@ export class MigrationExecutorService implements IMigrationExecutor {
 
     if (error instanceof Error) {
       return new MigrationError('MIGRATION_EXECUTION_FAILED', 'Migration execution failed', {
-        name: error.name
+        name: error.name,
       });
     }
 

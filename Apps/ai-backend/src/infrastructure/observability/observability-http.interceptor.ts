@@ -12,7 +12,7 @@ export class ObservabilityHttpInterceptor implements NestInterceptor {
     private readonly tracer: TracerService,
     private readonly metrics: MetricsService,
     private readonly requestContext: RequestContextService,
-    private readonly logger: StructuredLoggerService
+    private readonly logger: StructuredLoggerService,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -29,7 +29,9 @@ export class ObservabilityHttpInterceptor implements NestInterceptor {
     const route = req.route?.path ?? req.originalUrl?.split('?')[0] ?? req.url;
     const userId = (req.headers['x-user-id'] as string | undefined) ?? undefined;
 
-    const parentOtelContext = this.tracer.extractContextFromHeaders(req.headers as Record<string, string | string[] | undefined>);
+    const parentOtelContext = this.tracer.extractContextFromHeaders(
+      req.headers as Record<string, string | string[] | undefined>,
+    );
 
     return this.requestContext.run({ traceId: req.traceId ?? 'unknown', userId }, () =>
       this.tracer.withSpan(
@@ -52,8 +54,8 @@ export class ObservabilityHttpInterceptor implements NestInterceptor {
             throw error;
           }
         },
-        parentOtelContext
-      )
+        parentOtelContext,
+      ),
     );
   }
 
@@ -64,7 +66,7 @@ export class ObservabilityHttpInterceptor implements NestInterceptor {
     startedAt: number,
     _userId: string | undefined,
     operation: string,
-    error?: unknown
+    error?: unknown,
   ): void {
     const latencyMs = Date.now() - startedAt;
     this.metrics.recordHttpRequest(method, route, status, latencyMs / 1000);
@@ -72,8 +74,7 @@ export class ObservabilityHttpInterceptor implements NestInterceptor {
       operation: `${method} ${operation}`,
       status: error ? 'FAILURE' : 'SUCCESS',
       latencyMs,
-      errorCode: error instanceof Error ? error.constructor.name : undefined
+      errorCode: error instanceof Error ? error.constructor.name : undefined,
     });
   }
 }
-

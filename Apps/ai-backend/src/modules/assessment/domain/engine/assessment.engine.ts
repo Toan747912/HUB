@@ -6,7 +6,7 @@ import {
   CompetencyResult,
   KnowledgeGapResult,
   ReadinessLevel,
-  SkillScoreResult
+  SkillScoreResult,
 } from './assessment-engine.types';
 
 export const ASSESSMENT_ENGINE_VERSION = 'assessment-engine-v1';
@@ -58,7 +58,7 @@ export class AssessmentEngine {
       confidenceScore,
       readiness,
       weakAreas,
-      strongAreas
+      strongAreas,
     };
   }
 
@@ -78,7 +78,7 @@ export class AssessmentEngine {
         skillId,
         rawScore: bucket.total === 0 ? 0 : Math.round((bucket.completed / bucket.total) * 100),
         taskCount: bucket.total,
-        completedTaskCount: bucket.completed
+        completedTaskCount: bucket.completed,
       }));
   }
 
@@ -86,11 +86,14 @@ export class AssessmentEngine {
     return skillScores.map((skill) => ({
       skillId: skill.skillId,
       score: skill.rawScore,
-      level: CompetencyLevel.fromScore(skill.rawScore).getValue()
+      level: CompetencyLevel.fromScore(skill.rawScore).getValue(),
     }));
   }
 
-  private detectKnowledgeGaps(input: AssessmentInput, skillScores: SkillScoreResult[]): KnowledgeGapResult[] {
+  private detectKnowledgeGaps(
+    input: AssessmentInput,
+    skillScores: SkillScoreResult[],
+  ): KnowledgeGapResult[] {
     return skillScores
       .filter((skill) => skill.rawScore < GAP_THRESHOLD)
       .map((skill) => {
@@ -100,7 +103,7 @@ export class AssessmentEngine {
           id: `${input.roadmapId}-gap-${skill.skillId}`,
           skillId: skill.skillId,
           weight: KnowledgeWeight.fromSeverity(severity).getValue(),
-          reason: `Completion for "${skill.skillId}" is ${skill.rawScore}%, below the ${GAP_THRESHOLD}% readiness threshold`
+          reason: `Completion for "${skill.skillId}" is ${skill.rawScore}%, below the ${GAP_THRESHOLD}% readiness threshold`,
         };
       });
   }
@@ -108,14 +111,22 @@ export class AssessmentEngine {
   private estimateConfidence(
     input: AssessmentInput,
     competencies: CompetencyResult[],
-    knowledgeGaps: KnowledgeGapResult[]
+    knowledgeGaps: KnowledgeGapResult[],
   ): number {
     const averageCompetencyScore =
-      competencies.length === 0 ? 0 : competencies.reduce((sum, c) => sum + c.score, 0) / competencies.length;
+      competencies.length === 0
+        ? 0
+        : competencies.reduce((sum, c) => sum + c.score, 0) / competencies.length;
 
     const base = input.roadmapCompletionRatio * 0.6 + averageCompetencyScore * 0.4;
-    const latencyPenalty = Math.min(this.averageOverrunRatio(input.tasks) * LATENCY_PENALTY_CAP, LATENCY_PENALTY_CAP);
-    const revisionPenalty = Math.min(input.revisionCount * REVISION_PENALTY_PER_UNIT, REVISION_PENALTY_CAP);
+    const latencyPenalty = Math.min(
+      this.averageOverrunRatio(input.tasks) * LATENCY_PENALTY_CAP,
+      LATENCY_PENALTY_CAP,
+    );
+    const revisionPenalty = Math.min(
+      input.revisionCount * REVISION_PENALTY_PER_UNIT,
+      REVISION_PENALTY_CAP,
+    );
     const stabilityAdjustment = this.computeStabilityAdjustment(input.previousRuns);
 
     const raw = base - latencyPenalty - revisionPenalty + stabilityAdjustment;
@@ -125,11 +136,15 @@ export class AssessmentEngine {
   private calculateReadiness(
     input: AssessmentInput,
     confidenceScore: number,
-    knowledgeGaps: KnowledgeGapResult[]
+    knowledgeGaps: KnowledgeGapResult[],
   ): ReadinessLevel {
     const hasCriticalGap = knowledgeGaps.some((gap) => gap.weight === 'CRITICAL');
 
-    if (input.roadmapCompletionRatio >= READY_COMPLETION_THRESHOLD && !hasCriticalGap && confidenceScore >= READY_CONFIDENCE_THRESHOLD) {
+    if (
+      input.roadmapCompletionRatio >= READY_COMPLETION_THRESHOLD &&
+      !hasCriticalGap &&
+      confidenceScore >= READY_CONFIDENCE_THRESHOLD
+    ) {
       return 'READY';
     }
 
@@ -142,11 +157,20 @@ export class AssessmentEngine {
 
   private averageOverrunRatio(tasks: AssessmentInput['tasks'], skillId?: string): number {
     const relevant = tasks.filter(
-      (task) => (skillId === undefined || task.skillId === skillId) && task.completed && typeof task.actualDurationDays === 'number' && task.estimatedDurationDays > 0
+      (task) =>
+        (skillId === undefined || task.skillId === skillId) &&
+        task.completed &&
+        typeof task.actualDurationDays === 'number' &&
+        task.estimatedDurationDays > 0,
     );
     if (relevant.length === 0) return 0;
 
-    const overruns = relevant.map((task) => Math.max(0, (task.actualDurationDays! - task.estimatedDurationDays) / task.estimatedDurationDays));
+    const overruns = relevant.map((task) =>
+      Math.max(
+        0,
+        (task.actualDurationDays! - task.estimatedDurationDays) / task.estimatedDurationDays,
+      ),
+    );
     return overruns.reduce((sum, v) => sum + v, 0) / overruns.length;
   }
 

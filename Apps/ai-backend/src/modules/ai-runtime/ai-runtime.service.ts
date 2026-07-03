@@ -33,10 +33,12 @@ export class AiRuntimeService {
     private readonly assessmentService: AssessmentService,
     private readonly recommendationService: RecommendationService,
     private readonly discoveryService: DiscoveryService,
-    private readonly teachingService: TeachingService
+    private readonly teachingService: TeachingService,
   ) {}
 
-  async execute(dto: AiExecuteDto): Promise<{ route: string; output: ExplainableAiOutput; context: Record<string, unknown> }> {
+  async execute(
+    dto: AiExecuteDto,
+  ): Promise<{ route: string; output: ExplainableAiOutput; context: Record<string, unknown> }> {
     this.boundaryGuard.enforceNoCrossDomainWrite(dto.route, dto.attempted_writes ?? []);
 
     const domainContext = await this.buildDomainContext(dto);
@@ -51,16 +53,21 @@ export class AiRuntimeService {
       input: { ...(dto.input ?? {}), prompt: promptText },
       context: dto.context ?? {},
       memory: dto.memory ?? [],
-      domainContext
+      domainContext,
     });
 
-    const rawOutput = await this.callLlmWithResilience(llmPrompt, dto.route, domainContext, promptText);
+    const rawOutput = await this.callLlmWithResilience(
+      llmPrompt,
+      dto.route,
+      domainContext,
+      promptText,
+    );
     const output = this.normalizeExplainableOutput(rawOutput, dto.route, domainContext);
 
     return {
       route: dto.route,
       output,
-      context: domainContext
+      context: domainContext,
     };
   }
 
@@ -98,17 +105,23 @@ export class AiRuntimeService {
     prompt: string,
     route: string,
     context: Record<string, unknown>,
-    rawPromptText?: string
+    rawPromptText?: string,
   ): Promise<unknown> {
     if (this.isCircuitOpen()) {
-      return this.buildFallbackOutput(route, context, 'Circuit breaker open - using fallback response');
+      return this.buildFallbackOutput(
+        route,
+        context,
+        'Circuit breaker open - using fallback response',
+      );
     }
 
     const testMode = this.isTestMode();
     const forceTimeout = testMode && (rawPromptText?.includes('__TEST_TIMEOUT__') ?? false);
     const forceInvalidLlm = testMode && (rawPromptText?.includes('__TEST_INVALID_LLM__') ?? false);
-    const forceCircuitFail = testMode && (rawPromptText?.includes('__TEST_CIRCUIT_FAIL__') ?? false);
-    const forceCircuitRecover = testMode && (rawPromptText?.includes('__TEST_CIRCUIT_RECOVER__') ?? false);
+    const forceCircuitFail =
+      testMode && (rawPromptText?.includes('__TEST_CIRCUIT_FAIL__') ?? false);
+    const forceCircuitRecover =
+      testMode && (rawPromptText?.includes('__TEST_CIRCUIT_RECOVER__') ?? false);
 
     if (forceCircuitRecover) {
       this.circuitOpenUntil = 0;
@@ -124,7 +137,11 @@ export class AiRuntimeService {
       if (this.llmFailureCount >= this.circuitFailureThreshold) {
         this.circuitOpenUntil = Date.now() + this.circuitCooldownMs;
       }
-      return this.buildFallbackOutput(route, context, 'LLM unavailable or timed out - using fallback response');
+      return this.buildFallbackOutput(
+        route,
+        context,
+        'LLM unavailable or timed out - using fallback response',
+      );
     }
 
     try {
@@ -133,7 +150,7 @@ export class AiRuntimeService {
             new Promise<unknown>((resolve) => {
               setTimeout(() => resolve({ delayed: true }), this.llmTimeoutMs + 50);
             }),
-            this.llmTimeoutMs
+            this.llmTimeoutMs,
           )
         : await this.withTimeout(this.llm.complete(prompt), this.llmTimeoutMs);
 
@@ -144,7 +161,11 @@ export class AiRuntimeService {
       if (this.llmFailureCount >= this.circuitFailureThreshold) {
         this.circuitOpenUntil = Date.now() + this.circuitCooldownMs;
       }
-      return this.buildFallbackOutput(route, context, 'LLM unavailable or timed out - using fallback response');
+      return this.buildFallbackOutput(
+        route,
+        context,
+        'LLM unavailable or timed out - using fallback response',
+      );
     }
   }
 
@@ -174,7 +195,7 @@ export class AiRuntimeService {
   private normalizeExplainableOutput(
     rawOutput: unknown,
     route: string,
-    context: Record<string, unknown>
+    context: Record<string, unknown>,
   ): ExplainableAiOutput {
     const objectOutput =
       rawOutput && typeof rawOutput === 'object' && !Array.isArray(rawOutput)
@@ -200,13 +221,13 @@ export class AiRuntimeService {
       confidence,
       reasoning,
       traced_to,
-      route: route as ExplainableAiOutput['route']
+      route: route as ExplainableAiOutput['route'],
     };
 
     this.explainabilityRules.validate({
       confidence: normalized.confidence,
       reasoning: normalized.reasoning,
-      traced_to: normalized.traced_to
+      traced_to: normalized.traced_to,
     });
 
     return normalized;
@@ -228,13 +249,18 @@ export class AiRuntimeService {
     return derived.length > 0 ? derived : ['runtime_fallback'];
   }
 
-  private buildFallbackOutput(route: string, context: Record<string, unknown>, reason: string): Record<string, unknown> {
+  private buildFallbackOutput(
+    route: string,
+    context: Record<string, unknown>,
+    reason: string,
+  ): Record<string, unknown> {
     return {
       route,
       message: 'Fallback response generated',
       confidence: 0,
       reasoning: reason,
-      traced_to: Object.keys(context ?? {}).length > 0 ? Object.keys(context) : ['runtime_fallback']
+      traced_to:
+        Object.keys(context ?? {}).length > 0 ? Object.keys(context) : ['runtime_fallback'],
     };
   }
 

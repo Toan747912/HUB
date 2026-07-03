@@ -1,4 +1,7 @@
-import { AssessmentHistorySignal, AssessmentTaskSignal } from '../../domain/engine/assessment-engine.types';
+import {
+  AssessmentHistorySignal,
+  AssessmentTaskSignal,
+} from '../../domain/engine/assessment-engine.types';
 
 export class RunAssessmentCommand {
   constructor(
@@ -10,6 +13,6 @@ export class RunAssessmentCommand {
     public readonly expectedVersion: number | undefined,
     public readonly traceId: string,
     public readonly correlationId: string,
-    public readonly causationId: string
+    public readonly causationId: string,
   ) {}
 }

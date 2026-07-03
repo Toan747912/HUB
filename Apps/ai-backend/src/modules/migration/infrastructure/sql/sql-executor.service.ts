@@ -21,7 +21,11 @@ export class SqlExecutorService {
 
     try {
       await this.withRetry(async () => {
-        await this.withTimeout(this.executeBatch(tx, sqlBatch), this.stepTimeoutMs, 'SQL step timed out');
+        await this.withTimeout(
+          this.executeBatch(tx, sqlBatch),
+          this.stepTimeoutMs,
+          'SQL step timed out',
+        );
       });
 
       await this.commitTransaction(tx);
@@ -35,20 +39,26 @@ export class SqlExecutorService {
     return {
       statements: [],
       committed: false,
-      rolledBack: false
+      rolledBack: false,
     };
   }
 
   private async commitTransaction(tx: TransactionContext): Promise<void> {
     if (tx.rolledBack) {
-      throw new MigrationError('TRANSACTION_ALREADY_ROLLED_BACK', 'Cannot commit a rolled back transaction');
+      throw new MigrationError(
+        'TRANSACTION_ALREADY_ROLLED_BACK',
+        'Cannot commit a rolled back transaction',
+      );
     }
     tx.committed = true;
   }
 
   private async rollbackTransaction(tx: TransactionContext): Promise<void> {
     if (tx.committed) {
-      throw new MigrationError('TRANSACTION_ALREADY_COMMITTED', 'Cannot rollback a committed transaction');
+      throw new MigrationError(
+        'TRANSACTION_ALREADY_COMMITTED',
+        'Cannot rollback a committed transaction',
+      );
     }
     tx.rolledBack = true;
   }
@@ -77,13 +87,21 @@ export class SqlExecutorService {
       }
     }
 
-    throw new MigrationError('SQL_BATCH_RETRY_EXHAUSTED', 'SQL batch execution failed after retries', {
-      retries: this.maxRetries,
-      cause: this.serializeError(lastError)
-    });
+    throw new MigrationError(
+      'SQL_BATCH_RETRY_EXHAUSTED',
+      'SQL batch execution failed after retries',
+      {
+        retries: this.maxRetries,
+        cause: this.serializeError(lastError),
+      },
+    );
   }
 
-  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    timeoutMessage: string,
+  ): Promise<T> {
     let timer: NodeJS.Timeout | undefined;
 
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -108,7 +126,7 @@ export class SqlExecutorService {
 
     if (error instanceof Error) {
       return new MigrationError('SQL_EXECUTION_FAILED', 'SQL execution failed', {
-        name: error.name
+        name: error.name,
       });
     }
 
@@ -120,19 +138,19 @@ export class SqlExecutorService {
       return {
         error: error.error,
         message: error.message,
-        details: error.details
+        details: error.details,
       };
     }
 
     if (error instanceof Error) {
       return {
         name: error.name,
-        message: error.message
+        message: error.message,
       };
     }
 
     return {
-      error: 'UNKNOWN_ERROR'
+      error: 'UNKNOWN_ERROR',
     };
   }
 }

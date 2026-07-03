@@ -7,13 +7,31 @@ const baseInput: AssessmentInput = {
   learnerId: 'learner-1',
   roadmapCompletionRatio: 75,
   tasks: [
-    { id: 't1', skillId: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 },
-    { id: 't2', skillId: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 },
+    {
+      id: 't1',
+      skillId: 'Foundations',
+      completed: true,
+      estimatedDurationDays: 2,
+      actualDurationDays: 2,
+    },
+    {
+      id: 't2',
+      skillId: 'Foundations',
+      completed: true,
+      estimatedDurationDays: 2,
+      actualDurationDays: 2,
+    },
     { id: 't3', skillId: 'Advanced Practice', completed: false, estimatedDurationDays: 4 },
-    { id: 't4', skillId: 'Advanced Practice', completed: true, estimatedDurationDays: 4, actualDurationDays: 5 }
+    {
+      id: 't4',
+      skillId: 'Advanced Practice',
+      completed: true,
+      estimatedDurationDays: 4,
+      actualDurationDays: 5,
+    },
   ],
   revisionCount: 0,
-  previousRuns: []
+  previousRuns: [],
 };
 
 describe('AssessmentEngine', () => {
@@ -42,8 +60,14 @@ describe('AssessmentEngine', () => {
       tasks: [
         { id: 't1', skillId: 'Weak Area', completed: false, estimatedDurationDays: 2 },
         { id: 't2', skillId: 'Weak Area', completed: false, estimatedDurationDays: 2 },
-        { id: 't3', skillId: 'Strong Area', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }
-      ]
+        {
+          id: 't3',
+          skillId: 'Strong Area',
+          completed: true,
+          estimatedDurationDays: 2,
+          actualDurationDays: 2,
+        },
+      ],
     });
 
     expect(result.knowledgeGaps).toHaveLength(1);
@@ -55,7 +79,15 @@ describe('AssessmentEngine', () => {
   it('produces no gaps when every skill area is above the threshold', () => {
     const result = engine.evaluate({
       ...baseInput,
-      tasks: [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }]
+      tasks: [
+        {
+          id: 't1',
+          skillId: 'Solid',
+          completed: true,
+          estimatedDurationDays: 2,
+          actualDurationDays: 2,
+        },
+      ],
     });
 
     expect(result.knowledgeGaps).toHaveLength(0);
@@ -76,8 +108,8 @@ describe('AssessmentEngine', () => {
       previousRuns: [
         { confidenceScore: 70, readiness: 'READY', computedAt: '2027-01-01T00:00:00.000Z' },
         { confidenceScore: 71, readiness: 'READY', computedAt: '2027-01-02T00:00:00.000Z' },
-        { confidenceScore: 69, readiness: 'READY', computedAt: '2027-01-03T00:00:00.000Z' }
-      ]
+        { confidenceScore: 69, readiness: 'READY', computedAt: '2027-01-03T00:00:00.000Z' },
+      ],
     });
 
     const volatileHistory = engine.evaluate({
@@ -85,8 +117,8 @@ describe('AssessmentEngine', () => {
       previousRuns: [
         { confidenceScore: 20, readiness: 'AT_RISK', computedAt: '2027-01-01T00:00:00.000Z' },
         { confidenceScore: 90, readiness: 'READY', computedAt: '2027-01-02T00:00:00.000Z' },
-        { confidenceScore: 15, readiness: 'AT_RISK', computedAt: '2027-01-03T00:00:00.000Z' }
-      ]
+        { confidenceScore: 15, readiness: 'AT_RISK', computedAt: '2027-01-03T00:00:00.000Z' },
+      ],
     });
 
     expect(stableHistory.confidenceScore).toBeGreaterThan(volatileHistory.confidenceScore);
@@ -96,7 +128,15 @@ describe('AssessmentEngine', () => {
     const ready = engine.evaluate({
       ...baseInput,
       roadmapCompletionRatio: 95,
-      tasks: [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }]
+      tasks: [
+        {
+          id: 't1',
+          skillId: 'Solid',
+          completed: true,
+          estimatedDurationDays: 2,
+          actualDurationDays: 2,
+        },
+      ],
     });
     expect(ready.readiness).toBe('READY');
 
@@ -106,8 +146,8 @@ describe('AssessmentEngine', () => {
       tasks: [
         { id: 't1', skillId: 'Weak', completed: false, estimatedDurationDays: 2 },
         { id: 't2', skillId: 'Weak', completed: false, estimatedDurationDays: 2 },
-        { id: 't3', skillId: 'Weak', completed: false, estimatedDurationDays: 2 }
-      ]
+        { id: 't3', skillId: 'Weak', completed: false, estimatedDurationDays: 2 },
+      ],
     });
     expect(atRisk.readiness).toBe('AT_RISK');
   });

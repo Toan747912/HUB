@@ -1,4 +1,10 @@
-import { AssessmentId, GoalId, RoadmapId, SkillId, TaskId } from '../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  RoadmapId,
+  SkillId,
+  TaskId,
+} from '../../../../shared/domain/identifiers';
 import { RecommendationReason } from './recommendation-reason.entity';
 import { RecommendationScores } from './recommendation-scores';
 
@@ -15,6 +21,6 @@ export class RecommendationItem {
     public readonly affectedGoalId: GoalId,
     public readonly affectedRoadmapId: RoadmapId,
     public readonly affectedAssessmentId: AssessmentId,
-    public readonly logicalResourceRef: string | null = null
+    public readonly logicalResourceRef: string | null = null,
   ) {}
 }

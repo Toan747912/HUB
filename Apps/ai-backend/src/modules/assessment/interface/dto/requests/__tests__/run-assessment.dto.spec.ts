@@ -7,9 +7,17 @@ import { RunAssessmentDto } from '../run-assessment.dto';
 const validPayload = () => ({
   assessmentId: randomUUID(),
   roadmapCompletionRatio: 75,
-  tasks: [{ id: 't1', skillId: 'Foundations', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
+  tasks: [
+    {
+      id: 't1',
+      skillId: 'Foundations',
+      completed: true,
+      estimatedDurationDays: 2,
+      actualDurationDays: 2,
+    },
+  ],
   revisionCount: 0,
-  previousRuns: []
+  previousRuns: [],
 });
 
 describe('RunAssessmentDto validation', () => {
@@ -20,13 +28,19 @@ describe('RunAssessmentDto validation', () => {
   });
 
   it('rejects a non-UUID assessmentId', async () => {
-    const dto = plainToInstance(RunAssessmentDto, { ...validPayload(), assessmentId: 'not-a-uuid' });
+    const dto = plainToInstance(RunAssessmentDto, {
+      ...validPayload(),
+      assessmentId: 'not-a-uuid',
+    });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'assessmentId')).toBe(true);
   });
 
   it('rejects roadmapCompletionRatio outside [0, 100]', async () => {
-    const dto = plainToInstance(RunAssessmentDto, { ...validPayload(), roadmapCompletionRatio: 150 });
+    const dto = plainToInstance(RunAssessmentDto, {
+      ...validPayload(),
+      roadmapCompletionRatio: 150,
+    });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'roadmapCompletionRatio')).toBe(true);
   });

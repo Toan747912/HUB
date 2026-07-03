@@ -3,7 +3,7 @@ import {
   GoalId,
   LearnerId,
   RecommendationId,
-  RoadmapId
+  RoadmapId,
 } from '../../../../shared/domain/identifiers';
 import { Recommendation } from '../../domain/aggregates/recommendation.aggregate';
 import { RecommendationEngine } from '../../domain/engine/recommendation.engine';
@@ -20,7 +20,7 @@ import {
   RecommendationNotFoundError,
   RecommendationStateTransitionError,
   RecommendationValidationError,
-  RecommendationVersionConflictError
+  RecommendationVersionConflictError,
 } from '../errors/application.errors';
 
 export interface IRecommendationLock {
@@ -40,7 +40,7 @@ export class RecommendationCommandService {
     private readonly repository: IRecommendationRepository,
     private readonly eventPublisher: IEventPublisher,
     private readonly recommendationLock?: IRecommendationLock,
-    private readonly generationMetrics?: IRecommendationGenerationMetrics
+    private readonly generationMetrics?: IRecommendationGenerationMetrics,
   ) {}
 
   private async withLock<T>(recommendationId: string, fn: () => Promise<T>): Promise<T> {
@@ -73,7 +73,7 @@ export class RecommendationCommandService {
         competencies: command.competencies,
         knowledgeGaps: command.knowledgeGaps,
         confidenceScore: command.confidenceScore,
-        readiness: command.readiness
+        readiness: command.readiness,
       };
 
       const engineStart = Date.now();
@@ -90,9 +90,13 @@ export class RecommendationCommandService {
           roadmapId: RoadmapId.create(command.roadmapId),
           assessmentId: AssessmentId.create(command.assessmentId),
           learnerId: LearnerId.create(command.learnerId),
-          computation
+          computation,
         },
-        { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId }
+        {
+          traceId: command.traceId,
+          correlationId: command.correlationId,
+          causationId: command.causationId,
+        },
       );
 
       await this.repository.save(recommendation);
@@ -115,8 +119,12 @@ export class RecommendationCommandService {
         if (!r) throw new RecommendationNotFoundError(command.recommendationId);
 
         r.approve(
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -141,9 +149,13 @@ export class RecommendationCommandService {
         if (!r) throw new RecommendationNotFoundError(command.recommendationId);
 
         r.reject(
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
           command.reason,
-          command.expectedVersion
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -168,8 +180,12 @@ export class RecommendationCommandService {
         if (!r) throw new RecommendationNotFoundError(command.recommendationId);
 
         r.archive(
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -186,7 +202,9 @@ export class RecommendationCommandService {
     }
   }
 
-  async invalidateRecommendation(command: InvalidateRecommendationCommand): Promise<Recommendation> {
+  async invalidateRecommendation(
+    command: InvalidateRecommendationCommand,
+  ): Promise<Recommendation> {
     const start = Date.now();
     try {
       const recommendation = await this.withLock(command.recommendationId, async () => {
@@ -195,8 +213,12 @@ export class RecommendationCommandService {
 
         r.invalidate(
           command.reason,
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(r);
@@ -227,7 +249,13 @@ export class RecommendationCommandService {
     return error instanceof Error ? error : new Error(String(error));
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'app',
@@ -236,8 +264,8 @@ export class RecommendationCommandService {
         latencyMs: Date.now() - startMs,
         status,
         errorType: error instanceof Error ? error.constructor.name : undefined,
-        timestamp: new Date().toISOString()
-      })
+        timestamp: new Date().toISOString(),
+      }),
     );
   }
 }

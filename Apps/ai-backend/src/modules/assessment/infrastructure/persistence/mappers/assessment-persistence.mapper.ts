@@ -1,7 +1,16 @@
-import { AssessmentId, GoalId, LearnerId, RoadmapId, SkillId } from '../../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RoadmapId,
+  SkillId,
+} from '../../../../../shared/domain/identifiers';
 import { Assessment } from '../../../domain/aggregates/assessment.aggregate';
 import { AssessmentResult } from '../../../domain/entities/assessment-result.entity';
-import { AssessmentHistory, AssessmentHistoryReason } from '../../../domain/entities/assessment-history.entity';
+import {
+  AssessmentHistory,
+  AssessmentHistoryReason,
+} from '../../../domain/entities/assessment-history.entity';
 import { Competency } from '../../../domain/entities/competency.entity';
 import { KnowledgeGap } from '../../../domain/entities/knowledge-gap.entity';
 import { SkillScore } from '../../../domain/entities/skill-score.entity';
@@ -25,16 +34,25 @@ export class AssessmentPersistenceMapper {
               skillId: s.skillId.toString(),
               rawScore: s.rawScore,
               taskCount: s.taskCount,
-              completedTaskCount: s.completedTaskCount
+              completedTaskCount: s.completedTaskCount,
             })),
-            competencies: result.competencies.map((c) => ({ skillId: c.skillId.toString(), score: c.score, level: c.level })),
-            knowledgeGaps: result.knowledgeGaps.map((g) => ({ id: g.id, skillId: g.skillId.toString(), weight: g.weight, reason: g.reason })),
+            competencies: result.competencies.map((c) => ({
+              skillId: c.skillId.toString(),
+              score: c.score,
+              level: c.level,
+            })),
+            knowledgeGaps: result.knowledgeGaps.map((g) => ({
+              id: g.id,
+              skillId: g.skillId.toString(),
+              weight: g.weight,
+              reason: g.reason,
+            })),
             confidenceScore: result.confidenceScore,
             readiness: result.readiness,
             weakAreas: [...result.weakAreas],
             strongAreas: [...result.strongAreas],
             engineVersion: result.engineVersion,
-            computedAt: result.computedAt
+            computedAt: result.computedAt,
           }
         : null,
       history: assessment.getHistory().map((h) => ({
@@ -44,11 +62,11 @@ export class AssessmentPersistenceMapper {
         confidenceScore: h.confidenceScore,
         readiness: h.readiness,
         gapCount: h.gapCount,
-        createdAt: h.createdAt
+        createdAt: h.createdAt,
       })),
       invalidatedAt: assessment.getInvalidatedAt(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -68,15 +86,27 @@ export class AssessmentPersistenceMapper {
 
     (assessment as any).latestResult = doc.latestResult
       ? new AssessmentResult(
-          doc.latestResult.skillScores.map((s) => new SkillScore(SkillId.create(s.skillId), s.rawScore, s.taskCount, s.completedTaskCount)),
-          doc.latestResult.competencies.map((c) => new Competency(SkillId.create(c.skillId), c.score, c.level)),
-          doc.latestResult.knowledgeGaps.map((g) => new KnowledgeGap(g.id, SkillId.create(g.skillId), g.weight, g.reason)),
+          doc.latestResult.skillScores.map(
+            (s) =>
+              new SkillScore(
+                SkillId.create(s.skillId),
+                s.rawScore,
+                s.taskCount,
+                s.completedTaskCount,
+              ),
+          ),
+          doc.latestResult.competencies.map(
+            (c) => new Competency(SkillId.create(c.skillId), c.score, c.level),
+          ),
+          doc.latestResult.knowledgeGaps.map(
+            (g) => new KnowledgeGap(g.id, SkillId.create(g.skillId), g.weight, g.reason),
+          ),
           doc.latestResult.confidenceScore,
           doc.latestResult.readiness as any,
           doc.latestResult.weakAreas,
           doc.latestResult.strongAreas,
           doc.latestResult.engineVersion,
-          doc.latestResult.computedAt
+          doc.latestResult.computedAt,
         )
       : null;
 
@@ -89,8 +119,8 @@ export class AssessmentPersistenceMapper {
           h.confidenceScore,
           h.readiness,
           h.gapCount,
-          h.createdAt
-        )
+          h.createdAt,
+        ),
     );
 
     return assessment;

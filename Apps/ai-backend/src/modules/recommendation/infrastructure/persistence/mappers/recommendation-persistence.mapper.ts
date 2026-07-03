@@ -5,7 +5,7 @@ import {
   RecommendationId,
   RoadmapId,
   SkillId,
-  TaskId
+  TaskId,
 } from '../../../../../shared/domain/identifiers';
 import { Recommendation } from '../../../domain/aggregates/recommendation.aggregate';
 import { RecommendationItem } from '../../../domain/entities/recommendation-item.entity';
@@ -14,7 +14,10 @@ import { RecommendationScores } from '../../../domain/entities/recommendation-sc
 import { LearningStrategyAssignment } from '../../../domain/entities/learning-strategy-assignment.entity';
 import { ReviewSchedule } from '../../../domain/entities/review-schedule.entity';
 import { PriorityDecision } from '../../../domain/entities/priority-decision.entity';
-import { RecommendationHistory, RecommendationHistoryReason } from '../../../domain/entities/recommendation-history.entity';
+import {
+  RecommendationHistory,
+  RecommendationHistoryReason,
+} from '../../../domain/entities/recommendation-history.entity';
 import { RecommendationStatus } from '../../../domain/value-objects/recommendation-status.vo';
 import { RecommendationDocument } from '../documents/recommendation.document';
 
@@ -41,18 +44,18 @@ export class RecommendationPersistenceMapper {
         affectedGoalId: i.affectedGoalId.toString(),
         affectedRoadmapId: i.affectedRoadmapId.toString(),
         affectedAssessmentId: i.affectedAssessmentId.toString(),
-        logicalResourceRef: i.logicalResourceRef
+        logicalResourceRef: i.logicalResourceRef,
       })),
       learningStrategies: recommendation.getLearningStrategies().map((s) => ({
         skillId: s.skillId.toString(),
         strategy: s.strategy,
-        rationale: s.rationale
+        rationale: s.rationale,
       })),
       reviewSchedules: recommendation.getReviewSchedules().map((r) => ({
         skillId: r.skillId.toString(),
         intervalDays: r.intervalDays,
         dueDate: r.dueDate,
-        reason: r.reason
+        reason: r.reason,
       })),
       priorityDecisions: recommendation.getPriorityDecisions().map((p) => ({
         taskId: p.taskId,
@@ -60,7 +63,7 @@ export class RecommendationPersistenceMapper {
         originalOrder: p.originalOrder,
         suggestedOrder: p.suggestedOrder,
         blocked: p.blocked,
-        rationale: p.rationale
+        rationale: p.rationale,
       })),
       history: recommendation.getHistory().map((h) => ({
         version: h.version,
@@ -68,11 +71,11 @@ export class RecommendationPersistenceMapper {
         engineVersion: h.engineVersion,
         itemCount: h.itemCount,
         averageConfidence: h.averageConfidence,
-        createdAt: h.createdAt
+        createdAt: h.createdAt,
       })),
       invalidatedAt: recommendation.getInvalidatedAt(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -108,26 +111,34 @@ export class RecommendationPersistenceMapper {
             i.scores.difficultyScore,
             i.scores.confidenceScore,
             i.scores.riskScore,
-            i.scores.overallScore
+            i.scores.overallScore,
           ),
           new RecommendationReason(i.reason.summary, i.reason.evidence),
           GoalId.create(i.affectedGoalId),
           RoadmapId.create(i.affectedRoadmapId),
           AssessmentId.create(i.affectedAssessmentId),
-          i.logicalResourceRef
-        )
+          i.logicalResourceRef,
+        ),
     );
 
     (recommendation as any).learningStrategies = doc.learningStrategies.map(
-      (s) => new LearningStrategyAssignment(SkillId.create(s.skillId), s.strategy, s.rationale)
+      (s) => new LearningStrategyAssignment(SkillId.create(s.skillId), s.strategy, s.rationale),
     );
 
     (recommendation as any).reviewSchedules = doc.reviewSchedules.map(
-      (r) => new ReviewSchedule(SkillId.create(r.skillId), r.intervalDays, r.dueDate, r.reason)
+      (r) => new ReviewSchedule(SkillId.create(r.skillId), r.intervalDays, r.dueDate, r.reason),
     );
 
     (recommendation as any).priorityDecisions = doc.priorityDecisions.map(
-      (p) => new PriorityDecision(p.taskId, p.priorityScore, p.originalOrder, p.suggestedOrder, p.blocked, p.rationale)
+      (p) =>
+        new PriorityDecision(
+          p.taskId,
+          p.priorityScore,
+          p.originalOrder,
+          p.suggestedOrder,
+          p.blocked,
+          p.rationale,
+        ),
     );
 
     (recommendation as any).history = doc.history.map(
@@ -138,8 +149,8 @@ export class RecommendationPersistenceMapper {
           h.engineVersion,
           h.itemCount,
           h.averageConfidence,
-          h.createdAt
-        )
+          h.createdAt,
+        ),
     );
 
     return recommendation;

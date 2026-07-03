@@ -36,7 +36,7 @@ export class RoadmapLockService {
   constructor(
     private readonly redis: RedisService,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   private key(roadmapId: string): string {
@@ -46,7 +46,11 @@ export class RoadmapLockService {
   async lock(roadmapId: string): Promise<RoadmapLock> {
     const run = () => this.doLock(roadmapId);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.lock', SpanFactory.attributesFor({ operation: 'lock', aggregateId: roadmapId }), run);
+    return this.tracer.withSpan(
+      'redis.lock',
+      SpanFactory.attributesFor({ operation: 'lock', aggregateId: roadmapId }),
+      run,
+    );
   }
 
   private async doLock(roadmapId: string): Promise<RoadmapLock> {
@@ -76,7 +80,11 @@ export class RoadmapLockService {
   async unlock(lock: RoadmapLock): Promise<void> {
     const run = () => this.doUnlock(lock);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.unlock', SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.roadmapId }), run);
+    return this.tracer.withSpan(
+      'redis.unlock',
+      SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.roadmapId }),
+      run,
+    );
   }
 
   private async doUnlock(lock: RoadmapLock): Promise<void> {
@@ -96,8 +104,8 @@ export class RoadmapLockService {
           event: 'roadmap_lock_release_failed',
           roadmapId: lock.roadmapId,
           error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString()
-        })
+          timestamp: new Date().toISOString(),
+        }),
       );
     }
   }

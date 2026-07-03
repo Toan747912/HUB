@@ -10,7 +10,7 @@ import {
   Req,
   UseFilters,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreateGoalCommand } from '../../application/commands/create-goal.command';
 import { UpdateGoalCommand } from '../../application/commands/update-goal.command';
@@ -40,7 +40,7 @@ export class GoalController {
   constructor(
     private readonly commandService: GoalCommandService,
     private readonly queryService: GoalQueryService,
-    private readonly mapper: GoalResponseMapper
+    private readonly mapper: GoalResponseMapper,
   ) {}
 
   @Post()
@@ -57,7 +57,7 @@ export class GoalController {
       body.targetDate,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:create-goal'
+      body.causationId ?? 'http:create-goal',
     );
 
     const goal = await this.commandService.createGoal(command);
@@ -73,12 +73,14 @@ export class GoalController {
       queryServiceType: this.queryService?.constructor?.name,
       mapperType: this.mapper?.constructor?.name,
       queryServiceDefined: this.queryService !== undefined && this.queryService !== null,
-      mapperDefined: this.mapper !== undefined && this.mapper !== null
+      mapperDefined: this.mapper !== undefined && this.mapper !== null,
     };
     console.log(JSON.stringify(marker));
 
     const query = new GetGoalsQuery();
-    console.log(JSON.stringify({ marker: 'GOAL_CALL_CHAIN', stage: 'controller.findAll.beforeQueryService' }));
+    console.log(
+      JSON.stringify({ marker: 'GOAL_CALL_CHAIN', stage: 'controller.findAll.beforeQueryService' }),
+    );
 
     const goals = await this.queryService.getGoals(query);
 
@@ -88,8 +90,8 @@ export class GoalController {
         stage: 'controller.findAll.afterQueryService',
         goalsType: typeof goals,
         isArray: Array.isArray(goals),
-        goalsLength: Array.isArray(goals) ? goals.length : undefined
-      })
+        goalsLength: Array.isArray(goals) ? goals.length : undefined,
+      }),
     );
 
     const items = this.mapper.toList(goals as any[]);
@@ -100,8 +102,8 @@ export class GoalController {
         stage: 'controller.findAll.afterMapper',
         itemsType: typeof items,
         isArray: Array.isArray(items),
-        itemsLength: Array.isArray(items) ? items.length : undefined
-      })
+        itemsLength: Array.isArray(items) ? items.length : undefined,
+      }),
     );
 
     return { items, total: items.length };
@@ -120,7 +122,7 @@ export class GoalController {
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateGoalDto,
-    @Req() req: GoalRequestWithTrace
+    @Req() req: GoalRequestWithTrace,
   ) {
     const command = new UpdateGoalCommand(
       id,
@@ -133,7 +135,7 @@ export class GoalController {
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:update-goal'
+      body.causationId ?? 'http:update-goal',
     );
 
     const goal = await this.commandService.updateGoal(command);
@@ -143,7 +145,13 @@ export class GoalController {
   @Delete(':id')
   @RequirePermissions('Goal.Archive')
   async archive(@Param('id', new ParseUUIDPipe()) id: string, @Req() req: GoalRequestWithTrace) {
-    const command = new ArchiveGoalCommand(id, 0, req.traceId ?? 'unknown', req.traceId ?? 'unknown', 'http:archive-goal');
+    const command = new ArchiveGoalCommand(
+      id,
+      0,
+      req.traceId ?? 'unknown',
+      req.traceId ?? 'unknown',
+      'http:archive-goal',
+    );
     const goal = await this.commandService.archiveGoal(command);
     return this.mapper.toResponse(goal as any);
   }
@@ -153,14 +161,14 @@ export class GoalController {
   async complete(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: CompleteGoalDto,
-    @Req() req: GoalRequestWithTrace
+    @Req() req: GoalRequestWithTrace,
   ) {
     const command = new CompleteGoalCommand(
       id,
       body.expectedVersion,
       req.traceId ?? 'unknown',
       body.correlationId ?? req.traceId ?? 'unknown',
-      body.causationId ?? 'http:complete-goal'
+      body.causationId ?? 'http:complete-goal',
     );
     const goal = await this.commandService.completeGoal(command);
     return this.mapper.toResponse(goal as any);

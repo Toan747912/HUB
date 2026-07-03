@@ -1,4 +1,7 @@
-import { RecommendationDomainEvent, RecommendationEventMetadata } from './recommendation-event-metadata';
+import {
+  RecommendationDomainEvent,
+  RecommendationEventMetadata,
+} from './recommendation-event-metadata';
 
 export type RecommendationGeneratedPayload = {
   goalId: string;
@@ -31,54 +34,54 @@ export type RecommendationInvalidatedPayload = {
 
 export const recommendationGeneratedEvent = (
   metadata: RecommendationEventMetadata,
-  payload: RecommendationGeneratedPayload
+  payload: RecommendationGeneratedPayload,
 ): RecommendationDomainEvent<RecommendationGeneratedPayload> => ({
   type: 'RecommendationGenerated',
   metadata,
-  payload
+  payload,
 });
 
 export const recommendationApprovedEvent = (
   metadata: RecommendationEventMetadata,
-  payload: RecommendationApprovedPayload
+  payload: RecommendationApprovedPayload,
 ): RecommendationDomainEvent<RecommendationApprovedPayload> => ({
   type: 'RecommendationApproved',
   metadata,
-  payload
+  payload,
 });
 
 export const recommendationRejectedEvent = (
   metadata: RecommendationEventMetadata,
-  payload: RecommendationRejectedPayload
+  payload: RecommendationRejectedPayload,
 ): RecommendationDomainEvent<RecommendationRejectedPayload> => ({
   type: 'RecommendationRejected',
   metadata,
-  payload
+  payload,
 });
 
 export const recommendationArchivedEvent = (
   metadata: RecommendationEventMetadata,
-  payload: RecommendationArchivedPayload
+  payload: RecommendationArchivedPayload,
 ): RecommendationDomainEvent<RecommendationArchivedPayload> => ({
   type: 'RecommendationArchived',
   metadata,
-  payload
+  payload,
 });
 
 export const learningStrategyChangedEvent = (
   metadata: RecommendationEventMetadata,
-  payload: LearningStrategyChangedPayload
+  payload: LearningStrategyChangedPayload,
 ): RecommendationDomainEvent<LearningStrategyChangedPayload> => ({
   type: 'LearningStrategyChanged',
   metadata,
-  payload
+  payload,
 });
 
 export const recommendationInvalidatedEvent = (
   metadata: RecommendationEventMetadata,
-  payload: RecommendationInvalidatedPayload
+  payload: RecommendationInvalidatedPayload,
 ): RecommendationDomainEvent<RecommendationInvalidatedPayload> => ({
   type: 'RecommendationInvalidated',
   metadata,
-  payload
+  payload,
 });

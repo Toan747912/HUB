@@ -9,7 +9,11 @@ import { MigrationError } from '../../domain/errors/migration.error';
 export class RollbackService implements IRollbackHandler {
   constructor(private readonly sqlExecutorService: SqlExecutorService) {}
 
-  async rollback(job: MigrationJob, executedSteps: MigrationStep[], _traceId: string): Promise<RollbackResult> {
+  async rollback(
+    job: MigrationJob,
+    executedSteps: MigrationStep[],
+    _traceId: string,
+  ): Promise<RollbackResult> {
     const rolledBackStepIds: string[] = [];
     const executedStepIdSet = new Set(executedSteps.map((s) => s.id));
     const reverseOrdered = [...job.steps]
@@ -30,14 +34,14 @@ export class RollbackService implements IRollbackHandler {
           success: false,
           rolledBackStepIds,
           errorCode: normalized.error,
-          errorMessage: normalized.message
+          errorMessage: normalized.message,
         };
       }
     }
 
     return {
       success: true,
-      rolledBackStepIds
+      rolledBackStepIds,
     };
   }
 

@@ -14,14 +14,17 @@ describe('MetricsController', () => {
   beforeEach(() => {
     metrics = new MetricsService();
     dbHealth = { isReady: jest.fn().mockReturnValue(true) };
-    redisHealth = { isReady: jest.fn().mockReturnValue(false), getStatus: jest.fn().mockReturnValue('not_configured') };
+    redisHealth = {
+      isReady: jest.fn().mockReturnValue(false),
+      getStatus: jest.fn().mockReturnValue('not_configured'),
+    };
     queue = { isReady: jest.fn().mockReturnValue(false) };
 
     controller = new MetricsController(
       metrics,
       dbHealth as unknown as DatabaseHealthService,
       redisHealth as unknown as RedisHealthService,
-      queue as unknown as QueueService
+      queue as unknown as QueueService,
     );
   });
 

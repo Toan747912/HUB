@@ -13,7 +13,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     if (!isRedisConfigured()) {
-      this.logger.log(JSON.stringify({ event: 'redis_not_configured', timestamp: new Date().toISOString() }));
+      this.logger.log(
+        JSON.stringify({ event: 'redis_not_configured', timestamp: new Date().toISOString() }),
+      );
       return;
     }
 
@@ -22,15 +24,25 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     client.on('connect', () => {
       this.ready = true;
-      this.logger.log(JSON.stringify({ event: 'redis_connected', timestamp: new Date().toISOString() }));
+      this.logger.log(
+        JSON.stringify({ event: 'redis_connected', timestamp: new Date().toISOString() }),
+      );
     });
     client.on('error', (err: Error) => {
       this.ready = false;
-      this.logger.error(JSON.stringify({ event: 'redis_error', error: err.message, timestamp: new Date().toISOString() }));
+      this.logger.error(
+        JSON.stringify({
+          event: 'redis_error',
+          error: err.message,
+          timestamp: new Date().toISOString(),
+        }),
+      );
     });
     client.on('close', () => {
       this.ready = false;
-      this.logger.warn(JSON.stringify({ event: 'redis_disconnected', timestamp: new Date().toISOString() }));
+      this.logger.warn(
+        JSON.stringify({ event: 'redis_disconnected', timestamp: new Date().toISOString() }),
+      );
     });
 
     this.client = client;
@@ -45,7 +57,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       throw new Error(
         `Redis is configured (REDIS_HOST set) but unreachable at startup: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   }

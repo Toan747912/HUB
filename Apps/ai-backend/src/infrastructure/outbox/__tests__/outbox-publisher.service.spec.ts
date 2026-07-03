@@ -14,9 +14,9 @@ const makeEvent = (eventId: string): GoalDomainEvent => ({
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
     correlationId: 'corr-1',
-    causationId: 'cause-1'
+    causationId: 'cause-1',
   },
-  payload: { foo: 'bar' }
+  payload: { foo: 'bar' },
 });
 
 describe('OutboxPublisherService', () => {
@@ -25,9 +25,15 @@ describe('OutboxPublisherService', () => {
   let publisher: OutboxPublisherService;
 
   beforeEach(() => {
-    outbox = { saveMany: jest.fn().mockResolvedValue(undefined), markPublished: jest.fn().mockResolvedValue(undefined) };
+    outbox = {
+      saveMany: jest.fn().mockResolvedValue(undefined),
+      markPublished: jest.fn().mockResolvedValue(undefined),
+    };
     queue = { enqueue: jest.fn().mockResolvedValue(undefined) };
-    publisher = new OutboxPublisherService(outbox as unknown as OutboxRepository, queue as unknown as QueueService);
+    publisher = new OutboxPublisherService(
+      outbox as unknown as OutboxRepository,
+      queue as unknown as QueueService,
+    );
   });
 
   it('writes events to the outbox before enqueueing (durability-first)', async () => {
@@ -56,7 +62,9 @@ describe('OutboxPublisherService', () => {
 
   it('publish() delegates to publishMany() with a single event', async () => {
     await publisher.publish(makeEvent('evt-3'));
-    expect(outbox.saveMany).toHaveBeenCalledWith([expect.objectContaining({ metadata: expect.objectContaining({ eventId: 'evt-3' }) })]);
+    expect(outbox.saveMany).toHaveBeenCalledWith([
+      expect.objectContaining({ metadata: expect.objectContaining({ eventId: 'evt-3' }) }),
+    ]);
   });
 
   it('is a no-op for an empty event list', async () => {

@@ -23,7 +23,12 @@ export class CircuitBreakerService {
 
     if (record.state === 'OPEN') {
       if (record.openedAt && Date.now() - record.openedAt >= this.cooldownMs) {
-        this.circuits.set(jobId, { state: 'CLOSED', failures: 0, openedAt: undefined, lastFailureAt: undefined });
+        this.circuits.set(jobId, {
+          state: 'CLOSED',
+          failures: 0,
+          openedAt: undefined,
+          lastFailureAt: undefined,
+        });
         return true;
       }
       return false;
@@ -33,7 +38,12 @@ export class CircuitBreakerService {
   }
 
   onSuccess(jobId: string): void {
-    this.circuits.set(jobId, { state: 'CLOSED', failures: 0, openedAt: undefined, lastFailureAt: undefined });
+    this.circuits.set(jobId, {
+      state: 'CLOSED',
+      failures: 0,
+      openedAt: undefined,
+      lastFailureAt: undefined,
+    });
   }
 
   onFailure(jobId: string): void {
@@ -46,6 +56,11 @@ export class CircuitBreakerService {
       return;
     }
 
-    this.circuits.set(jobId, { state: 'CLOSED', failures, openedAt: undefined, lastFailureAt: now });
+    this.circuits.set(jobId, {
+      state: 'CLOSED',
+      failures,
+      openedAt: undefined,
+      lastFailureAt: now,
+    });
   }
 }

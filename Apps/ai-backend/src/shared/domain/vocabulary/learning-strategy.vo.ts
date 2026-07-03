@@ -1,4 +1,5 @@
-export type LearningStrategyValue = 'REVIEW' | 'PRACTICE' | 'ADVANCE' | 'SLOW_DOWN' | 'SKIP' | 'REPEAT' | 'DEEP_DIVE' | 'RECOVERY';
+export type LearningStrategyValue =
+  'REVIEW' | 'PRACTICE' | 'ADVANCE' | 'SLOW_DOWN' | 'SKIP' | 'REPEAT' | 'DEEP_DIVE' | 'RECOVERY';
 
 const ALLOWED_STRATEGIES: LearningStrategyValue[] = [
   'REVIEW',
@@ -8,7 +9,7 @@ const ALLOWED_STRATEGIES: LearningStrategyValue[] = [
   'SKIP',
   'REPEAT',
   'DEEP_DIVE',
-  'RECOVERY'
+  'RECOVERY',
 ];
 
 /**

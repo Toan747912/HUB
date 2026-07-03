@@ -1,4 +1,10 @@
-import { AssessmentId, GoalId, LearnerId, RecommendationId, RoadmapId } from '../../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RecommendationId,
+  RoadmapId,
+} from '../../../../../shared/domain/identifiers';
 import { RecommendationEngine } from '../../engine/recommendation.engine';
 import { RecommendationInput } from '../../engine/recommendation-engine.types';
 import { Recommendation } from '../recommendation.aggregate';
@@ -17,11 +23,20 @@ const baseInput: RecommendationInput = {
   referenceDate: '2027-01-01T00:00:00.000Z',
   roadmapCompletionRatio: 60,
   revisionCount: 0,
-  tasks: [{ id: 't1', skillId: 'Foundations', completed: false, order: 1, dependsOn: [], estimatedDurationDays: 3 }],
+  tasks: [
+    {
+      id: 't1',
+      skillId: 'Foundations',
+      completed: false,
+      order: 1,
+      dependsOn: [],
+      estimatedDurationDays: 3,
+    },
+  ],
   competencies: [{ skillId: 'Foundations', score: 60, level: 'PROFICIENT' }],
   knowledgeGaps: [{ skillId: 'Foundations', weight: 'HIGH', reason: 'gap' }],
   confidenceScore: 70,
-  readiness: 'NOT_READY'
+  readiness: 'NOT_READY',
 };
 
 const makeRecommendation = (): Recommendation => {
@@ -33,9 +48,9 @@ const makeRecommendation = (): Recommendation => {
       roadmapId: RoadmapId.create('roadmap-1'),
       assessmentId: AssessmentId.create('assessment-1'),
       learnerId: LearnerId.create('learner-1'),
-      computation
+      computation,
     },
-    context
+    context,
   );
 };
 
@@ -49,7 +64,10 @@ describe('Recommendation aggregate', () => {
     expect(recommendation.getHistory()[0].reason).toBe('GENERATED');
 
     const events = recommendation.pullEvents();
-    expect(events.map((e) => e.type)).toEqual(['RecommendationGenerated', 'LearningStrategyChanged']);
+    expect(events.map((e) => e.type)).toEqual([
+      'RecommendationGenerated',
+      'LearningStrategyChanged',
+    ]);
   });
 
   it('every RecommendationItem carries reason/scores/affected ids (explainability)', () => {
@@ -79,7 +97,11 @@ describe('Recommendation aggregate', () => {
     const recommendation = makeRecommendation();
     recommendation.pullEvents();
 
-    recommendation.reject(context, 'Not aligned with learner preference', recommendation.getAggregateVersion());
+    recommendation.reject(
+      context,
+      'Not aligned with learner preference',
+      recommendation.getAggregateVersion(),
+    );
     expect(recommendation.getStatus()).toBe('REJECTED');
 
     const events = recommendation.pullEvents();
@@ -114,7 +136,9 @@ describe('Recommendation aggregate', () => {
     const recommendation = makeRecommendation();
     recommendation.archive(context, recommendation.getAggregateVersion());
     expect(() => recommendation.approve(context, recommendation.getAggregateVersion())).toThrow();
-    expect(() => recommendation.reject(context, undefined, recommendation.getAggregateVersion())).toThrow();
+    expect(() =>
+      recommendation.reject(context, undefined, recommendation.getAggregateVersion()),
+    ).toThrow();
   });
 
   it('rejects a stale expectedVersion (optimistic concurrency)', () => {
@@ -128,7 +152,11 @@ describe('Recommendation aggregate', () => {
     recommendation.archive(context, recommendation.getAggregateVersion());
 
     expect(recommendation.getHistory()).toHaveLength(3);
-    expect(recommendation.getHistory().map((h) => h.reason)).toEqual(['GENERATED', 'APPROVED', 'ARCHIVED']);
+    expect(recommendation.getHistory().map((h) => h.reason)).toEqual([
+      'GENERATED',
+      'APPROVED',
+      'ARCHIVED',
+    ]);
     expect(recommendation.getHistory().map((h) => h.version)).toEqual([1, 2, 3]);
   });
 });

@@ -5,7 +5,7 @@ import {
   LearningStrategyCatalogEntryResponseDto,
   RecommendationHistoryResponseDto,
   RecommendationListResponseDto,
-  RecommendationResponseDto
+  RecommendationResponseDto,
 } from '../dto/responses/recommendation.response.dto';
 
 @Injectable()
@@ -32,18 +32,18 @@ export class RecommendationResponseMapper {
         affectedGoalId: i.affectedGoalId.toString(),
         affectedRoadmapId: i.affectedRoadmapId.toString(),
         affectedAssessmentId: i.affectedAssessmentId.toString(),
-        logicalResourceRef: i.logicalResourceRef
+        logicalResourceRef: i.logicalResourceRef,
       })),
       learningStrategies: recommendation.getLearningStrategies().map((s) => ({
         skillId: s.skillId.toString(),
         strategy: s.strategy,
-        rationale: s.rationale
+        rationale: s.rationale,
       })),
       reviewSchedules: recommendation.getReviewSchedules().map((r) => ({
         skillId: r.skillId.toString(),
         intervalDays: r.intervalDays,
         dueDate: r.dueDate,
-        reason: r.reason
+        reason: r.reason,
       })),
       priorityDecisions: recommendation.getPriorityDecisions().map((p) => ({
         taskId: p.taskId,
@@ -51,8 +51,8 @@ export class RecommendationResponseMapper {
         originalOrder: p.originalOrder,
         suggestedOrder: p.suggestedOrder,
         blocked: p.blocked,
-        rationale: p.rationale
-      }))
+        rationale: p.rationale,
+      })),
     };
   }
 
@@ -70,12 +70,14 @@ export class RecommendationResponseMapper {
         engineVersion: h.engineVersion,
         itemCount: h.itemCount,
         averageConfidence: h.averageConfidence,
-        createdAt: h.createdAt.toISOString()
-      }))
+        createdAt: h.createdAt.toISOString(),
+      })),
     };
   }
 
-  toStrategyCatalog(entries: LearningStrategyCatalogEntry[]): LearningStrategyCatalogEntryResponseDto[] {
+  toStrategyCatalog(
+    entries: LearningStrategyCatalogEntry[],
+  ): LearningStrategyCatalogEntryResponseDto[] {
     return entries.map((e) => ({ strategy: e.strategy, description: e.description }));
   }
 }

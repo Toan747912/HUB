@@ -13,7 +13,7 @@ const validPayload = () => ({
   difficulty: 'INTERMEDIATE',
   priority: 'HIGH',
   constraints: ['5 hours/week'],
-  targetDate: '2027-01-01'
+  targetDate: '2027-01-01',
 });
 
 describe('CreateRoadmapDto validation', () => {
@@ -38,7 +38,10 @@ describe('CreateRoadmapDto validation', () => {
   });
 
   it('rejects a non-array constraints field', async () => {
-    const dto = plainToInstance(CreateRoadmapDto, { ...validPayload(), constraints: 'not-an-array' });
+    const dto = plainToInstance(CreateRoadmapDto, {
+      ...validPayload(),
+      constraints: 'not-an-array',
+    });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'constraints')).toBe(true);
   });

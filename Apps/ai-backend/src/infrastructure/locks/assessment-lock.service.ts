@@ -36,7 +36,7 @@ export class AssessmentLockService {
   constructor(
     private readonly redis: RedisService,
     private readonly tracer?: TracerService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   private key(assessmentId: string): string {
@@ -46,7 +46,11 @@ export class AssessmentLockService {
   async lock(assessmentId: string): Promise<AssessmentLock> {
     const run = () => this.doLock(assessmentId);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.lock', SpanFactory.attributesFor({ operation: 'lock', aggregateId: assessmentId }), run);
+    return this.tracer.withSpan(
+      'redis.lock',
+      SpanFactory.attributesFor({ operation: 'lock', aggregateId: assessmentId }),
+      run,
+    );
   }
 
   private async doLock(assessmentId: string): Promise<AssessmentLock> {
@@ -76,7 +80,11 @@ export class AssessmentLockService {
   async unlock(lock: AssessmentLock): Promise<void> {
     const run = () => this.doUnlock(lock);
     if (!this.tracer) return run();
-    return this.tracer.withSpan('redis.unlock', SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.assessmentId }), run);
+    return this.tracer.withSpan(
+      'redis.unlock',
+      SpanFactory.attributesFor({ operation: 'unlock', aggregateId: lock.assessmentId }),
+      run,
+    );
   }
 
   private async doUnlock(lock: AssessmentLock): Promise<void> {
@@ -96,8 +104,8 @@ export class AssessmentLockService {
           event: 'assessment_lock_release_failed',
           assessmentId: lock.assessmentId,
           error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString()
-        })
+          timestamp: new Date().toISOString(),
+        }),
       );
     }
   }

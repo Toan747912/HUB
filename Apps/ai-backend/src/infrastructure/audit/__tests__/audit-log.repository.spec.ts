@@ -20,15 +20,15 @@ describe('AuditLogRepository — integration', () => {
     module = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'AuditEvent', schema: AuditEventSchema }])
+        MongooseModule.forFeature([{ name: 'AuditEvent', schema: AuditEventSchema }]),
       ],
       providers: [
         {
           provide: AuditLogRepository,
           useFactory: (m: Model<AuditEventDocument>) => new AuditLogRepository(m),
-          inject: [getModelToken('AuditEvent')]
-        }
-      ]
+          inject: [getModelToken('AuditEvent')],
+        },
+      ],
     }).compile();
 
     repository = module.get(AuditLogRepository);
@@ -53,7 +53,7 @@ describe('AuditLogRepository — integration', () => {
       operation: 'GoalCreated',
       resource: 'Goal:goal-1',
       before: null,
-      after: { title: 'Learn TS' }
+      after: { title: 'Learn TS' },
     });
 
     const rows = await repository.findByResource('Goal:goal-1');
@@ -65,17 +65,38 @@ describe('AuditLogRepository — integration', () => {
         operation: 'GoalCreated',
         resource: 'Goal:goal-1',
         before: null,
-        after: { title: 'Learn TS' }
-      })
+        after: { title: 'Learn TS' },
+      }),
     );
     expect(rows[0].timestamp).toBeInstanceOf(Date);
   });
 
   it('findByResource returns rows newest-first, scoped to the resource', async () => {
-    await repository.record({ traceId: 't1', userId: null, operation: 'GoalCreated', resource: 'Goal:a', before: null, after: {} });
+    await repository.record({
+      traceId: 't1',
+      userId: null,
+      operation: 'GoalCreated',
+      resource: 'Goal:a',
+      before: null,
+      after: {},
+    });
     await new Promise((r) => setTimeout(r, 5));
-    await repository.record({ traceId: 't2', userId: null, operation: 'GoalUpdated', resource: 'Goal:a', before: null, after: {} });
-    await repository.record({ traceId: 't3', userId: null, operation: 'GoalCreated', resource: 'Goal:b', before: null, after: {} });
+    await repository.record({
+      traceId: 't2',
+      userId: null,
+      operation: 'GoalUpdated',
+      resource: 'Goal:a',
+      before: null,
+      after: {},
+    });
+    await repository.record({
+      traceId: 't3',
+      userId: null,
+      operation: 'GoalCreated',
+      resource: 'Goal:b',
+      before: null,
+      after: {},
+    });
 
     const rows = await repository.findByResource('Goal:a');
     expect(rows).toHaveLength(2);
@@ -84,7 +105,14 @@ describe('AuditLogRepository — integration', () => {
   });
 
   it('userId defaults to null when not provided', async () => {
-    await repository.record({ traceId: 't4', userId: null, operation: 'GoalArchived', resource: 'Goal:c', before: null, after: {} });
+    await repository.record({
+      traceId: 't4',
+      userId: null,
+      operation: 'GoalArchived',
+      resource: 'Goal:c',
+      before: null,
+      after: {},
+    });
     const rows = await repository.findByResource('Goal:c');
     expect(rows[0].userId).toBeNull();
   });

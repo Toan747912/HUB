@@ -14,7 +14,7 @@ import {
   AssessmentNotFoundError,
   AssessmentStateTransitionError,
   AssessmentValidationError,
-  AssessmentVersionConflictError
+  AssessmentVersionConflictError,
 } from '../errors/application.errors';
 
 export interface IAssessmentLock {
@@ -33,7 +33,7 @@ export class AssessmentCommandService {
     private readonly repository: IAssessmentRepository,
     private readonly eventPublisher: IEventPublisher,
     private readonly assessmentLock?: IAssessmentLock,
-    private readonly generationMetrics?: IAssessmentGenerationMetrics
+    private readonly generationMetrics?: IAssessmentGenerationMetrics,
   ) {}
 
   private async withLock<T>(assessmentId: string, fn: () => Promise<T>): Promise<T> {
@@ -56,9 +56,13 @@ export class AssessmentCommandService {
           assessmentId: AssessmentId.create(command.assessmentId),
           goalId: GoalId.create(command.goalId),
           roadmapId: RoadmapId.create(command.roadmapId),
-          learnerId: LearnerId.create(command.learnerId)
+          learnerId: LearnerId.create(command.learnerId),
         },
-        { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId }
+        {
+          traceId: command.traceId,
+          correlationId: command.correlationId,
+          causationId: command.causationId,
+        },
       );
 
       await this.repository.save(assessment);
@@ -87,7 +91,7 @@ export class AssessmentCommandService {
           roadmapCompletionRatio: command.roadmapCompletionRatio,
           tasks: command.tasks,
           revisionCount: command.revisionCount,
-          previousRuns: command.previousRuns
+          previousRuns: command.previousRuns,
         };
 
         const engineStart = Date.now();
@@ -96,8 +100,12 @@ export class AssessmentCommandService {
 
         a.run(
           computation,
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(a);
@@ -122,8 +130,12 @@ export class AssessmentCommandService {
         if (!a) throw new AssessmentNotFoundError(command.assessmentId);
 
         a.approve(
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(a);
@@ -148,8 +160,12 @@ export class AssessmentCommandService {
         if (!a) throw new AssessmentNotFoundError(command.assessmentId);
 
         a.archive(
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(a);
@@ -175,8 +191,12 @@ export class AssessmentCommandService {
 
         a.invalidate(
           command.reason,
-          { traceId: command.traceId, correlationId: command.correlationId, causationId: command.causationId },
-          command.expectedVersion
+          {
+            traceId: command.traceId,
+            correlationId: command.correlationId,
+            causationId: command.causationId,
+          },
+          command.expectedVersion,
         );
 
         await this.repository.save(a);
@@ -207,7 +227,13 @@ export class AssessmentCommandService {
     return error instanceof Error ? error : new Error(String(error));
   }
 
-  private log(operation: string, aggregateId: string, startMs: number, status: string, error?: unknown): void {
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
     console.log(
       JSON.stringify({
         traceId: 'app',
@@ -216,8 +242,8 @@ export class AssessmentCommandService {
         latencyMs: Date.now() - startMs,
         status,
         errorType: error instanceof Error ? error.constructor.name : undefined,
-        timestamp: new Date().toISOString()
-      })
+        timestamp: new Date().toISOString(),
+      }),
     );
   }
 }

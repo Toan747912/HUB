@@ -8,7 +8,12 @@ import { AssessmentInput } from '../../../../domain/engine/assessment-engine.typ
 import { AssessmentDocument } from '../../documents/assessment.document';
 import { AssessmentSchema } from '../../schemas/assessment.schema';
 import { MongoAssessmentRepository } from '../mongo-assessment.repository';
-import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  LearnerId,
+  RoadmapId,
+} from '../../../../../../shared/domain/identifiers';
 
 const engine = new AssessmentEngine();
 const context = { traceId: 't', correlationId: 'c', causationId: 'ca' };
@@ -18,20 +23,30 @@ const baseInput: AssessmentInput = {
   roadmapId: 'roadmap-1',
   learnerId: 'learner-1',
   roadmapCompletionRatio: 80,
-  tasks: [{ id: 't1', skillId: 'Solid', completed: true, estimatedDurationDays: 2, actualDurationDays: 2 }],
+  tasks: [
+    {
+      id: 't1',
+      skillId: 'Solid',
+      completed: true,
+      estimatedDurationDays: 2,
+      actualDurationDays: 2,
+    },
+  ],
   revisionCount: 0,
-  previousRuns: []
+  previousRuns: [],
 };
 
-const makeAssessment = (overrides: Partial<{ assessmentId: string; learnerId: string }> = {}): Assessment =>
+const makeAssessment = (
+  overrides: Partial<{ assessmentId: string; learnerId: string }> = {},
+): Assessment =>
   Assessment.create(
     {
       assessmentId: AssessmentId.create(overrides.assessmentId ?? 'assessment-1'),
       goalId: GoalId.create('goal-1'),
       roadmapId: RoadmapId.create('roadmap-1'),
-      learnerId: LearnerId.create(overrides.learnerId ?? 'learner-1')
+      learnerId: LearnerId.create(overrides.learnerId ?? 'learner-1'),
     },
-    context
+    context,
   );
 
 // First run: MongoMemoryServer downloads the MongoDB binary (~780 MB).
@@ -50,15 +65,15 @@ describe('MongoAssessmentRepository — integration', () => {
     module = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'Assessment', schema: AssessmentSchema }])
+        MongooseModule.forFeature([{ name: 'Assessment', schema: AssessmentSchema }]),
       ],
       providers: [
         {
           provide: MongoAssessmentRepository,
           useFactory: (m: Model<AssessmentDocument>) => new MongoAssessmentRepository(m),
-          inject: [getModelToken('Assessment')]
-        }
-      ]
+          inject: [getModelToken('Assessment')],
+        },
+      ],
     }).compile();
 
     repository = module.get(MongoAssessmentRepository);
@@ -116,7 +131,11 @@ describe('MongoAssessmentRepository — integration', () => {
   it('preserves append-only history (versioning) across save/reload', async () => {
     const assessment = makeAssessment({ assessmentId: 'assessment-t05' });
     assessment.run(engine.evaluate(baseInput), context, assessment.getAggregateVersion());
-    assessment.run(engine.evaluate({ ...baseInput, roadmapCompletionRatio: 40 }), context, assessment.getAggregateVersion());
+    assessment.run(
+      engine.evaluate({ ...baseInput, roadmapCompletionRatio: 40 }),
+      context,
+      assessment.getAggregateVersion(),
+    );
     await repository.save(assessment);
 
     const found = await repository.findById('assessment-t05');
@@ -149,7 +168,7 @@ describe('MongoAssessmentRepository — integration', () => {
       findByIdAndUpdate: () => Promise.reject(new Error('DB_FAULT')),
       findById: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
       find: () => ({ lean: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }) }),
-      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) })
+      findByIdAndDelete: () => ({ exec: () => Promise.reject(new Error('DB_FAULT')) }),
     } as any;
 
     const faultyRepo = new MongoAssessmentRepository(faultyModel);

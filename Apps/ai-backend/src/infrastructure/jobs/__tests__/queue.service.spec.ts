@@ -17,7 +17,7 @@ jest.mock('bullmq', () => {
     constructor(
       public name: string,
       public processor: (job: any) => Promise<void>,
-      public opts: any
+      public opts: any,
     ) {
       instances.workers.push(this);
     }
@@ -45,14 +45,16 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
     correlationId: 'corr-1',
-    causationId: 'cause-1'
+    causationId: 'cause-1',
   },
   payload: { foo: 'bar' },
-  ...overrides
+  ...overrides,
 });
 
 describe('QueueService', () => {
-  let breaker: jest.Mocked<Pick<RedisCircuitBreakerService, 'canExecute' | 'onSuccess' | 'onFailure'>>;
+  let breaker: jest.Mocked<
+    Pick<RedisCircuitBreakerService, 'canExecute' | 'onSuccess' | 'onFailure'>
+  >;
   let service: QueueService;
   let bullmq: any;
 
@@ -65,7 +67,7 @@ describe('QueueService', () => {
     breaker = {
       canExecute: jest.fn().mockResolvedValue(true),
       onSuccess: jest.fn().mockResolvedValue(undefined),
-      onFailure: jest.fn().mockResolvedValue(undefined)
+      onFailure: jest.fn().mockResolvedValue(undefined),
     } as any;
 
     service = new QueueService(breaker as unknown as RedisCircuitBreakerService);
@@ -86,7 +88,10 @@ describe('QueueService', () => {
 
   it('is ready and creates a goal-events queue + a DLQ queue when Redis is configured', () => {
     expect(service.isReady()).toBe(true);
-    expect(bullmq.__instances.queues.map((q: any) => q.name)).toEqual(['goal-events', 'goal-events-dlq']);
+    expect(bullmq.__instances.queues.map((q: any) => q.name)).toEqual([
+      'goal-events',
+      'goal-events-dlq',
+    ]);
   });
 
   // Evidence #2: Queue enqueue
@@ -101,8 +106,8 @@ describe('QueueService', () => {
       expect.objectContaining({
         jobId: event.metadata.eventId,
         attempts: 5,
-        backoff: { type: 'exponential', delay: 1000 }
-      })
+        backoff: { type: 'exponential', delay: 1000 },
+      }),
     );
   });
 
@@ -130,9 +135,9 @@ describe('QueueService', () => {
     const [worker] = bullmq.__instances.workers;
     const event = makeEvent();
 
-    await expect(worker.processor({ id: '1', data: event, attemptsMade: 0, opts: { attempts: 5 } })).rejects.toThrow(
-      /Circuit OPEN/
-    );
+    await expect(
+      worker.processor({ id: '1', data: event, attemptsMade: 0, opts: { attempts: 5 } }),
+    ).rejects.toThrow(/Circuit OPEN/);
   });
 
   // Evidence #4: Retry execution — not yet exhausted, no dead-letter move
@@ -156,6 +161,10 @@ describe('QueueService', () => {
 
     await worker.handlers['failed'](job, new Error('permanent failure'));
 
-    expect(dlq.add).toHaveBeenCalledWith(event.type, event, expect.objectContaining({ jobId: event.metadata.eventId }));
+    expect(dlq.add).toHaveBeenCalledWith(
+      event.type,
+      event,
+      expect.objectContaining({ jobId: event.metadata.eventId }),
+    );
   });
 });

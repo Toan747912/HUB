@@ -20,8 +20,8 @@ describe('OutboxRepository — observability wiring', () => {
     module = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri(), { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }])
-      ]
+        MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }]),
+      ],
     }).compile();
     model = module.get<Model<OutboxEventDocument>>(getModelToken('OutboxEvent'));
   });
@@ -43,6 +43,10 @@ describe('OutboxRepository — observability wiring', () => {
 
   it('wraps findPending in a span', async () => {
     await repository.findPending();
-    expect(tracer.withSpan).toHaveBeenCalledWith('outbox.findPending', expect.objectContaining({ operation: 'findPending' }), expect.any(Function));
+    expect(tracer.withSpan).toHaveBeenCalledWith(
+      'outbox.findPending',
+      expect.objectContaining({ operation: 'findPending' }),
+      expect.any(Function),
+    );
   });
 });

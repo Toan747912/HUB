@@ -4,7 +4,7 @@ import {
   GoalNotFoundError,
   GoalStateTransitionError,
   GoalValidationError,
-  GoalVersionConflictError
+  GoalVersionConflictError,
 } from '../../application/errors/application.errors';
 import { GoalRequestWithTrace } from '../middleware/trace.middleware';
 
@@ -28,7 +28,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       success: false,
       data: null,
       error: normalized.error,
-      traceId
+      traceId,
     });
   }
 
@@ -38,8 +38,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         status: HttpStatus.NOT_FOUND,
         error: {
           code: 'GOAL_NOT_FOUND',
-          message: exception.message
-        }
+          message: exception.message,
+        },
       };
     }
 
@@ -48,8 +48,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         status: HttpStatus.CONFLICT,
         error: {
           code: 'VERSION_CONFLICT',
-          message: exception.message
-        }
+          message: exception.message,
+        },
       };
     }
 
@@ -58,24 +58,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         error: {
           code: 'VALIDATION_ERROR',
-          message: exception.message
-        }
+          message: exception.message,
+        },
       };
     }
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const payload = exception.getResponse() as
-        | { message?: unknown; error?: unknown; details?: unknown }
-        | string;
+        { message?: unknown; error?: unknown; details?: unknown } | string;
 
       if (typeof payload === 'string') {
         return {
           status,
           error: {
             code: `HTTP_${status}`,
-            message: payload
-          }
+            message: payload,
+          },
         };
       }
 
@@ -96,8 +95,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         error: {
           code,
           message,
-          details: payload.details
-        }
+          details: payload.details,
+        },
       };
     }
 
@@ -105,8 +104,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       error: {
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'An unexpected error occurred'
-      }
+        message: 'An unexpected error occurred',
+      },
     };
   }
 }

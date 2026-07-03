@@ -21,8 +21,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       ...body,
       details: body.details ?? {
         path: request.url,
-        method: request.method
-      }
+        method: request.method,
+      },
     });
   }
 
@@ -35,27 +35,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const rawObj = raw as Record<string, unknown>;
 
         if (this.isNormalizedEnvelope(rawObj)) {
-          const normalizedDetails = Array.isArray(rawObj.details) ? rawObj.details : rawObj.details ?? [];
+          const normalizedDetails = Array.isArray(rawObj.details)
+            ? rawObj.details
+            : (rawObj.details ?? []);
           return {
             status,
             body: {
               success: false,
               error: 'VALIDATION_FAILED',
               message: typeof rawObj.message === 'string' ? rawObj.message : 'Validation failed',
-              details: normalizedDetails
-            }
+              details: normalizedDetails,
+            },
           };
         }
 
-        const validationMessage = Array.isArray(rawObj.message) ? rawObj.message.join('; ') : 'Validation failed';
+        const validationMessage = Array.isArray(rawObj.message)
+          ? rawObj.message.join('; ')
+          : 'Validation failed';
         return {
           status,
           body: {
             success: false,
             error: 'VALIDATION_FAILED',
             message: validationMessage,
-            details: Array.isArray(rawObj.message) ? rawObj.message : rawObj
-          }
+            details: Array.isArray(rawObj.message) ? rawObj.message : rawObj,
+          },
         };
       }
 
@@ -65,8 +69,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           body: {
             success: false,
             error: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests'
-          }
+            message: 'Too many requests',
+          },
         };
       }
 
@@ -80,12 +84,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
               success: false,
               error: typeof rawObj.error === 'string' ? rawObj.error : `HTTP_${status}`,
               message: typeof rawObj.message === 'string' ? rawObj.message : exception.message,
-              details: rawObj.details
-            }
+              details: rawObj.details,
+            },
           };
         }
 
-        const errorCode = typeof rawObj.error === 'string' ? this.toErrorCode(rawObj.error) : `HTTP_${status}`;
+        const errorCode =
+          typeof rawObj.error === 'string' ? this.toErrorCode(rawObj.error) : `HTTP_${status}`;
         const message =
           typeof rawObj.message === 'string'
             ? rawObj.message
@@ -99,8 +104,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             success: false,
             error: errorCode,
             message,
-            details: rawObj.details ?? rawObj
-          }
+            details: rawObj.details ?? rawObj,
+          },
         };
       }
 
@@ -109,8 +114,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         body: {
           success: false,
           error: `HTTP_${status}`,
-          message: exception.message || 'Request failed'
-        }
+          message: exception.message || 'Request failed',
+        },
       };
     }
 
@@ -122,9 +127,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           error: 'INTERNAL_SERVER_ERROR',
           message: 'An unexpected error occurred',
           details: {
-            name: exception.name
-          }
-        }
+            name: exception.name,
+          },
+        },
       };
     }
 
@@ -133,24 +138,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       body: {
         success: false,
         error: 'INTERNAL_SERVER_ERROR',
-        message: 'An unexpected error occurred'
-      }
+        message: 'An unexpected error occurred',
+      },
     };
   }
 
-  private isValidationPayload(raw: unknown): raw is { message: unknown; error?: unknown; statusCode?: unknown } {
+  private isValidationPayload(
+    raw: unknown,
+  ): raw is { message: unknown; error?: unknown; statusCode?: unknown } {
     return typeof raw === 'object' && raw !== null && 'message' in raw;
   }
 
   private isNormalizedEnvelope(raw: Record<string, unknown>): boolean {
-    return raw.success === false && typeof raw.error === 'string' && typeof raw.message === 'string';
+    return (
+      raw.success === false && typeof raw.error === 'string' && typeof raw.message === 'string'
+    );
   }
 
   private toErrorCode(input: string): string {
-    return input
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '') || 'REQUEST_FAILED';
+    return (
+      input
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'REQUEST_FAILED'
+    );
   }
 }
