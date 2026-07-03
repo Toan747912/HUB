@@ -14,6 +14,7 @@ import { TelemetryModule } from './infrastructure/observability/telemetry.module
 import { AuditModule } from './infrastructure/audit/audit.module';
 import { SecurityModule } from './infrastructure/security/security.module';
 import { AiRuntimeModule } from './modules/ai-runtime/ai-runtime.module';
+import { MissionPlannerModule } from './modules/mission-planner/mission-planner.module';
 import { MigrationModule } from './modules/migration/migration.module';
 import { DiscoveryModule } from './modules/discovery/discovery.module';
 import { TeachingModule } from './modules/teaching/teaching.module';
@@ -28,7 +29,10 @@ import { OrchestrationModule } from './modules/orchestration/orchestration.modul
 import { LearningSessionModule } from './modules/learning-session/learning-session.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { SharedModule } from './shared/shared.module';
-import { getDatabaseName, getDatabaseUri } from './modules/goal/infrastructure/persistence/config/database.config';
+import {
+  getDatabaseName,
+  getDatabaseUri,
+} from './modules/goal/infrastructure/persistence/config/database.config';
 
 @Module({
   imports: [
@@ -38,23 +42,42 @@ import { getDatabaseName, getDatabaseUri } from './modules/goal/infrastructure/p
         dbName: getDatabaseName(),
         connectionFactory: (connection: any) => {
           connection.on('connected', () =>
-            console.log(JSON.stringify({ event: 'db_connected', database: 'mongodb', timestamp: new Date().toISOString() }))
+            console.log(
+              JSON.stringify({
+                event: 'db_connected',
+                database: 'mongodb',
+                timestamp: new Date().toISOString(),
+              }),
+            ),
           );
           connection.on('error', (err: Error) =>
-            console.error(JSON.stringify({ event: 'db_error', database: 'mongodb', error: err.message, timestamp: new Date().toISOString() }))
+            console.error(
+              JSON.stringify({
+                event: 'db_error',
+                database: 'mongodb',
+                error: err.message,
+                timestamp: new Date().toISOString(),
+              }),
+            ),
           );
           connection.on('disconnected', () =>
-            console.warn(JSON.stringify({ event: 'db_disconnected', database: 'mongodb', timestamp: new Date().toISOString() }))
+            console.warn(
+              JSON.stringify({
+                event: 'db_disconnected',
+                database: 'mongodb',
+                timestamp: new Date().toISOString(),
+              }),
+            ),
           );
           return connection;
-        }
-      })
+        },
+      }),
     }),
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,
-        limit: 30
-      }
+        limit: 30,
+      },
     ]),
     ScheduleModule.forRoot(),
     TelemetryModule,
@@ -80,17 +103,18 @@ import { getDatabaseName, getDatabaseUri } from './modules/goal/infrastructure/p
     DiscoveryModule,
     TeachingModule,
     AiRuntimeModule,
-    MigrationModule
+    MissionPlannerModule,
+    MigrationModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard
+      useClass: ThrottlerGuard,
     },
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard
-    }
-  ]
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

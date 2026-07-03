@@ -13,6 +13,9 @@ import { RecommendationCommandService } from '../../recommendation/application/s
 import { RecommendationQueryService } from '../../recommendation/application/services/recommendation-query.service';
 import { InvalidateRecommendationCommand } from '../../recommendation/application/commands/invalidate-recommendation.command';
 import { GetRecommendationsByAssessmentIdQuery } from '../../recommendation/application/queries/get-recommendations-by-assessment-id.query';
+import { LearningSessionQueryService } from '../../learning-session/application/services/learning-session-query.service';
+import { GetLearningSessionQuery } from '../../learning-session/application/queries/get-learning-session.query';
+import { RunAssessmentCommand } from '../../assessment/application/commands/run-assessment.command';
 
 // Event types that trigger each downstream invalidation step. Everything
 // else flowing through the queue (e.g. GoalConstraintChanged,
@@ -20,20 +23,35 @@ import { GetRecommendationsByAssessmentIdQuery } from '../../recommendation/appl
 // produces) is intentionally ignored — the orchestration layer only reacts
 // to events that represent a real upstream change, never to its own output,
 // which would otherwise create an invalidation loop.
-const GOAL_TRIGGER_EVENTS = new Set(['GoalCreated', 'GoalUpdated', 'GoalCompleted', 'GoalArchived']);
+const GOAL_TRIGGER_EVENTS = new Set([
+  'GoalCreated',
+  'GoalUpdated',
+  'GoalCompleted',
+  'GoalArchived',
+]);
 const ROADMAP_TRIGGER_EVENTS = new Set([
   'RoadmapCreated',
   'RoadmapUpdated',
   'RoadmapPublished',
   'RoadmapRegenerated',
-  'RoadmapInvalidated'
+  'RoadmapInvalidated',
 ]);
 const ASSESSMENT_TRIGGER_EVENTS = new Set([
   'AssessmentCreated',
   'AssessmentCompleted',
   'CompetencyUpdated',
   'KnowledgeGapDetected',
-  'AssessmentInvalidated'
+  'AssessmentInvalidated',
+]);
+const SESSION_TRIGGER_EVENTS = new Set([
+  'LearningSessionCreated',
+  'LearningSessionStarted',
+  'LearningSessionPaused',
+  'LearningSessionResumed',
+  'LearningSessionCompleted',
+  'LearningSessionCancelled',
+  'EvidenceRecorded',
+  'ProgressUpdated',
 ]);
 
 /**
@@ -66,7 +84,8 @@ export class OrchestrationWorkerService implements OnModuleInit {
     private readonly assessmentCommandService: AssessmentCommandService,
     private readonly assessmentQueryService: AssessmentQueryService,
     private readonly recommendationCommandService: RecommendationCommandService,
-    private readonly recommendationQueryService: RecommendationQueryService
+    private readonly recommendationQueryService: RecommendationQueryService,
+    private readonly learningSessionQueryService: LearningSessionQueryService,
   ) {}
 
   onModuleInit(): void {
@@ -84,12 +103,18 @@ export class OrchestrationWorkerService implements OnModuleInit {
     }
     if (ASSESSMENT_TRIGGER_EVENTS.has(event.type)) {
       await this.handleAssessmentEvent(event);
+      return;
+    }
+    if (SESSION_TRIGGER_EVENTS.has(event.type)) {
+      await this.handleSessionEvent(event);
     }
   }
 
   private async handleGoalEvent(event: DomainEvent): Promise<void> {
     const goalId = event.metadata.aggregateId.toString();
-    const roadmaps = await this.roadmapQueryService.getRoadmapsByGoalId(new GetRoadmapsByGoalIdQuery(goalId));
+    const roadmaps = await this.roadmapQueryService.getRoadmapsByGoalId(
+      new GetRoadmapsByGoalIdQuery(goalId),
+    );
 
     for (const roadmap of roadmaps) {
       try {
@@ -100,11 +125,16 @@ export class OrchestrationWorkerService implements OnModuleInit {
             undefined,
             event.metadata.traceId,
             event.metadata.correlationId,
-            event.metadata.eventId
-          )
+            event.metadata.eventId,
+          ),
         );
       } catch (error) {
-        this.logWarn('goal_to_roadmap_invalidation_failed', event, roadmap.getId().toString(), error);
+        this.logWarn(
+          'goal_to_roadmap_invalidation_failed',
+          event,
+          roadmap.getId().toString(),
+          error,
+        );
       }
     }
   }
@@ -112,7 +142,7 @@ export class OrchestrationWorkerService implements OnModuleInit {
   private async handleRoadmapEvent(event: DomainEvent): Promise<void> {
     const roadmapId = event.metadata.aggregateId.toString();
     const assessments = await this.assessmentQueryService.getAssessmentsByRoadmapId(
-      new GetAssessmentsByRoadmapIdQuery(roadmapId)
+      new GetAssessmentsByRoadmapIdQuery(roadmapId),
     );
 
     for (const assessment of assessments) {
@@ -124,11 +154,16 @@ export class OrchestrationWorkerService implements OnModuleInit {
             undefined,
             event.metadata.traceId,
             event.metadata.correlationId,
-            event.metadata.eventId
-          )
+            event.metadata.eventId,
+          ),
         );
       } catch (error) {
-        this.logWarn('roadmap_to_assessment_invalidation_failed', event, assessment.getId().toString(), error);
+        this.logWarn(
+          'roadmap_to_assessment_invalidation_failed',
+          event,
+          assessment.getId().toString(),
+          error,
+        );
       }
     }
   }
@@ -136,7 +171,7 @@ export class OrchestrationWorkerService implements OnModuleInit {
   private async handleAssessmentEvent(event: DomainEvent): Promise<void> {
     const assessmentId = event.metadata.aggregateId.toString();
     const recommendations = await this.recommendationQueryService.getRecommendationsByAssessmentId(
-      new GetRecommendationsByAssessmentIdQuery(assessmentId)
+      new GetRecommendationsByAssessmentIdQuery(assessmentId),
     );
 
     for (const recommendation of recommendations) {
@@ -148,16 +183,74 @@ export class OrchestrationWorkerService implements OnModuleInit {
             undefined,
             event.metadata.traceId,
             event.metadata.correlationId,
-            event.metadata.eventId
-          )
+            event.metadata.eventId,
+          ),
         );
       } catch (error) {
-        this.logWarn('assessment_to_recommendation_invalidation_failed', event, recommendation.getId().toString(), error);
+        this.logWarn(
+          'assessment_to_recommendation_invalidation_failed',
+          event,
+          recommendation.getId().toString(),
+          error,
+        );
       }
     }
   }
 
-  private logWarn(reasonEvent: string, sourceEvent: DomainEvent, targetAggregateId: string, error: unknown): void {
+  private async handleSessionEvent(event: DomainEvent): Promise<void> {
+    if (event.type !== 'EvidenceRecorded') {
+      return;
+    }
+
+    const sessionId = event.metadata.aggregateId.toString();
+    const session = await this.learningSessionQueryService.getSession(
+      new GetLearningSessionQuery(sessionId),
+    );
+    if (!session || !session.getAssessmentId()) {
+      return;
+    }
+
+    try {
+      let revisionCount = 0;
+      session.getEvidence().forEach((e) => {
+        revisionCount += e.revisionCount;
+      });
+
+      await this.assessmentCommandService.runAssessment(
+        new RunAssessmentCommand(
+          session.getAssessmentId()!.toString(),
+          session.getProgress().completionRate * 100,
+          session.getTasks().map((t) => ({
+            id: t.id,
+            skillId: t.skillId.toString(),
+            completed: t.completed,
+            estimatedDurationDays: 1,
+            actualDurationDays: t.completedAt ? 1 : undefined,
+          })),
+          revisionCount,
+          [],
+          undefined,
+          event.metadata.traceId,
+          event.metadata.correlationId,
+          event.metadata.eventId,
+        ),
+      );
+    } catch (error) {
+      this.logWarn(
+        'session_evidence_to_assessment_failed',
+        event,
+        session.getAssessmentId()!.toString(),
+        error,
+      );
+    }
+  }
+
+  private logWarn(
+    reasonEvent: string,
+    sourceEvent: DomainEvent,
+    targetAggregateId: string,
+    error: unknown,
+  ): void {
     this.logger.warn(
       JSON.stringify({
         event: reasonEvent,
@@ -165,8 +258,8 @@ export class OrchestrationWorkerService implements OnModuleInit {
         sourceEventId: sourceEvent.metadata.eventId,
         targetAggregateId,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString()
-      })
+        timestamp: new Date().toISOString(),
+      }),
     );
   }
 }

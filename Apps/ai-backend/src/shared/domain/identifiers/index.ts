@@ -8,3 +8,4 @@ export * from './task-id';
 export * from './milestone-id';
 export * from './phase-id';
 export * from './skill-id';
+export * from './session-id';

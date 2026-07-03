@@ -1,4 +1,9 @@
-import { AssessmentId, GoalId, RecommendationId, RoadmapId } from '../../../../shared/domain/identifiers';
+import {
+  AssessmentId,
+  GoalId,
+  RecommendationId,
+  RoadmapId,
+} from '../../../../shared/domain/identifiers';
 import { DomainEvent } from '../../../../infrastructure/outbox/domain-event.contract';
 import { QueueService } from '../../../../infrastructure/jobs/queue.service';
 import { RoadmapCommandService } from '../../../roadmap/application/services/roadmap-command.service';
@@ -12,7 +17,11 @@ import { InvalidateAssessmentCommand } from '../../../assessment/application/com
 import { InvalidateRecommendationCommand } from '../../../recommendation/application/commands/invalidate-recommendation.command';
 import { OrchestrationWorkerService } from '../orchestration-worker.service';
 
-const makeEvent = (type: string, aggregateId: { toString(): string }, overrides: Partial<DomainEvent> = {}): DomainEvent => ({
+const makeEvent = (
+  type: string,
+  aggregateId: { toString(): string },
+  overrides: Partial<DomainEvent> = {},
+): DomainEvent => ({
   type,
   metadata: {
     eventId: `evt-${type}`,
@@ -22,10 +31,10 @@ const makeEvent = (type: string, aggregateId: { toString(): string }, overrides:
     occurredAt: new Date().toISOString(),
     traceId: 'trace-1',
     correlationId: 'corr-1',
-    causationId: 'cause-1'
+    causationId: 'cause-1',
   },
   payload: {},
-  ...overrides
+  ...overrides,
 });
 
 describe('OrchestrationWorkerService — event-driven staleness propagation', () => {
@@ -48,18 +57,26 @@ describe('OrchestrationWorkerService — event-driven staleness propagation', ()
 
     roadmapCommandService = { invalidateRoadmap: jest.fn().mockResolvedValue(undefined) } as any;
     roadmapQueryService = {
-      getRoadmapsByGoalId: jest.fn().mockResolvedValue([{ getId: () => roadmapId }])
+      getRoadmapsByGoalId: jest.fn().mockResolvedValue([{ getId: () => roadmapId }]),
     } as any;
 
-    assessmentCommandService = { invalidateAssessment: jest.fn().mockResolvedValue(undefined) } as any;
+    assessmentCommandService = {
+      invalidateAssessment: jest.fn().mockResolvedValue(undefined),
+    } as any;
     assessmentQueryService = {
-      getAssessmentsByRoadmapId: jest.fn().mockResolvedValue([{ getId: () => assessmentId }])
+      getAssessmentsByRoadmapId: jest.fn().mockResolvedValue([{ getId: () => assessmentId }]),
     } as any;
 
-    recommendationCommandService = { invalidateRecommendation: jest.fn().mockResolvedValue(undefined) } as any;
-    recommendationQueryService = {
-      getRecommendationsByAssessmentId: jest.fn().mockResolvedValue([{ getId: () => recommendationId }])
+    recommendationCommandService = {
+      invalidateRecommendation: jest.fn().mockResolvedValue(undefined),
     } as any;
+    recommendationQueryService = {
+      getRecommendationsByAssessmentId: jest
+        .fn()
+        .mockResolvedValue([{ getId: () => recommendationId }]),
+    } as any;
+
+    const learningSessionQueryService = {} as any;
 
     service = new OrchestrationWorkerService(
       queue,
@@ -68,7 +85,8 @@ describe('OrchestrationWorkerService — event-driven staleness propagation', ()
       assessmentCommandService,
       assessmentQueryService,
       recommendationCommandService,
-      recommendationQueryService
+      recommendationQueryService,
+      learningSessionQueryService,
     );
   });
 
@@ -84,10 +102,11 @@ describe('OrchestrationWorkerService — event-driven staleness propagation', ()
     await service.handleEvent(event);
 
     expect(roadmapQueryService.getRoadmapsByGoalId).toHaveBeenCalledWith(
-      expect.objectContaining({ goalId: 'goal-1' })
+      expect.objectContaining({ goalId: 'goal-1' }),
     );
     expect(roadmapCommandService.invalidateRoadmap).toHaveBeenCalledTimes(1);
-    const command = roadmapCommandService.invalidateRoadmap.mock.calls[0][0] as InvalidateRoadmapCommand;
+    const command = roadmapCommandService.invalidateRoadmap.mock
+      .calls[0][0] as InvalidateRoadmapCommand;
     expect(command.roadmapId).toBe('roadmap-1');
     expect(command.reason).toContain('GoalCompleted');
     expect(command.traceId).toBe('trace-1');
@@ -104,10 +123,11 @@ describe('OrchestrationWorkerService — event-driven staleness propagation', ()
     await service.handleEvent(event);
 
     expect(assessmentQueryService.getAssessmentsByRoadmapId).toHaveBeenCalledWith(
-      expect.objectContaining({ roadmapId: 'roadmap-1' })
+      expect.objectContaining({ roadmapId: 'roadmap-1' }),
     );
     expect(assessmentCommandService.invalidateAssessment).toHaveBeenCalledTimes(1);
-    const command = assessmentCommandService.invalidateAssessment.mock.calls[0][0] as InvalidateAssessmentCommand;
+    const command = assessmentCommandService.invalidateAssessment.mock
+      .calls[0][0] as InvalidateAssessmentCommand;
     expect(command.assessmentId).toBe('assessment-1');
     expect(command.reason).toContain('RoadmapUpdated');
 
@@ -121,10 +141,11 @@ describe('OrchestrationWorkerService — event-driven staleness propagation', ()
     await service.handleEvent(event);
 
     expect(recommendationQueryService.getRecommendationsByAssessmentId).toHaveBeenCalledWith(
-      expect.objectContaining({ assessmentId: 'assessment-1' })
+      expect.objectContaining({ assessmentId: 'assessment-1' }),
     );
     expect(recommendationCommandService.invalidateRecommendation).toHaveBeenCalledTimes(1);
-    const command = recommendationCommandService.invalidateRecommendation.mock.calls[0][0] as InvalidateRecommendationCommand;
+    const command = recommendationCommandService.invalidateRecommendation.mock
+      .calls[0][0] as InvalidateRecommendationCommand;
     expect(command.recommendationId).toBe('recommendation-1');
     expect(command.reason).toContain('AssessmentCompleted');
 
@@ -171,9 +192,11 @@ describe('OrchestrationWorkerService — event-driven staleness propagation', ()
   it('one failed downstream invalidation does not block invalidating the remaining matches', async () => {
     roadmapQueryService.getRoadmapsByGoalId.mockResolvedValue([
       { getId: () => RoadmapId.create('roadmap-fail') },
-      { getId: () => roadmapId }
+      { getId: () => roadmapId },
     ] as any);
-    roadmapCommandService.invalidateRoadmap.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined as any);
+    roadmapCommandService.invalidateRoadmap
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(undefined as any);
 
     await service.handleEvent(makeEvent('GoalCompleted', goalId));
 
