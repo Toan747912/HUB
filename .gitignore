@@ -6,5 +6,8 @@ build/
 !.env.example
 *.log
 coverage/
+Infrastructure/scripts/backups/
 .DS_Store
 Thumbs.db
+.next/
+*.tsbuildinfo
