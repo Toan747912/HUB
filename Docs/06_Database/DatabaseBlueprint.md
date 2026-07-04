@@ -1,5 +1,8 @@
 # Database Blueprint — AI Mentor OS
 
+> **⛔ SUPERSEDED (2026-07-02):** This document blueprints a Postgres/Supabase schema that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as canonical — see [MongoPersistenceModel.md](MongoPersistenceModel.md) for the as-built collection diagram. Retained for historical record only.
+
+
 > Database Design Phase — **Step 4A** (theo [DECISION-040](../11_Decisions/DECISION-040-Physical-Database-Design-Split.md)). Xây trên [LogicalDatabaseModel.md](LogicalDatabaseModel.md) (Step 2), [PersistenceArchitecture.md](PersistenceArchitecture.md) (Step 1), [PhysicalDesignPreparation.md](PhysicalDesignPreparation.md) (Step 3) và [PHYSICAL_DESIGN_READINESS.md](PHYSICAL_DESIGN_READINESS.md). Áp dụng [DECISION-039](../11_Decisions/DECISION-039-Knowledge-Graph-Persistence.md) (Knowledge Graph = bảng quan hệ + Recursive CTE).
 >
 > **Chỉ thiết kế ở mức bảng/quan hệ/chiến lược — KHÔNG viết SQL, không `CREATE TABLE`, không cột cụ thể, không kiểu dữ liệu, không index/constraint cụ thể.** Mỗi "Entity" dưới đây tương ứng 1 bảng ở Step 4B, nhưng tên cột/kiểu dữ liệu chưa được định nghĩa ở tài liệu này.

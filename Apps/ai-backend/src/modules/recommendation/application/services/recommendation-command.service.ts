@@ -1,3 +1,5 @@
+import { Connection } from 'mongoose';
+import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import {
   AssessmentId,
   GoalId,
@@ -39,6 +41,7 @@ export class RecommendationCommandService {
   constructor(
     private readonly repository: IRecommendationRepository,
     private readonly eventPublisher: IEventPublisher,
+    private readonly connection: Connection,
     private readonly recommendationLock?: IRecommendationLock,
     private readonly generationMetrics?: IRecommendationGenerationMetrics,
   ) {}
@@ -99,8 +102,12 @@ export class RecommendationCommandService {
         },
       );
 
-      await this.repository.save(recommendation);
-      const events = recommendation.pullEvents();
+      const events = await withTransaction(this.connection, async (session) => {
+        await this.repository.save(recommendation, session);
+        const ev = recommendation.pullEvents();
+        await this.eventPublisher.stage(ev, session);
+        return ev;
+      });
       await this.eventPublisher.publishMany(events);
 
       this.log('GENERATE_RECOMMENDATIONS', command.recommendationId, start, 'SUCCESS');
@@ -127,8 +134,12 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });
@@ -158,8 +169,12 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });
@@ -188,8 +203,12 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });
@@ -221,8 +240,12 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });

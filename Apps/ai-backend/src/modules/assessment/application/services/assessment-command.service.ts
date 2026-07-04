@@ -1,3 +1,5 @@
+import { Connection } from 'mongoose';
+import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../shared/domain/identifiers';
 import { Assessment } from '../../domain/aggregates/assessment.aggregate';
 import { AssessmentEngine } from '../../domain/engine/assessment.engine';
@@ -32,6 +34,7 @@ export class AssessmentCommandService {
   constructor(
     private readonly repository: IAssessmentRepository,
     private readonly eventPublisher: IEventPublisher,
+    private readonly connection: Connection,
     private readonly assessmentLock?: IAssessmentLock,
     private readonly generationMetrics?: IAssessmentGenerationMetrics,
   ) {}
@@ -65,8 +68,12 @@ export class AssessmentCommandService {
         },
       );
 
-      await this.repository.save(assessment);
-      const events = assessment.pullEvents();
+      const events = await withTransaction(this.connection, async (session) => {
+        await this.repository.save(assessment, session);
+        const ev = assessment.pullEvents();
+        await this.eventPublisher.stage(ev, session);
+        return ev;
+      });
       await this.eventPublisher.publishMany(events);
 
       this.log('CREATE_ASSESSMENT', command.assessmentId, start, 'SUCCESS');
@@ -108,8 +115,12 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(a);
-        const events = a.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(a, session);
+          const ev = a.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return a;
       });
@@ -138,8 +149,12 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(a);
-        const events = a.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(a, session);
+          const ev = a.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return a;
       });
@@ -168,8 +183,12 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(a);
-        const events = a.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(a, session);
+          const ev = a.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return a;
       });
@@ -199,8 +218,12 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(a);
-        const events = a.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(a, session);
+          const ev = a.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return a;
       });

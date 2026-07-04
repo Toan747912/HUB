@@ -1,6 +1,6 @@
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, createConnection, disconnect } from 'mongoose';
 import { GoalDomainEvent } from '../../../modules/goal/domain/events/goal-event-metadata';
 import { GoalId } from '../../../shared/domain/identifiers';
@@ -27,14 +27,14 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
 });
 
 describe('OutboxRepository — integration', () => {
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let module: TestingModule;
   let repository: OutboxRepository;
   let model: Model<OutboxEventDocument>;
   let uri: string;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     uri = mongod.getUri();
 
     module = await Test.createTestingModule({

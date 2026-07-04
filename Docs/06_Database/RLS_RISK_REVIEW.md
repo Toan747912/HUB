@@ -1,5 +1,8 @@
 # RLS Risk Review — Supabase Policy Preparation
 
+> **⛔ SUPERSEDED (2026-07-02):** This document describes a Postgres/Supabase RLS architecture that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as the canonical persistence platform, with access control enforced entirely in the NestJS application layer (JWT + RBAC) instead of database-level row security. Retained for historical record only — do not use as current architecture guidance.
+
+
 > **Round:** Supabase Policy Preparation Review.  
 > **Scope:** Policy design risks for all 17 DDL Round 1–3 tables + cross-cutting architecture.  
 > **No SQL. Architecture review only.**

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ClientSession } from 'mongoose';
 import { IEventPublisher } from '../../modules/goal/application/contracts/event-publisher.contract';
 import { GoalDomainEvent } from '../../modules/goal/domain/events/goal-event-metadata';
 import { AuditLogService } from '../audit/audit-log.service';
@@ -23,6 +24,11 @@ export class OutboxPublisherService implements IEventPublisher {
 
   async publish(event: GoalDomainEvent): Promise<void> {
     await this.publishMany([event]);
+  }
+
+  async stage(events: GoalDomainEvent[], session: ClientSession): Promise<void> {
+    if (events.length === 0) return;
+    await this.outbox.saveMany(events, session);
   }
 
   async publishMany(events: GoalDomainEvent[]): Promise<void> {

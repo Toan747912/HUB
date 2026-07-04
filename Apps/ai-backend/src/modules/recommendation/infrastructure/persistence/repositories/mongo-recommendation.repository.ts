@@ -1,5 +1,5 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Recommendation } from '../../../domain/aggregates/recommendation.aggregate';
 import { IRecommendationRepository } from '../../../application/contracts/recommendation-repository.contract';
 import { MetricsService } from '../../../../../infrastructure/observability/metrics.service';
@@ -15,7 +15,7 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
     private readonly metrics?: MetricsService,
   ) {}
 
-  async save(recommendation: Recommendation): Promise<void> {
+  async save(recommendation: Recommendation, session?: ClientSession): Promise<void> {
     await this.instrumented('save', recommendation.getId().toString(), async () => {
       const start = Date.now();
       const doc = RecommendationPersistenceMapper.toDocument(recommendation);
@@ -27,7 +27,7 @@ export class MongoRecommendationRepository implements IRecommendationRepository 
             $set: { ...mutableFields, updatedAt: new Date() },
             $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: 'after' },
+          { upsert: true, returnDocument: 'after', session },
         );
         this.log('save', recommendation.getId().toString(), start, 'SUCCESS');
       } catch (error) {

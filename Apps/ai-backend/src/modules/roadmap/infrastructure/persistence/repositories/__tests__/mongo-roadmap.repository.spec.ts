@@ -1,6 +1,6 @@
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, disconnect } from 'mongoose';
 import { Roadmap } from '../../../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../../../domain/engine/roadmap-planning.engine';
@@ -46,13 +46,13 @@ const makeRoadmap = (
 jest.setTimeout(300_000);
 
 describe('MongoRoadmapRepository — integration', () => {
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let module: TestingModule;
   let repository: MongoRoadmapRepository;
   let model: Model<RoadmapDocument>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     const uri = mongod.getUri();
 
     module = await Test.createTestingModule({

@@ -1,5 +1,5 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Roadmap } from '../../../domain/aggregates/roadmap.aggregate';
 import { IRoadmapRepository } from '../../../application/contracts/roadmap-repository.contract';
 import { MetricsService } from '../../../../../infrastructure/observability/metrics.service';
@@ -15,7 +15,7 @@ export class MongoRoadmapRepository implements IRoadmapRepository {
     private readonly metrics?: MetricsService,
   ) {}
 
-  async save(roadmap: Roadmap): Promise<void> {
+  async save(roadmap: Roadmap, session?: ClientSession): Promise<void> {
     await this.instrumented('save', roadmap.getId().toString(), async () => {
       const start = Date.now();
       const doc = RoadmapPersistenceMapper.toDocument(roadmap);
@@ -27,7 +27,7 @@ export class MongoRoadmapRepository implements IRoadmapRepository {
             $set: { ...mutableFields, updatedAt: new Date() },
             $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: 'after' },
+          { upsert: true, returnDocument: 'after', session },
         );
         this.log('save', roadmap.getId().toString(), start, 'SUCCESS');
       } catch (error) {

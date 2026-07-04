@@ -1,7 +1,8 @@
+import { ClientSession } from 'mongoose';
 import { Roadmap } from '../../domain/aggregates/roadmap.aggregate';
 
 export interface IRoadmapRepository {
-  save(roadmap: Roadmap): Promise<void>;
+  save(roadmap: Roadmap, session?: ClientSession): Promise<void>;
   findById(id: string): Promise<Roadmap | null>;
   findAll(learnerId?: string): Promise<Roadmap[]>;
   findByGoalId(goalId: string): Promise<Roadmap[]>;

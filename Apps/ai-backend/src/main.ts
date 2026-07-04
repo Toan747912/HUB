@@ -1,11 +1,15 @@
 import 'reflect-metadata';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ObservabilityHttpInterceptor } from './infrastructure/observability/observability-http.interceptor';
-import { getCorsOrigin, getRequestBodyLimit } from './infrastructure/security/secrets/security.config';
+import {
+  getCorsOrigin,
+  getRequestBodyLimit,
+} from './infrastructure/security/secrets/security.config';
 import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
 import { TraceLoggingInterceptor } from './shared/interceptors/trace-logging.interceptor';
 
@@ -17,7 +21,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: getCorsOrigin(),
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    credentials: true,
   });
 
   app.useGlobalPipes(
@@ -29,20 +33,31 @@ async function bootstrap(): Promise<void> {
         const details = errors.map((e) => ({
           field: e.property,
           constraints: e.constraints ?? {},
-          children: e.children ?? []
+          children: e.children ?? [],
         }));
         return new BadRequestException({
           success: false,
           error: 'VALIDATION_FAILED',
           message: 'Validation failed',
-          details
+          details,
         });
-      }
-    })
+      },
+    }),
   );
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new TraceLoggingInterceptor(), app.get(ObservabilityHttpInterceptor));
+
+  // Configure Swagger OpenAPI Doc
+  const config = new DocumentBuilder()
+    .setTitle('AI Mentor OS - API')
+    .setDescription('Modular adaptive learning engine REST API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   app.enableShutdownHooks();
 

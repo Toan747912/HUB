@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
 import { AssessmentService } from './assessment.service';
 import { AssessmentController } from './interface/controllers/assessment.controller';
 import { AssessmentResponseMapper } from './interface/mappers/assessment-response.mapper';
@@ -70,10 +70,18 @@ const ASSESSMENT_LOCK_SERVICE = Symbol('AssessmentLockService');
       useFactory: (
         repository: any,
         eventPublisher: any,
+        connection: any,
         assessmentLock: any,
         metrics: MetricsService,
-      ) => new AssessmentCommandService(repository, eventPublisher, assessmentLock, metrics),
-      inject: [ASSESSMENT_REPOSITORY, EVENT_PUBLISHER, ASSESSMENT_LOCK_SERVICE, MetricsService],
+      ) =>
+        new AssessmentCommandService(repository, eventPublisher, connection, assessmentLock, metrics),
+      inject: [
+        ASSESSMENT_REPOSITORY,
+        EVENT_PUBLISHER,
+        getConnectionToken(),
+        ASSESSMENT_LOCK_SERVICE,
+        MetricsService,
+      ],
     },
     {
       provide: AssessmentQueryService,

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ClientSession } from 'mongoose';
 import { RoadmapDomainEvent } from '../../domain/events/roadmap-event-metadata';
 import { IEventPublisher } from '../../application/contracts/event-publisher.contract';
 import { AuditLogService } from '../../../../infrastructure/audit/audit-log.service';
@@ -29,6 +30,11 @@ export class RoadmapOutboxPublisherService implements IEventPublisher {
 
   async publish(event: RoadmapDomainEvent): Promise<void> {
     await this.publishMany([event]);
+  }
+
+  async stage(events: RoadmapDomainEvent[], session: ClientSession): Promise<void> {
+    if (events.length === 0) return;
+    await this.outbox.saveMany(events, session);
   }
 
   async publishMany(events: RoadmapDomainEvent[]): Promise<void> {

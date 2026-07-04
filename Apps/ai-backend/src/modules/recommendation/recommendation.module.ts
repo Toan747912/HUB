@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
 import { RecommendationService } from './recommendation.service';
 import { RecommendationController } from './interface/controllers/recommendation.controller';
 import { RecommendationResponseMapper } from './interface/mappers/recommendation-response.mapper';
@@ -70,13 +70,21 @@ const RECOMMENDATION_LOCK_SERVICE = Symbol('RecommendationLockService');
       useFactory: (
         repository: any,
         eventPublisher: any,
+        connection: any,
         recommendationLock: any,
         metrics: MetricsService,
       ) =>
-        new RecommendationCommandService(repository, eventPublisher, recommendationLock, metrics),
+        new RecommendationCommandService(
+          repository,
+          eventPublisher,
+          connection,
+          recommendationLock,
+          metrics,
+        ),
       inject: [
         RECOMMENDATION_REPOSITORY,
         EVENT_PUBLISHER,
+        getConnectionToken(),
         RECOMMENDATION_LOCK_SERVICE,
         MetricsService,
       ],

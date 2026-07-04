@@ -1,7 +1,8 @@
+import { ClientSession } from 'mongoose';
 import { Goal } from '../../domain/aggregates/goal.aggregate';
 
 export interface IGoalRepository {
-  save(goal: Goal): Promise<void>;
+  save(goal: Goal, session?: ClientSession): Promise<void>;
   findById(id: string): Promise<Goal | null>;
   findAll(): Promise<Goal[]>;
   delete(id: string): Promise<void>;

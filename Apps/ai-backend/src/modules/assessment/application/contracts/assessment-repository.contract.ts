@@ -1,7 +1,8 @@
+import { ClientSession } from 'mongoose';
 import { Assessment } from '../../domain/aggregates/assessment.aggregate';
 
 export interface IAssessmentRepository {
-  save(assessment: Assessment): Promise<void>;
+  save(assessment: Assessment, session?: ClientSession): Promise<void>;
   findById(id: string): Promise<Assessment | null>;
   findAll(learnerId?: string): Promise<Assessment[]>;
   findByRoadmapId(roadmapId: string): Promise<Assessment[]>;

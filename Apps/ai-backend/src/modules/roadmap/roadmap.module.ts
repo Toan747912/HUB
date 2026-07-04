@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
 import { RoadmapService } from './roadmap.service';
 import { RoadmapController } from './interface/controllers/roadmap.controller';
 import { RoadmapResponseMapper } from './interface/mappers/roadmap-response.mapper';
@@ -74,14 +74,23 @@ const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
         repository: any,
         eventPublisher: any,
         skillCatalog: SkillCatalogService,
+        connection: any,
         roadmapLock: any,
         metrics: MetricsService,
       ) =>
-        new RoadmapCommandService(repository, eventPublisher, skillCatalog, roadmapLock, metrics),
+        new RoadmapCommandService(
+          repository,
+          eventPublisher,
+          skillCatalog,
+          connection,
+          roadmapLock,
+          metrics,
+        ),
       inject: [
         ROADMAP_REPOSITORY,
         EVENT_PUBLISHER,
         SkillCatalogService,
+        getConnectionToken(),
         ROADMAP_LOCK_SERVICE,
         MetricsService,
       ],

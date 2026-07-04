@@ -1,5 +1,5 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { SkillId } from '../../../../../shared/domain/identifiers';
 import { Skill } from '../../../domain/aggregates/skill.aggregate';
 import { ISkillRepository } from '../../../application/contracts/skill-repository.contract';
@@ -9,7 +9,7 @@ import { SkillPersistenceMapper } from '../mappers/skill-persistence.mapper';
 export class MongoSkillRepository implements ISkillRepository {
   constructor(@InjectModel('Skill') private readonly model: Model<SkillDocument>) {}
 
-  async save(skill: Skill): Promise<void> {
+  async save(skill: Skill, session?: ClientSession): Promise<void> {
     const doc = SkillPersistenceMapper.toDocument(skill);
     const { _id, createdAt, ...mutableFields } = doc;
     await this.model.findByIdAndUpdate(
@@ -18,7 +18,7 @@ export class MongoSkillRepository implements ISkillRepository {
         $set: { ...mutableFields, updatedAt: new Date() },
         $setOnInsert: { createdAt: new Date() },
       },
-      { upsert: true, returnDocument: 'after' },
+      { upsert: true, returnDocument: 'after', session },
     );
   }
 

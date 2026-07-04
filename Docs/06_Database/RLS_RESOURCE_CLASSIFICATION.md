@@ -1,5 +1,8 @@
 # RLS Resource Classification — AI Mentor OS
 
+> **⛔ SUPERSEDED (2026-07-02):** This document describes a Postgres/Supabase RLS architecture that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as the canonical persistence platform, with access control enforced entirely in the NestJS application layer (JWT + RBAC) instead of database-level row security. Retained for historical record only — do not use as current architecture guidance.
+
+
 > Phạm vi: phân loại 17 bảng đã DDL (Round 1-3) + 4 Aggregate chưa DDL (Round 4+, ghi nhận theo Aggregate Root đã chốt) + 2 cơ chế cross-cutting (TraceLink, Decision Header) theo 6 category đề bài yêu cầu. **Không viết SQL Policy.** Kế thừa trực tiếp "RLS Impact Notes" đã có sẵn ở [DDL_ROUND1_DESIGN.md](DDL_ROUND1_DESIGN.md) mục 4, [DDL_ROUND2_DESIGN.md](DDL_ROUND2_DESIGN.md) mục 4, [DDL_ROUND3_DESIGN.md](DDL_ROUND3_DESIGN.md) mục 5 — tài liệu này **tổng hợp lại có hệ thống**, không phát sinh boundary RLS mới ngoài những gì 3 Round DDL đã ghi nhận.
 
 ---

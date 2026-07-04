@@ -88,6 +88,8 @@ Lý do thiết kế từng nhóm, xem [DECISION-014](11_Decisions/DECISION-014-W
 
 `02_User_Research/`, `07_API/`, `08_UI_UX/`, `12_Meetings/` hiện chưa có nội dung thật — mỗi thư mục có README giải thích điều kiện để bắt đầu. `06_Database/` đã mở khóa và đang ở Step 4A (xem mục 7).
 
+**Lưu ý về `14_Operations/`:** thư mục này (WP-06, thêm 2026-07-03) tài liệu hóa mức độ vận hành thực tế của `Apps/ai-backend` — một track kỹ thuật đang chạy song song, độc lập với tiến độ Database Design mô tả ở mục 7 dưới đây. Xem [14_Operations/README.md](14_Operations/README.md) để hiểu rõ mâu thuẫn giữa 2 track này; mục 7 của file này **chưa được cập nhật** để phản ánh track đó — không tự suy luận trạng thái `Apps/`/`Infrastructure/` từ mục 7 nếu bạn đang làm việc trong `Apps/ai-backend/`.
+
 ## 5. Các quyết định đã khóa
 
 Toàn bộ tại [11_Decisions/](11_Decisions/README.md) — 46 quyết định khóa (DECISION-001 đến DECISION-048, gap số 034 và 041 không cấp, DECISION-046 vẫn là proposal mở chưa khóa):

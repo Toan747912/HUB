@@ -1,5 +1,8 @@
 # Canonical Schema v1
 
+> **⛔ SUPERSEDED (2026-07-02):** This document describes a Postgres/Supabase RLS architecture that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as the canonical persistence platform, with access control enforced entirely in the NestJS application layer (JWT + RBAC) instead of database-level row security. Retained for historical record only — do not use as current architecture guidance.
+
+
 ## 1. Purpose
 
 CanonicalSchema_v1 defines the single canonical logical database model that supersedes Batch 0–5 draft layering for design governance purposes.  

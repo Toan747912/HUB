@@ -1,7 +1,8 @@
+import { ClientSession } from 'mongoose';
 import { Recommendation } from '../../domain/aggregates/recommendation.aggregate';
 
 export interface IRecommendationRepository {
-  save(recommendation: Recommendation): Promise<void>;
+  save(recommendation: Recommendation, session?: ClientSession): Promise<void>;
   findById(id: string): Promise<Recommendation | null>;
   findAll(learnerId?: string): Promise<Recommendation[]>;
   findByAssessmentId(assessmentId: string): Promise<Recommendation[]>;

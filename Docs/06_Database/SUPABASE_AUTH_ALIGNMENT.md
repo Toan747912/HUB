@@ -1,5 +1,8 @@
 # Supabase Auth Alignment — RLS Architecture Review
 
+> **⛔ SUPERSEDED (2026-07-02):** This document describes a Postgres/Supabase RLS architecture that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as the canonical persistence platform, with access control enforced entirely in the NestJS application layer (JWT + RBAC) instead of database-level row security. Retained for historical record only — do not use as current architecture guidance.
+
+
 > Phạm vi: Task 4 — đối chiếu [DECISION-043](../11_Decisions/DECISION-043-Supabase-Auth-Alignment.md) với Actor Model/Resource Classification/Boundary Matrix vừa xây ở Round này. **Không viết SQL Policy.** Xác nhận Ownership Model, Auth Flow, Session Flow, Backend Flow.
 
 ---

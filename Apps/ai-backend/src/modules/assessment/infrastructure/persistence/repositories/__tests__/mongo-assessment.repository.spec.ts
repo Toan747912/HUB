@@ -1,6 +1,6 @@
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, disconnect } from 'mongoose';
 import { Assessment } from '../../../../domain/aggregates/assessment.aggregate';
 import { AssessmentEngine } from '../../../../domain/engine/assessment.engine';
@@ -53,13 +53,13 @@ const makeAssessment = (
 jest.setTimeout(300_000);
 
 describe('MongoAssessmentRepository — integration', () => {
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let module: TestingModule;
   let repository: MongoAssessmentRepository;
   let model: Model<AssessmentDocument>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     const uri = mongod.getUri();
 
     module = await Test.createTestingModule({

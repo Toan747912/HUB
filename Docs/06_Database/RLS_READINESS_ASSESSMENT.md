@@ -1,5 +1,8 @@
 # RLS Readiness Assessment — AI Mentor OS
 
+> **⛔ SUPERSEDED (2026-07-02):** This document describes a Postgres/Supabase RLS architecture that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as the canonical persistence platform, with access control enforced entirely in the NestJS application layer (JWT + RBAC) instead of database-level row security. Retained for historical record only — do not use as current architecture guidance.
+
+
 > Phạm vi: Task 6 (cross-check) + Mandatory Questions + Final Readiness Section của Round Supabase RLS Architecture Review. **Không viết SQL Policy, không implement.** Tổng hợp [RLS_ACTOR_MODEL.md](RLS_ACTOR_MODEL.md), [RLS_RESOURCE_CLASSIFICATION.md](RLS_RESOURCE_CLASSIFICATION.md), [RLS_BOUNDARY_MATRIX.md](RLS_BOUNDARY_MATRIX.md), [SUPABASE_AUTH_ALIGNMENT.md](SUPABASE_AUTH_ALIGNMENT.md), [RLS_POLICY_STRATEGY.md](RLS_POLICY_STRATEGY.md).
 
 ---

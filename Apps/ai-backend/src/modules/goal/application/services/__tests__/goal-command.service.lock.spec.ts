@@ -29,9 +29,19 @@ const makeGoal = (): Goal => {
   return goal;
 };
 
+const makeConnection = (): any => ({
+  startSession: jest.fn().mockResolvedValue({
+    withTransaction: async (fn: () => Promise<void>) => {
+      await fn();
+    },
+    endSession: jest.fn().mockResolvedValue(undefined),
+  }),
+});
+
 describe('GoalCommandService — distributed lock wiring', () => {
   let repository: jest.Mocked<IGoalRepository>;
   let eventPublisher: jest.Mocked<IEventPublisher>;
+  let connection: any;
   let goalLock: jest.Mocked<IGoalLock>;
   let service: GoalCommandService;
 
@@ -42,12 +52,17 @@ describe('GoalCommandService — distributed lock wiring', () => {
       findAll: jest.fn(),
       delete: jest.fn(),
     } as any;
-    eventPublisher = { publish: jest.fn(), publishMany: jest.fn().mockResolvedValue(undefined) };
+    eventPublisher = {
+      publish: jest.fn(),
+      publishMany: jest.fn().mockResolvedValue(undefined),
+      stage: jest.fn().mockResolvedValue(undefined),
+    };
+    connection = makeConnection();
     goalLock = {
       lock: jest.fn().mockResolvedValue({ token: 'tok' }),
       unlock: jest.fn().mockResolvedValue(undefined),
     };
-    service = new GoalCommandService(repository, eventPublisher, goalLock);
+    service = new GoalCommandService(repository, eventPublisher, connection, goalLock);
   });
 
   it('acquires and releases the lock around completeGoal', async () => {
@@ -82,7 +97,7 @@ describe('GoalCommandService — distributed lock wiring', () => {
   it('works without a lock service (backward compatible, lock is optional)', async () => {
     const goal = makeGoal();
     repository.findById.mockResolvedValue(goal);
-    const noLockService = new GoalCommandService(repository, eventPublisher);
+    const noLockService = new GoalCommandService(repository, eventPublisher, connection);
 
     const command = new CompleteGoalCommand(
       'goal-lock-1',

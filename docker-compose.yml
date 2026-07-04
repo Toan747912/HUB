@@ -1,6 +1,32 @@
 version: "3.9"
 
 services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongo:
+        condition: service_healthy
+    entrypoint: ["mongosh", "--host", "mongo", "--eval"]
+    command:
+      - >
+        try {
+          rs.status();
+        } catch (e) {
+          rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongo:27017" }] });
+        }
+    restart: "no"
+
   redis:
     image: redis:7-alpine
     ports:
@@ -11,13 +37,25 @@ services:
       timeout: 3s
       retries: 5
 
-  backend:
+  ai-backend:
     build:
-      context: ./Apps/backend
+      context: ./Apps/ai-backend
     ports:
-      - "4000:4000"
+      - "3001:3001"
     environment:
-      PORT: 4000
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/ai-backend?replicaSet=rs0
+      DATABASE_NAME: ai-backend
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: dev-jwt-secret-change-me
+      REFRESH_SECRET: dev-refresh-secret-change-me
+      CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
 
   ai-service:
     build:
@@ -31,7 +69,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_BACKEND_URL: http://localhost:4000
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:3001
     depends_on:
-      - backend
+      - ai-backend
       - ai-service

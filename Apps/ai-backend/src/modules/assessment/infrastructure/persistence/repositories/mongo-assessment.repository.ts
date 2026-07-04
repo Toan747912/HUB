@@ -1,5 +1,5 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Assessment } from '../../../domain/aggregates/assessment.aggregate';
 import { IAssessmentRepository } from '../../../application/contracts/assessment-repository.contract';
 import { MetricsService } from '../../../../../infrastructure/observability/metrics.service';
@@ -15,7 +15,7 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
     private readonly metrics?: MetricsService,
   ) {}
 
-  async save(assessment: Assessment): Promise<void> {
+  async save(assessment: Assessment, session?: ClientSession): Promise<void> {
     await this.instrumented('save', assessment.getId().toString(), async () => {
       const start = Date.now();
       const doc = AssessmentPersistenceMapper.toDocument(assessment);
@@ -27,7 +27,7 @@ export class MongoAssessmentRepository implements IAssessmentRepository {
             $set: { ...mutableFields, updatedAt: new Date() },
             $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: 'after' },
+          { upsert: true, returnDocument: 'after', session },
         );
         this.log('save', assessment.getId().toString(), start, 'SUCCESS');
       } catch (error) {

@@ -42,9 +42,19 @@ const makeGenerateCommand = (recommendationId = 'rec-lock-1') =>
     'ca',
   );
 
+const makeConnection = (): any => ({
+  startSession: jest.fn().mockResolvedValue({
+    withTransaction: async (fn: () => Promise<void>) => {
+      await fn();
+    },
+    endSession: jest.fn().mockResolvedValue(undefined),
+  }),
+});
+
 describe('RecommendationCommandService — distributed lock wiring', () => {
   let repository: jest.Mocked<IRecommendationRepository>;
   let eventPublisher: jest.Mocked<IEventPublisher>;
+  let connection: any;
   let recommendationLock: jest.Mocked<IRecommendationLock>;
   let service: RecommendationCommandService;
 
@@ -55,18 +65,28 @@ describe('RecommendationCommandService — distributed lock wiring', () => {
       findAll: jest.fn(),
       delete: jest.fn(),
     } as any;
-    eventPublisher = { publish: jest.fn(), publishMany: jest.fn().mockResolvedValue(undefined) };
+    eventPublisher = {
+      publish: jest.fn(),
+      publishMany: jest.fn().mockResolvedValue(undefined),
+      stage: jest.fn().mockResolvedValue(undefined),
+    };
+    connection = makeConnection();
     recommendationLock = {
       lock: jest.fn().mockResolvedValue({ token: 'tok' }),
       unlock: jest.fn().mockResolvedValue(undefined),
     };
-    service = new RecommendationCommandService(repository, eventPublisher, recommendationLock);
+    service = new RecommendationCommandService(
+      repository,
+      eventPublisher,
+      connection,
+      recommendationLock,
+    );
   });
 
   it('generateRecommendations persists a GENERATED recommendation and publishes RecommendationGenerated + LearningStrategyChanged', async () => {
     const recommendation = await service.generateRecommendations(makeGenerateCommand());
 
-    expect(repository.save).toHaveBeenCalledWith(recommendation);
+    expect(repository.save).toHaveBeenCalledWith(recommendation, expect.anything());
     expect(eventPublisher.publishMany).toHaveBeenCalled();
     const [publishedEvents] = eventPublisher.publishMany.mock.calls[0];
     expect(publishedEvents.map((e: any) => e.type)).toEqual([
@@ -120,7 +140,7 @@ describe('RecommendationCommandService — distributed lock wiring', () => {
   it('works without a lock service (backward compatible, lock is optional)', async () => {
     const generated = await service.generateRecommendations(makeGenerateCommand());
     repository.findById.mockResolvedValue(generated);
-    const noLockService = new RecommendationCommandService(repository, eventPublisher);
+    const noLockService = new RecommendationCommandService(repository, eventPublisher, connection);
 
     const command = new ApproveRecommendationCommand(
       'rec-lock-1',

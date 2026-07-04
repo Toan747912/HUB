@@ -1,3 +1,5 @@
+import { Connection } from 'mongoose';
+import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import { GoalId, LearnerId, MilestoneId } from '../../../../shared/domain/identifiers';
 import { Goal } from '../../domain/aggregates/goal.aggregate';
 import { GoalConstraint } from '../../domain/entities/goal-constraint.entity';
@@ -30,6 +32,7 @@ export class GoalCommandService {
   constructor(
     private readonly repository: IGoalRepository,
     private readonly eventPublisher: IEventPublisher,
+    private readonly connection: Connection,
     private readonly goalLock?: IGoalLock,
   ) {}
 
@@ -66,8 +69,12 @@ export class GoalCommandService {
         },
       );
 
-      await this.repository.save(goal);
-      const events = goal.pullEvents();
+      const events = await withTransaction(this.connection, async (session) => {
+        await this.repository.save(goal, session);
+        const ev = goal.pullEvents();
+        await this.eventPublisher.stage(ev, session);
+        return ev;
+      });
       await this.eventPublisher.publishMany(events);
 
       this.log('CREATE_GOAL', command.goalId, start, 'SUCCESS');
@@ -100,8 +107,12 @@ export class GoalCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(g);
-        const events = g.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(g, session);
+          const ev = g.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return g;
       });
@@ -131,8 +142,12 @@ export class GoalCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(g);
-        const events = g.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(g, session);
+          const ev = g.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return g;
       });
@@ -162,8 +177,12 @@ export class GoalCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(g);
-        const events = g.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(g, session);
+          const ev = g.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return g;
       });
@@ -189,8 +208,12 @@ export class GoalCommandService {
         );
         g.addMilestone(milestone, command.expectedVersion);
 
-        await this.repository.save(g);
-        const events = g.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(g, session);
+          const ev = g.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return g;
       });

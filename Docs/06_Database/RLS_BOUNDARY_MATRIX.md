@@ -1,5 +1,8 @@
 # RLS Boundary Matrix — AI Mentor OS
 
+> **⛔ SUPERSEDED (2026-07-02):** This document describes a Postgres/Supabase RLS architecture that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as the canonical persistence platform, with access control enforced entirely in the NestJS application layer (JWT + RBAC) instead of database-level row security. Retained for historical record only — do not use as current architecture guidance.
+
+
 > Phạm vi: Task 3 — Actor × Resource Category, xác định Read/Create/Update/Archive/Deny. **Không viết SQL Policy.** Dùng đúng 8 Actor ([RLS_ACTOR_MODEL.md](RLS_ACTOR_MODEL.md)) × 6 Category ([RLS_RESOURCE_CLASSIFICATION.md](RLS_RESOURCE_CLASSIFICATION.md)).
 
 ---

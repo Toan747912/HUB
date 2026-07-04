@@ -1,5 +1,5 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Goal } from '../../../domain/aggregates/goal.aggregate';
 import { IGoalRepository } from '../../../application/contracts/goal-repository.contract';
 import { MetricsService } from '../../../../../infrastructure/observability/metrics.service';
@@ -15,7 +15,7 @@ export class MongoGoalRepository implements IGoalRepository {
     private readonly metrics?: MetricsService,
   ) {}
 
-  async save(goal: Goal): Promise<void> {
+  async save(goal: Goal, session?: ClientSession): Promise<void> {
     await this.instrumented('save', goal.getId().toString(), async () => {
       const start = Date.now();
       const doc = GoalPersistenceMapper.toDocument(goal);
@@ -28,7 +28,7 @@ export class MongoGoalRepository implements IGoalRepository {
             $set: { ...mutableFields, updatedAt: new Date() },
             $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: 'after' },
+          { upsert: true, returnDocument: 'after', session },
         );
         this.log('save', goal.getId().toString(), start, 'SUCCESS');
       } catch (error) {

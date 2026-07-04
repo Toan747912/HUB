@@ -28,9 +28,19 @@ const makeAssessment = (): Assessment =>
     context,
   );
 
+const makeConnection = (): any => ({
+  startSession: jest.fn().mockResolvedValue({
+    withTransaction: async (fn: () => Promise<void>) => {
+      await fn();
+    },
+    endSession: jest.fn().mockResolvedValue(undefined),
+  }),
+});
+
 describe('AssessmentCommandService — distributed lock wiring', () => {
   let repository: jest.Mocked<IAssessmentRepository>;
   let eventPublisher: jest.Mocked<IEventPublisher>;
+  let connection: any;
   let assessmentLock: jest.Mocked<IAssessmentLock>;
   let service: AssessmentCommandService;
 
@@ -41,12 +51,17 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
       findAll: jest.fn(),
       delete: jest.fn(),
     } as any;
-    eventPublisher = { publish: jest.fn(), publishMany: jest.fn().mockResolvedValue(undefined) };
+    eventPublisher = {
+      publish: jest.fn(),
+      publishMany: jest.fn().mockResolvedValue(undefined),
+      stage: jest.fn().mockResolvedValue(undefined),
+    };
+    connection = makeConnection();
     assessmentLock = {
       lock: jest.fn().mockResolvedValue({ token: 'tok' }),
       unlock: jest.fn().mockResolvedValue(undefined),
     };
-    service = new AssessmentCommandService(repository, eventPublisher, assessmentLock);
+    service = new AssessmentCommandService(repository, eventPublisher, connection, assessmentLock);
   });
 
   const runCommand = (assessment: Assessment) =>
@@ -103,7 +118,7 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
   it('works without a lock service (backward compatible, lock is optional)', async () => {
     const assessment = makeAssessment();
     repository.findById.mockResolvedValue(assessment);
-    const noLockService = new AssessmentCommandService(repository, eventPublisher);
+    const noLockService = new AssessmentCommandService(repository, eventPublisher, connection);
 
     await expect(noLockService.runAssessment(runCommand(assessment))).resolves.toBeDefined();
   });
@@ -121,7 +136,7 @@ describe('AssessmentCommandService — distributed lock wiring', () => {
 
     const assessment = await service.createAssessment(command);
 
-    expect(repository.save).toHaveBeenCalledWith(assessment);
+    expect(repository.save).toHaveBeenCalledWith(assessment, expect.anything());
     expect(eventPublisher.publishMany).toHaveBeenCalled();
     const [publishedEvents] = eventPublisher.publishMany.mock.calls[0];
     expect(publishedEvents[0].type).toBe('AssessmentCreated');

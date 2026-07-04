@@ -1,5 +1,8 @@
+import { randomUUID } from 'crypto';
 import { SkillId } from '../../../../shared/domain/identifiers';
 import { SkillCategory } from '../value-objects/skill-category.vo';
+import { SkillDomainEvent, SkillEventMetadata } from '../events/skill-event-metadata';
+import { skillCreatedEvent } from '../events/skill-events';
 
 export type SkillCreateProps = {
   skillId: SkillId;
@@ -10,6 +13,12 @@ export type SkillCreateProps = {
   metadata?: Record<string, unknown>;
 };
 
+export type SkillEventContext = {
+  traceId: string;
+  correlationId: string;
+  causationId: string;
+};
+
 /**
  * Skill is a catalog/lookup entry, not a workflow aggregate — there is no
  * draft/published/archived lifecycle, no commands, no lifecycle invariants.
@@ -17,6 +26,9 @@ export type SkillCreateProps = {
  * owner (see WP-06C Workstream B).
  */
 export class Skill {
+  private aggregateVersion = 0;
+  private pendingEvents: SkillDomainEvent[] = [];
+
   private constructor(
     private readonly skillId: SkillId,
     private name: string,
@@ -26,8 +38,8 @@ export class Skill {
     private metadata: Record<string, unknown>,
   ) {}
 
-  static create(props: SkillCreateProps): Skill {
-    return new Skill(
+  static create(props: SkillCreateProps, context?: SkillEventContext): Skill {
+    const aggregate = new Skill(
       props.skillId,
       props.name,
       props.category ?? SkillCategory.other(),
@@ -35,10 +47,45 @@ export class Skill {
       props.aliases ? [...props.aliases] : [],
       props.metadata ? { ...props.metadata } : {},
     );
+    aggregate.recordEvent(
+      skillCreatedEvent(aggregate.buildMetadata(context ?? Skill.defaultContext()), {
+        name: aggregate.name,
+        category: aggregate.category.getValue(),
+      }),
+    );
+    return aggregate;
   }
 
-  static generate(props: Omit<SkillCreateProps, 'skillId'>): Skill {
-    return Skill.create({ ...props, skillId: SkillId.generate() });
+  static generate(props: Omit<SkillCreateProps, 'skillId'>, context?: SkillEventContext): Skill {
+    return Skill.create({ ...props, skillId: SkillId.generate() }, context);
+  }
+
+  private static defaultContext(): SkillEventContext {
+    const id = randomUUID();
+    return { traceId: id, correlationId: id, causationId: id };
+  }
+
+  pullEvents(): SkillDomainEvent[] {
+    const events = [...this.pendingEvents];
+    this.pendingEvents = [];
+    return events;
+  }
+
+  private buildMetadata(context: SkillEventContext): SkillEventMetadata {
+    return {
+      eventId: randomUUID(),
+      aggregateId: this.skillId,
+      aggregateType: 'Skill',
+      aggregateVersion: this.aggregateVersion,
+      occurredAt: new Date().toISOString(),
+      traceId: context.traceId,
+      correlationId: context.correlationId,
+      causationId: context.causationId,
+    };
+  }
+
+  private recordEvent(event: SkillDomainEvent): void {
+    this.pendingEvents.push(event);
   }
 
   getId(): SkillId {

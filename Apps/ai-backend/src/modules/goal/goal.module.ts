@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
 import { GoalService } from './goal.service';
 import { GoalController } from './interface/controllers/goal.controller';
 import { GoalResponseMapper } from './interface/mappers/goal-response.mapper';
@@ -49,9 +49,9 @@ const GOAL_LOCK_SERVICE = Symbol('GoalLockService');
     },
     {
       provide: GoalCommandService,
-      useFactory: (repository: any, eventPublisher: any, goalLock: any) =>
-        new GoalCommandService(repository, eventPublisher, goalLock),
-      inject: [GOAL_REPOSITORY, EVENT_PUBLISHER, GOAL_LOCK_SERVICE],
+      useFactory: (repository: any, eventPublisher: any, connection: any, goalLock: any) =>
+        new GoalCommandService(repository, eventPublisher, connection, goalLock),
+      inject: [GOAL_REPOSITORY, EVENT_PUBLISHER, getConnectionToken(), GOAL_LOCK_SERVICE],
     },
     {
       provide: GoalQueryService,

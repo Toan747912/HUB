@@ -1,3 +1,5 @@
+import { ClientSession, Connection } from 'mongoose';
+import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import { GoalId, LearnerId, RoadmapId, TaskId } from '../../../../shared/domain/identifiers';
 import { Roadmap } from '../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../domain/engine/roadmap-planning.engine';
@@ -7,6 +9,7 @@ import {
   ResolvedPlanningResult,
 } from '../../domain/engine/roadmap-planning.types';
 import { SkillCatalogService } from '../../../skill/application/services/skill-catalog.service';
+import { SkillDomainEvent } from '../../../skill/domain/events/skill-event-metadata';
 import { RoadmapDomainError } from '../../domain/errors/roadmap-domain.error';
 import { CreateRoadmapCommand } from '../commands/create-roadmap.command';
 import { UpdateRoadmapCommand } from '../commands/update-roadmap.command';
@@ -40,14 +43,18 @@ export class RoadmapCommandService {
     private readonly repository: IRoadmapRepository,
     private readonly eventPublisher: IEventPublisher,
     private readonly skillCatalog: SkillCatalogService,
+    private readonly connection: Connection,
     private readonly roadmapLock?: IRoadmapLock,
     private readonly generationMetrics?: IRoadmapGenerationMetrics,
   ) {}
 
-  private async generatePlan(input: PlanningInput): Promise<ResolvedPlanningResult> {
+  private async generatePlan(
+    input: PlanningInput,
+    session: ClientSession,
+  ): Promise<{ plan: ResolvedPlanningResult; skillEvents: SkillDomainEvent[] }> {
     const start = Date.now();
     const plan = this.planningEngine.generate(input);
-    const resolved = await this.resolveSkills(plan);
+    const resolved = await this.resolveSkills(plan, session);
     this.generationMetrics?.recordRoadmapGenerationDuration((Date.now() - start) / 1000);
     return resolved;
   }
@@ -55,12 +62,24 @@ export class RoadmapCommandService {
   // Resolves each task's deterministic skillLabel (e.g. "Foundations") to a
   // real SkillCatalogService entry, caching per-label within one plan so a
   // phase's skill is only looked up/created once instead of once per task.
-  private async resolveSkills(plan: PlanningResult): Promise<ResolvedPlanningResult> {
+  // The active Mongo session is threaded through so Skill's write (if a new
+  // catalog entry is created) joins the same transaction as this Roadmap
+  // write instead of committing independently.
+  private async resolveSkills(
+    plan: PlanningResult,
+    session: ClientSession,
+  ): Promise<{ plan: ResolvedPlanningResult; skillEvents: SkillDomainEvent[] }> {
     const cache = new Map<string, string>();
+    const skillEvents: SkillDomainEvent[] = [];
     const skillIdFor = async (label: string): Promise<string> => {
       const cached = cache.get(label);
       if (cached) return cached;
-      const skill = await this.skillCatalog.findOrCreateByName(label);
+      const { skill, events } = await this.skillCatalog.findOrCreateByName(
+        label,
+        undefined,
+        session,
+      );
+      skillEvents.push(...events);
       const id = skill.getId().toString();
       cache.set(label, id);
       return id;
@@ -80,7 +99,7 @@ export class RoadmapCommandService {
       phases.push({ ...phase, milestones });
     }
 
-    return { ...plan, phases };
+    return { plan: { ...plan, phases }, skillEvents };
   }
 
   private async withLock<T>(roadmapId: string, fn: () => Promise<T>): Promise<T> {
@@ -110,26 +129,34 @@ export class RoadmapCommandService {
         targetDate: command.targetDate,
       };
 
-      const plan = await this.generatePlan(goalSnapshot);
+      const { roadmap, roadmapEvents, skillEvents } = await withTransaction(
+        this.connection,
+        async (session) => {
+          const { plan, skillEvents } = await this.generatePlan(goalSnapshot, session);
 
-      const roadmap = Roadmap.create(
-        {
-          roadmapId: RoadmapId.create(command.roadmapId),
-          goalId: GoalId.create(command.goalId),
-          learnerId: LearnerId.create(command.learnerId),
-          goalSnapshot,
-          plan,
-        },
-        {
-          traceId: command.traceId,
-          correlationId: command.correlationId,
-          causationId: command.causationId,
+          const roadmap = Roadmap.create(
+            {
+              roadmapId: RoadmapId.create(command.roadmapId),
+              goalId: GoalId.create(command.goalId),
+              learnerId: LearnerId.create(command.learnerId),
+              goalSnapshot,
+              plan,
+            },
+            {
+              traceId: command.traceId,
+              correlationId: command.correlationId,
+              causationId: command.causationId,
+            },
+          );
+
+          await this.repository.save(roadmap, session);
+          const roadmapEvents = roadmap.pullEvents();
+          await this.eventPublisher.stage(roadmapEvents, session);
+          return { roadmap, roadmapEvents, skillEvents };
         },
       );
-
-      await this.repository.save(roadmap);
-      const events = roadmap.pullEvents();
-      await this.eventPublisher.publishMany(events);
+      await this.eventPublisher.publishMany(roadmapEvents);
+      await this.skillCatalog.publishEvents(skillEvents);
 
       this.log('CREATE_ROADMAP', command.roadmapId, start, 'SUCCESS');
       return roadmap;
@@ -156,8 +183,12 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });
@@ -186,8 +217,12 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });
@@ -216,8 +251,12 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });
@@ -237,20 +276,28 @@ export class RoadmapCommandService {
         const r = await this.repository.findById(command.roadmapId);
         if (!r) throw new RoadmapNotFoundError(command.roadmapId);
 
-        const plan = await this.generatePlan(r.getGoalSnapshot());
-        r.regenerate(
-          plan,
-          {
-            traceId: command.traceId,
-            correlationId: command.correlationId,
-            causationId: command.causationId,
-          },
-          command.expectedVersion,
-        );
+        const { roadmapEvents, skillEvents } = await withTransaction(
+          this.connection,
+          async (session) => {
+            const { plan, skillEvents } = await this.generatePlan(r.getGoalSnapshot(), session);
+            r.regenerate(
+              plan,
+              {
+                traceId: command.traceId,
+                correlationId: command.correlationId,
+                causationId: command.causationId,
+              },
+              command.expectedVersion,
+            );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
-        await this.eventPublisher.publishMany(events);
+            await this.repository.save(r, session);
+            const roadmapEvents = r.pullEvents();
+            await this.eventPublisher.stage(roadmapEvents, session);
+            return { roadmapEvents, skillEvents };
+          },
+        );
+        await this.eventPublisher.publishMany(roadmapEvents);
+        await this.skillCatalog.publishEvents(skillEvents);
         return r;
       });
 
@@ -279,8 +326,12 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });
@@ -310,8 +361,12 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        await this.repository.save(r);
-        const events = r.pullEvents();
+        const events = await withTransaction(this.connection, async (session) => {
+          await this.repository.save(r, session);
+          const ev = r.pullEvents();
+          await this.eventPublisher.stage(ev, session);
+          return ev;
+        });
         await this.eventPublisher.publishMany(events);
         return r;
       });

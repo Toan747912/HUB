@@ -1,6 +1,6 @@
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, disconnect } from 'mongoose';
 import { randomUUID } from 'crypto';
 import { Goal } from '../../../../domain/aggregates/goal.aggregate';
@@ -34,13 +34,13 @@ const makeGoal = (overrides: Partial<{ goalId: string; learnerId: string }> = {}
 jest.setTimeout(300_000);
 
 describe('MongoGoalRepository — integration', () => {
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let module: TestingModule;
   let repository: MongoGoalRepository;
   let model: Model<GoalDocument>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     const uri = mongod.getUri();
 
     module = await Test.createTestingModule({

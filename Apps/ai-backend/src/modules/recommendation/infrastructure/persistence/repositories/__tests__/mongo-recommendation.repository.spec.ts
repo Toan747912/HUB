@@ -1,6 +1,6 @@
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, disconnect } from 'mongoose';
 import { Recommendation } from '../../../../domain/aggregates/recommendation.aggregate';
 import { RecommendationEngine } from '../../../../domain/engine/recommendation.engine';
@@ -67,13 +67,13 @@ const makeRecommendation = (
 jest.setTimeout(300_000);
 
 describe('MongoRecommendationRepository — integration', () => {
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let module: TestingModule;
   let repository: MongoRecommendationRepository;
   let model: Model<RecommendationDocument>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     const uri = mongod.getUri();
 
     module = await Test.createTestingModule({

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { SpanFactory } from '../observability/span.factory';
 import { TracerService } from '../observability/tracer.service';
 import { DomainEvent, DomainEventMetadata } from './domain-event.contract';
@@ -28,9 +28,9 @@ export class OutboxRepository {
     private readonly tracer?: TracerService,
   ) {}
 
-  async saveMany(events: DomainEvent[]): Promise<void> {
+  async saveMany(events: DomainEvent[], session?: ClientSession): Promise<void> {
     if (events.length === 0) return;
-    const run = () => this.doSaveMany(events);
+    const run = () => this.doSaveMany(events, session);
     if (!this.tracer) return run();
     return this.tracer.withSpan(
       'outbox.saveMany',
@@ -39,7 +39,7 @@ export class OutboxRepository {
     );
   }
 
-  private async doSaveMany(events: DomainEvent[]): Promise<void> {
+  private async doSaveMany(events: DomainEvent[], session?: ClientSession): Promise<void> {
     const docs = events.map((event) => {
       const extraMetadata: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(event.metadata)) {
@@ -75,6 +75,7 @@ export class OutboxRepository {
           upsert: true,
         },
       })),
+      { session },
     );
   }
 

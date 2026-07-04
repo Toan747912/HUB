@@ -1,5 +1,8 @@
 # Logical Database Model — AI Mentor OS
 
+> **⛔ SUPERSEDED (2026-07-02):** This document blueprints a Postgres/Supabase schema that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as canonical — see [MongoPersistenceModel.md](MongoPersistenceModel.md) for the as-built collection diagram. Retained for historical record only.
+
+
 > Database Design Phase — Step 2. Theo [DECISION-035](../11_Decisions/DECISION-035-No-Full-Event-Sourcing.md), [DECISION-036](../11_Decisions/DECISION-036-LearningProfile-Is-Projection.md), [DECISION-037](../11_Decisions/DECISION-037-Right-To-Be-Forgotten-Anonymization.md). Xây trên [PersistenceArchitecture.md](PersistenceArchitecture.md) (Step 1) và [CoreDomainMap.md](../03_Domain_Model/CoreDomainMap.md)/[AssessmentDomain.md](../03_Domain_Model/AssessmentDomain.md)/[LearningSessionDomain.md](../03_Domain_Model/LearningSessionDomain.md).
 >
 > **Chỉ mô tả Logical Model.** KHÔNG thiết kế SQL, không `CREATE TABLE`, không cột, không index, không constraint cụ thể. "Entity" dưới đây là khái niệm logic (tương đương 1 bảng/collection ở Physical Design sau này), không phải định nghĩa vật lý.

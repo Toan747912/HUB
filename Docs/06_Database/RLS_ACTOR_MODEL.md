@@ -1,5 +1,8 @@
 # RLS Actor Model — AI Mentor OS
 
+> **⛔ SUPERSEDED (2026-07-02):** This document describes a Postgres/Supabase RLS architecture that was never implemented. [DECISION-058](../11_Decisions/DECISION-058-MongoDB-Canonical-Persistence-Store.md) establishes MongoDB as the canonical persistence platform, with access control enforced entirely in the NestJS application layer (JWT + RBAC) instead of database-level row security. Retained for historical record only — do not use as current architecture guidance.
+
+
 > Phạm vi: phân tích kiến trúc actor/trust cho Authorization Architecture. **Không viết SQL Policy, không implement.** Kế thừa [DECISION-043](../11_Decisions/DECISION-043-Supabase-Auth-Alignment.md), [FRONTEND_BACKEND_INTERACTION_REVIEW.md](../07_API/FRONTEND_BACKEND_INTERACTION_REVIEW.md), [BACKEND_MODULE_CATALOG.md](BACKEND_MODULE_CATALOG.md), [INFRASTRUCTURE_BOUNDARY_REVIEW.md](INFRASTRUCTURE_BOUNDARY_REVIEW.md).
 
 ---

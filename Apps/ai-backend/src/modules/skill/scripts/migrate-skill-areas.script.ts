@@ -87,7 +87,7 @@ export async function migrateSkillAreas(
       continue;
     }
 
-    const skill = await skillCatalogService.findOrCreateByName(trimmed);
+    const { skill } = await skillCatalogService.findOrCreateByName(trimmed);
     resolved.push({ skillArea: value, skillId: skill.getId().toString() });
   }
 
