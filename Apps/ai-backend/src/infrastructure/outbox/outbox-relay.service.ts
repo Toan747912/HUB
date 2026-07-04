@@ -5,7 +5,8 @@ import {
   GoalId,
   Identifier,
   RecommendationId,
-  RoadmapId
+  RoadmapId,
+  SessionId,
 } from '../../shared/domain/identifiers';
 import { QueueService } from '../jobs/queue.service';
 import { MetricsService } from '../observability/metrics.service';
@@ -27,6 +28,8 @@ function reconstructAggregateId(aggregateType: string, aggregateId: string): Ide
       return AssessmentId.create(aggregateId);
     case 'Recommendation':
       return RecommendationId.create(aggregateId);
+    case 'LearningSession':
+      return SessionId.create(aggregateId);
     case 'Goal':
     default:
       return GoalId.create(aggregateId);
@@ -40,7 +43,7 @@ export class OutboxRelayService {
   constructor(
     private readonly outbox: OutboxRepository,
     private readonly queue: QueueService,
-    private readonly metrics?: MetricsService
+    private readonly metrics?: MetricsService,
   ) {}
 
   @Interval(RELAY_INTERVAL_MS)
@@ -65,15 +68,20 @@ export class OutboxRelayService {
             eventId: doc.eventId,
             aggregateId: doc.aggregateId,
             error: error instanceof Error ? error.message : String(error),
-            timestamp: new Date().toISOString()
-          })
+            timestamp: new Date().toISOString(),
+          }),
         );
       }
     }
 
     if (pending.length > 0) {
       this.logger.log(
-        JSON.stringify({ event: 'outbox_relay_sweep', found: pending.length, relayed, timestamp: new Date().toISOString() })
+        JSON.stringify({
+          event: 'outbox_relay_sweep',
+          found: pending.length,
+          relayed,
+          timestamp: new Date().toISOString(),
+        }),
       );
     }
 
@@ -95,12 +103,12 @@ export class OutboxRelayService {
       traceId: doc.traceId,
       correlationId: doc.correlationId,
       causationId: doc.causationId,
-      ...doc.metadata
+      ...doc.metadata,
     };
     return {
       type: doc.eventType,
       metadata,
-      payload: doc.payload
+      payload: doc.payload,
     };
   }
 }

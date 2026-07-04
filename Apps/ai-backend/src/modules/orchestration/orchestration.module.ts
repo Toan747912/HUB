@@ -3,6 +3,7 @@ import { QueueModule } from '../../infrastructure/jobs/queue.module';
 import { RoadmapModule } from '../roadmap/roadmap.module';
 import { AssessmentModule } from '../assessment/assessment.module';
 import { RecommendationModule } from '../recommendation/recommendation.module';
+import { LearningSessionModule } from '../learning-session/learning-session.module';
 import { OrchestrationWorkerService } from './application/orchestration-worker.service';
 
 /**
@@ -13,8 +14,14 @@ import { OrchestrationWorkerService } from './application/orchestration-worker.s
  * than any direct call from Goal/Roadmap/Assessment into this module.
  */
 @Module({
-  imports: [QueueModule, RoadmapModule, AssessmentModule, RecommendationModule],
+  imports: [
+    QueueModule,
+    RoadmapModule,
+    AssessmentModule,
+    RecommendationModule,
+    LearningSessionModule,
+  ],
   providers: [OrchestrationWorkerService],
-  exports: [OrchestrationWorkerService]
+  exports: [OrchestrationWorkerService],
 })
 export class OrchestrationModule {}

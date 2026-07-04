@@ -1,0 +1,143 @@
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { LearningSession } from '../../../domain/aggregates/learning-session.aggregate';
+import { ILearningSessionRepository } from '../../../application/contracts/learning-session-repository.contract';
+import { MetricsService } from '../../../../../infrastructure/observability/metrics.service';
+import { SpanFactory } from '../../../../../infrastructure/observability/span.factory';
+import { TracerService } from '../../../../../infrastructure/observability/tracer.service';
+import {
+  LearningSessionDocument,
+  LearningSessionPersistenceMapper,
+} from '../mappers/learning-session-persistence.mapper';
+
+export class MongoLearningSessionRepository implements ILearningSessionRepository {
+  constructor(
+    @InjectModel('LearningSession') private readonly model: Model<any>,
+    private readonly tracer?: TracerService,
+    private readonly metrics?: MetricsService,
+  ) {}
+
+  async save(session: LearningSession): Promise<void> {
+    await this.instrumented('save', session.getId().toString(), async () => {
+      const start = Date.now();
+      const doc = LearningSessionPersistenceMapper.toDocument(session);
+      const { _id, createdAt, ...mutableFields } = doc;
+      try {
+        await this.model.findByIdAndUpdate(
+          _id,
+          {
+            $set: { ...mutableFields, updatedAt: new Date() },
+            $setOnInsert: { createdAt: new Date() },
+          },
+          { upsert: true, returnDocument: 'after' },
+        );
+        this.log('save', session.getId().toString(), start, 'SUCCESS');
+      } catch (error) {
+        this.log('save', session.getId().toString(), start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
+  async findById(id: string): Promise<LearningSession | null> {
+    return this.instrumented('findById', id, async () => {
+      const start = Date.now();
+      try {
+        const doc = await this.model.findById(id).lean<LearningSessionDocument>().exec();
+        this.log('findById', id, start, 'SUCCESS');
+        return doc ? LearningSessionPersistenceMapper.toDomain(doc) : null;
+      } catch (error) {
+        this.log('findById', id, start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
+  async findAll(): Promise<LearningSession[]> {
+    return this.instrumented('findAll', '*', async () => {
+      const start = Date.now();
+      try {
+        const docs = await this.model.find().lean<LearningSessionDocument[]>().exec();
+        this.log('findAll', '*', start, 'SUCCESS');
+        return docs.map((d) => LearningSessionPersistenceMapper.toDomain(d));
+      } catch (error) {
+        this.log('findAll', '*', start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
+  async findByLearnerId(learnerId: string): Promise<LearningSession[]> {
+    return this.instrumented('findByLearnerId', learnerId, async () => {
+      const start = Date.now();
+      try {
+        const docs = await this.model.find({ learnerId }).lean<LearningSessionDocument[]>().exec();
+        this.log('findByLearnerId', learnerId, start, 'SUCCESS');
+        return docs.map((d) => LearningSessionPersistenceMapper.toDomain(d));
+      } catch (error) {
+        this.log('findByLearnerId', learnerId, start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.instrumented('delete', id, async () => {
+      const start = Date.now();
+      try {
+        await this.model.findByIdAndDelete(id).exec();
+        this.log('delete', id, start, 'SUCCESS');
+      } catch (error) {
+        this.log('delete', id, start, 'FAILURE', error);
+        throw error;
+      }
+    });
+  }
+
+  private async instrumented<T>(
+    operation: string,
+    aggregateId: string,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    const start = Date.now();
+    const run = async (): Promise<T> => {
+      try {
+        const result = await fn();
+        this.metrics?.recordMongoLatency(operation, Date.now() - start);
+        return result;
+      } catch (error) {
+        this.metrics?.recordMongoLatency(operation, Date.now() - start);
+        throw error;
+      }
+    };
+
+    if (!this.tracer) {
+      return run();
+    }
+    return this.tracer.withSpan(
+      `mongodb.${operation}`,
+      SpanFactory.attributesFor({ operation, aggregateId }),
+      run,
+    );
+  }
+
+  private log(
+    operation: string,
+    aggregateId: string,
+    startMs: number,
+    status: string,
+    error?: unknown,
+  ): void {
+    console.log(
+      JSON.stringify({
+        traceId: 'db',
+        operation,
+        aggregateId,
+        latencyMs: Date.now() - startMs,
+        database: 'mongodb',
+        status,
+        errorType: error instanceof Error ? error.constructor.name : undefined,
+      }),
+    );
+  }
+}

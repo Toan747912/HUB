@@ -22,7 +22,13 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'Recommendation.Generate',
     'Recommendation.Approve',
     'Recommendation.Reject',
-    'Recommendation.Archive'
+    'Recommendation.Archive',
+    'LearningSession.Read',
+    'LearningSession.Write',
+    'LearningSession.Start',
+    'LearningSession.Complete',
+    'LearningSession.Cancel',
+    'LearningSession.Analytics',
   ],
   STUDENT: [
     'Goal.Read',
@@ -32,9 +38,15 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'Assessment.Run',
     'Recommendation.Read',
     'Recommendation.Approve',
-    'Recommendation.Reject'
+    'Recommendation.Reject',
+    'LearningSession.Read',
+    'LearningSession.Write',
+    'LearningSession.Start',
+    'LearningSession.Complete',
+    'LearningSession.Cancel',
+    'LearningSession.Analytics',
   ],
-  SYSTEM: [...PERMISSIONS]
+  SYSTEM: [...PERMISSIONS],
 };
 
 export function roleHasPermission(role: Role, permission: Permission): boolean {

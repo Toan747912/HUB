@@ -20,7 +20,13 @@ export const PERMISSIONS = [
   'Recommendation.Generate',
   'Recommendation.Approve',
   'Recommendation.Reject',
-  'Recommendation.Archive'
+  'Recommendation.Archive',
+  'LearningSession.Read',
+  'LearningSession.Write',
+  'LearningSession.Start',
+  'LearningSession.Complete',
+  'LearningSession.Cancel',
+  'LearningSession.Analytics',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
