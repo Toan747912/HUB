@@ -11,6 +11,7 @@ function buildContext(overrides: Partial<BrainContext> = {}): BrainContext {
     roadmap: { nodeId: 'node-1', status: 'ACTIVE' },
     session: { id: 'session-1', phase: 'ACTIVE' },
     recommendation: { state: 'priority-for-user-1' },
+    discovery: { profile: 'discovery-context-user-1' },
     assembledAt: '2026-07-03T00:00:00.000Z',
     ...overrides,
   };

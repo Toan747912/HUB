@@ -15,6 +15,7 @@ import { AuditModule } from './infrastructure/audit/audit.module';
 import { SecurityModule } from './infrastructure/security/security.module';
 import { AiRuntimeModule } from './modules/ai-runtime/ai-runtime.module';
 import { MissionPlannerModule } from './modules/mission-planner/mission-planner.module';
+import { DiscoveryPlannerModule } from './modules/discovery-planner/discovery-planner.module';
 import { MigrationModule } from './modules/migration/migration.module';
 import { DiscoveryModule } from './modules/discovery/discovery.module';
 import { TeachingModule } from './modules/teaching/teaching.module';
@@ -104,6 +105,7 @@ import {
     TeachingModule,
     AiRuntimeModule,
     MissionPlannerModule,
+    DiscoveryPlannerModule,
     MigrationModule,
   ],
   providers: [

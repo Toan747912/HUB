@@ -1,3 +1,4 @@
+import { DiscoveryService } from '../../../modules/discovery/discovery.service';
 import { GoalService } from '../../../modules/goal/goal.service';
 import { LearningSessionService } from '../../../modules/learning-session/learning-session.service';
 import { RecommendationService } from '../../../modules/recommendation/recommendation.service';
@@ -16,12 +17,16 @@ describe('ContextAssemblyService', () => {
     const recommendationService = {
       getRecommendationState: jest.fn().mockResolvedValue({ state: 'priority-for-user-1' }),
     };
+    const discoveryService = {
+      getDiscoveryContext: jest.fn().mockResolvedValue({ profile: 'discovery-context-user-1' }),
+    };
 
     const service = new ContextAssemblyService(
       goalService as unknown as GoalService,
       roadmapService as unknown as RoadmapService,
       learningSessionService as unknown as LearningSessionService,
       recommendationService as unknown as RecommendationService,
+      discoveryService as unknown as DiscoveryService,
     );
 
     const context = await service.assemble({
@@ -35,6 +40,7 @@ describe('ContextAssemblyService', () => {
     expect(roadmapService.getRoadmapSlice).toHaveBeenCalledWith('goal-1');
     expect(learningSessionService.getSession).toHaveBeenCalledWith('session-1');
     expect(recommendationService.getRecommendationState).toHaveBeenCalledWith('user-1');
+    expect(discoveryService.getDiscoveryContext).toHaveBeenCalledWith('user-1');
 
     expect(context).toMatchObject({
       userId: 'user-1',
@@ -45,6 +51,7 @@ describe('ContextAssemblyService', () => {
       roadmap: { nodeId: 'node-1', status: 'ACTIVE' },
       session: { id: 'session-1', phase: 'ACTIVE' },
       recommendation: { state: 'priority-for-user-1' },
+      discovery: { profile: 'discovery-context-user-1' },
     });
     expect(typeof context.assembledAt).toBe('string');
     expect(new Date(context.assembledAt).toString()).not.toBe('Invalid Date');

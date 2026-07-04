@@ -4,9 +4,9 @@ import { ContextAssemblyService } from '../../../../../infrastructure/ai-brain/c
 import { ResilientLlmGateway } from '../../../../../infrastructure/ai-brain/resilient-llm-gateway.service';
 import { MetricsService } from '../../../../../infrastructure/observability/metrics.service';
 import { ExplainabilityRulesService } from '../../../../../shared/services/explainability-rules.service';
-import { MISSION_FALLBACK_VERSION } from '../../../domain/engine/mission-planning.engine';
-import { MISSION_PROMPT_VERSION } from '../../prompts/mission-prompt';
-import { MissionPlannerService } from '../mission-planner.service';
+import { DISCOVERY_FALLBACK_VERSION } from '../../../domain/engine/discovery-planning.engine';
+import { DISCOVERY_PROMPT_VERSION } from '../../prompts/discovery-prompt';
+import { DiscoveryPlannerService } from '../discovery-planner.service';
 
 function buildContext(): BrainContext {
   return {
@@ -23,19 +23,19 @@ function buildContext(): BrainContext {
   };
 }
 
-describe('MissionPlannerService', () => {
+describe('DiscoveryPlannerService', () => {
   function build() {
     const contextAssembly = { assemble: jest.fn().mockResolvedValue(buildContext()) };
     const llmGateway = { complete: jest.fn() };
     const explainabilityRules = { validate: jest.fn() };
     const metrics = {
-      incrementMissionPlanGenerated: jest.fn(),
-      incrementMissionPlanFallbackUsed: jest.fn(),
-      recordMissionPlanConfidence: jest.fn(),
+      incrementDiscoveryPlanGenerated: jest.fn(),
+      incrementDiscoveryPlanFallbackUsed: jest.fn(),
+      recordDiscoveryPlanConfidence: jest.fn(),
     };
     const auditLog = { recordSecurityEvent: jest.fn().mockResolvedValue(undefined) };
 
-    const service = new MissionPlannerService(
+    const service = new DiscoveryPlannerService(
       contextAssembly as unknown as ContextAssemblyService,
       llmGateway as unknown as ResilientLlmGateway,
       explainabilityRules as unknown as ExplainabilityRulesService,
@@ -56,13 +56,17 @@ describe('MissionPlannerService', () => {
   it('reads context exclusively through ContextAssemblyService', async () => {
     const { service, contextAssembly, llmGateway } = build();
     llmGateway.complete.mockResolvedValue({
-      raw: { tasks: [{ id: 't1', title: 'T', description: 'D', estimatedMinutes: 10, source: 'roadmap' }], confidence: 0.8, reasoning: 'ok' },
+      raw: {
+        suggestions: [{ goalArea: 'A', skillFocus: 'a-skill', rationale: 'r' }],
+        confidence: 0.8,
+        reasoning: 'ok',
+      },
       provider: 'mock-llm',
       model: 'mock-llm-v1',
       fallbackUsed: false,
     });
 
-    await service.generateTodaysMission(baseRequest);
+    await service.discoverInitialFocus(baseRequest);
 
     expect(contextAssembly.assemble).toHaveBeenCalledWith({
       userId: 'user-1',
@@ -72,29 +76,30 @@ describe('MissionPlannerService', () => {
     });
   });
 
-  it('returns a normalized LLM-backed mission with confidence, explanation, provider, model, and fallbackUsed=false', async () => {
+  it('returns a normalized LLM-backed discovery plan with confidence, explanation, provider, model, and fallbackUsed=false', async () => {
     const { service, llmGateway } = build();
     llmGateway.complete.mockResolvedValue({
       raw: {
-        tasks: [{ id: 't1', title: 'Task', description: 'Do it', estimatedMinutes: 25, source: 'roadmap' }],
-        focusSummary: 'Focus on the roadmap',
+        suggestions: [{ goalArea: 'Backend depth', skillFocus: 'system-design', rationale: 'High signal' }],
+        primaryFocus: 'system-design',
         confidence: 0.9,
-        reasoning: 'Roadmap node is active and highest priority.',
+        reasoning: 'Profile signals system-design interest.',
       },
       provider: 'mock-llm',
       model: 'mock-llm-v1',
       fallbackUsed: false,
     });
 
-    const result = await service.generateTodaysMission(baseRequest);
+    const result = await service.discoverInitialFocus(baseRequest);
 
     expect(result.fallbackUsed).toBe(false);
     expect(result.confidence).toBe(0.9);
-    expect(result.explanation).toBe('Roadmap node is active and highest priority.');
+    expect(result.explanation).toBe('Profile signals system-design interest.');
     expect(result.provider).toBe('mock-llm');
     expect(result.model).toBe('mock-llm-v1');
-    expect(result.promptVersion).toBe(MISSION_PROMPT_VERSION);
-    expect(result.tasks).toHaveLength(1);
+    expect(result.promptVersion).toBe(DISCOVERY_PROMPT_VERSION);
+    expect(result.suggestions).toHaveLength(1);
+    expect(result.primaryFocus).toBe('system-design');
   });
 
   it('uses the deterministic fallback engine when the gateway reports fallbackUsed', async () => {
@@ -107,24 +112,24 @@ describe('MissionPlannerService', () => {
       fallbackReason: 'circuit_open',
     });
 
-    const result = await service.generateTodaysMission(baseRequest);
+    const result = await service.discoverInitialFocus(baseRequest);
 
     expect(result.fallbackUsed).toBe(true);
-    expect(result.explanation).toContain(MISSION_FALLBACK_VERSION);
+    expect(result.explanation).toContain(DISCOVERY_FALLBACK_VERSION);
     expect(result.explanation).toContain('circuit_open');
-    expect(result.tasks.length).toBeGreaterThan(0);
+    expect(result.suggestions.length).toBeGreaterThan(0);
   });
 
-  it('falls back when the LLM returns tasks in an invalid shape', async () => {
+  it('falls back when the LLM returns suggestions in an invalid shape', async () => {
     const { service, llmGateway } = build();
     llmGateway.complete.mockResolvedValue({
-      raw: { tasks: 'not-an-array', confidence: 0.9, reasoning: 'x' },
+      raw: { suggestions: 'not-an-array', confidence: 0.9, reasoning: 'x' },
       provider: 'mock-llm',
       model: 'mock-llm-v1',
       fallbackUsed: false,
     });
 
-    const result = await service.generateTodaysMission(baseRequest);
+    const result = await service.discoverInitialFocus(baseRequest);
 
     expect(result.fallbackUsed).toBe(true);
     expect(result.explanation).toContain('invalid_llm_output');
@@ -134,7 +139,7 @@ describe('MissionPlannerService', () => {
     const { service, llmGateway } = build();
     llmGateway.complete.mockResolvedValue({
       raw: {
-        tasks: [{ id: 't1', title: 'T', description: 'D', estimatedMinutes: 10, source: 'roadmap' }],
+        suggestions: [{ goalArea: 'A', skillFocus: 'a-skill', rationale: 'r' }],
         confidence: 5,
         reasoning: 'x',
       },
@@ -143,47 +148,55 @@ describe('MissionPlannerService', () => {
       fallbackUsed: false,
     });
 
-    const result = await service.generateTodaysMission(baseRequest);
+    const result = await service.discoverInitialFocus(baseRequest);
     expect(result.confidence).toBe(1);
   });
 
   it('validates every response against the shared explainability rules before returning', async () => {
     const { service, llmGateway, explainabilityRules } = build();
     llmGateway.complete.mockResolvedValue({
-      raw: { tasks: [{ id: 't1', title: 'T', description: 'D', estimatedMinutes: 10, source: 'roadmap' }], confidence: 0.7, reasoning: 'why' },
+      raw: {
+        suggestions: [{ goalArea: 'A', skillFocus: 'a-skill', rationale: 'r' }],
+        confidence: 0.7,
+        reasoning: 'why',
+      },
       provider: 'mock-llm',
       model: 'mock-llm-v1',
       fallbackUsed: false,
     });
 
-    await service.generateTodaysMission(baseRequest);
+    await service.discoverInitialFocus(baseRequest);
 
     expect(explainabilityRules.validate).toHaveBeenCalledWith({
       confidence: 0.7,
       reasoning: 'why',
-      traced_to: ['goal:goal-1', 'roadmap:node-1', 'session:session-1'],
+      traced_to: ['discovery:user-1', 'goal:goal-1', 'recommendation:priority-for-user-1'],
     });
   });
 
   it('emits metrics and an audit event on success', async () => {
     const { service, llmGateway, metrics, auditLog } = build();
     llmGateway.complete.mockResolvedValue({
-      raw: { tasks: [{ id: 't1', title: 'T', description: 'D', estimatedMinutes: 10, source: 'roadmap' }], confidence: 0.7, reasoning: 'why' },
+      raw: {
+        suggestions: [{ goalArea: 'A', skillFocus: 'a-skill', rationale: 'r' }],
+        confidence: 0.7,
+        reasoning: 'why',
+      },
       provider: 'mock-llm',
       model: 'mock-llm-v1',
       fallbackUsed: false,
     });
 
-    await service.generateTodaysMission(baseRequest);
+    await service.discoverInitialFocus(baseRequest);
 
-    expect(metrics.incrementMissionPlanGenerated).toHaveBeenCalled();
-    expect(metrics.recordMissionPlanConfidence).toHaveBeenCalledWith(0.7);
-    expect(metrics.incrementMissionPlanFallbackUsed).not.toHaveBeenCalled();
+    expect(metrics.incrementDiscoveryPlanGenerated).toHaveBeenCalled();
+    expect(metrics.recordDiscoveryPlanConfidence).toHaveBeenCalledWith(0.7);
+    expect(metrics.incrementDiscoveryPlanFallbackUsed).not.toHaveBeenCalled();
     expect(auditLog.recordSecurityEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         traceId: 'trace-1',
         userId: 'user-1',
-        operation: 'MISSION_PLAN_GENERATED',
+        operation: 'DISCOVERY_PLAN_GENERATED',
       }),
     );
   });
@@ -201,20 +214,20 @@ describe('MissionPlannerService', () => {
     };
     const explainabilityRules = { validate: jest.fn() };
 
-    const service = new MissionPlannerService(
+    const service = new DiscoveryPlannerService(
       contextAssembly as unknown as ContextAssemblyService,
       llmGateway as unknown as ResilientLlmGateway,
       explainabilityRules as unknown as ExplainabilityRulesService,
     );
 
-    await expect(service.generateTodaysMission(baseRequest)).resolves.toBeDefined();
+    await expect(service.discoverInitialFocus(baseRequest)).resolves.toBeDefined();
   });
 
   it('propagates errors thrown while assembling context', async () => {
     const { service, contextAssembly } = build();
     contextAssembly.assemble.mockRejectedValue(new Error('context assembly failed'));
 
-    await expect(service.generateTodaysMission(baseRequest)).rejects.toThrow(
+    await expect(service.discoverInitialFocus(baseRequest)).rejects.toThrow(
       'context assembly failed',
     );
   });

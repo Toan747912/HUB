@@ -184,6 +184,27 @@ export class MetricsService {
   private missionPlanConfidenceSampleSum = 0;
   private missionPlanConfidenceSampleCount = 0;
 
+  private readonly discoveryPlanGeneratedTotal = new Counter({
+    name: 'discovery_plan_generated_total',
+    help: 'Total discovery plans generated',
+    registers: [this.registry],
+  });
+
+  private readonly discoveryPlanFallbackTotal = new Counter({
+    name: 'discovery_plan_fallback_total',
+    help: 'Total discovery plans generated via deterministic fallback',
+    registers: [this.registry],
+  });
+
+  private readonly discoveryPlanConfidenceAverage = new Gauge({
+    name: 'discovery_plan_confidence_average',
+    help: 'Running average confidence score across all generated discovery plans',
+    registers: [this.registry],
+  });
+
+  private discoveryPlanConfidenceSampleSum = 0;
+  private discoveryPlanConfidenceSampleCount = 0;
+
   private readonly mongodbLatencyMs = new Histogram({
     name: 'mongodb_latency_ms',
     help: 'MongoDB operation latency in milliseconds',
@@ -345,6 +366,22 @@ export class MetricsService {
     this.missionPlanConfidenceSampleCount += 1;
     this.missionPlanConfidenceAverage.set(
       this.missionPlanConfidenceSampleSum / this.missionPlanConfidenceSampleCount,
+    );
+  }
+
+  incrementDiscoveryPlanGenerated(): void {
+    this.discoveryPlanGeneratedTotal.inc();
+  }
+
+  incrementDiscoveryPlanFallbackUsed(): void {
+    this.discoveryPlanFallbackTotal.inc();
+  }
+
+  recordDiscoveryPlanConfidence(score: number): void {
+    this.discoveryPlanConfidenceSampleSum += score;
+    this.discoveryPlanConfidenceSampleCount += 1;
+    this.discoveryPlanConfidenceAverage.set(
+      this.discoveryPlanConfidenceSampleSum / this.discoveryPlanConfidenceSampleCount,
     );
   }
 

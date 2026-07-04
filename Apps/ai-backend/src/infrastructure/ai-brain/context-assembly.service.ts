@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DiscoveryService } from '../../modules/discovery/discovery.service';
 import { GoalService } from '../../modules/goal/goal.service';
 import { LearningSessionService } from '../../modules/learning-session/learning-session.service';
 import { RecommendationService } from '../../modules/recommendation/recommendation.service';
@@ -17,14 +18,16 @@ export class ContextAssemblyService {
     private readonly roadmapService: RoadmapService,
     private readonly learningSessionService: LearningSessionService,
     private readonly recommendationService: RecommendationService,
+    private readonly discoveryService: DiscoveryService,
   ) {}
 
   async assemble(request: BrainContextRequest): Promise<BrainContext> {
-    const [goal, roadmap, session, recommendation] = await Promise.all([
+    const [goal, roadmap, session, recommendation, discovery] = await Promise.all([
       this.goalService.getGoal(request.goalId),
       this.roadmapService.getRoadmapSlice(request.goalId),
       this.learningSessionService.getSession(request.sessionId),
       this.recommendationService.getRecommendationState(request.userId),
+      this.discoveryService.getDiscoveryContext(request.userId),
     ]);
 
     return {
@@ -36,6 +39,7 @@ export class ContextAssemblyService {
       roadmap,
       session,
       recommendation,
+      discovery,
       assembledAt: new Date().toISOString(),
     };
   }

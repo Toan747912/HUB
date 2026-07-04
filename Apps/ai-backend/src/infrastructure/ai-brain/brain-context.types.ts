@@ -14,5 +14,6 @@ export interface BrainContext {
   roadmap: { nodeId: string; status: string };
   session: { id: string; phase: string };
   recommendation: { state: string };
+  discovery: { profile: string };
   assembledAt: string;
 }
