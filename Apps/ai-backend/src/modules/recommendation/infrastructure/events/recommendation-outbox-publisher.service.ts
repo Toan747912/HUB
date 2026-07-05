@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ClientSession } from 'mongoose';
+import { PrismaTransactionClient } from '../../../../infrastructure/persistence/with-transaction';
 import { RecommendationDomainEvent } from '../../domain/events/recommendation-event-metadata';
 import { IEventPublisher } from '../../application/contracts/event-publisher.contract';
 import { AuditLogService } from '../../../../infrastructure/audit/audit-log.service';
@@ -33,9 +33,9 @@ export class RecommendationOutboxPublisherService implements IEventPublisher {
     await this.publishMany([event]);
   }
 
-  async stage(events: RecommendationDomainEvent[], session: ClientSession): Promise<void> {
+  async stage(events: RecommendationDomainEvent[], tx: PrismaTransactionClient): Promise<void> {
     if (events.length === 0) return;
-    await this.outbox.saveMany(events, session);
+    await this.outbox.saveMany(events, tx);
   }
 
   async publishMany(events: RecommendationDomainEvent[]): Promise<void> {

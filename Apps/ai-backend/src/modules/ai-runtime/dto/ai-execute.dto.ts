@@ -28,6 +28,11 @@ export class AiExecuteDto {
     'recommendation',
     'discovery',
     'teaching',
+    'mission_planner',
+    'discovery_planner',
+    'knowledge_planner',
+    'evidence_planner',
+    'teaching_planner',
   ])
   route!: DomainRoute;
 

@@ -1,48 +1,22 @@
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Model, disconnect } from 'mongoose';
-import { AuditEventDocument, AuditEventSchema } from '../audit-event.schema';
+import { PrismaService } from '../../persistence/prisma.service';
 import { AuditLogRepository } from '../audit-log.repository';
 
-jest.setTimeout(300_000);
-
 describe('AuditLogRepository — integration', () => {
-  let mongod: MongoMemoryServer;
-  let module: TestingModule;
+  let prisma: PrismaService;
   let repository: AuditLogRepository;
-  let model: Model<AuditEventDocument>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
-
-    module = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'AuditEvent', schema: AuditEventSchema }]),
-      ],
-      providers: [
-        {
-          provide: AuditLogRepository,
-          useFactory: (m: Model<AuditEventDocument>) => new AuditLogRepository(m),
-          inject: [getModelToken('AuditEvent')],
-        },
-      ],
-    }).compile();
-
-    repository = module.get(AuditLogRepository);
-    model = module.get<Model<AuditEventDocument>>(getModelToken('AuditEvent'));
+    prisma = new PrismaService();
+    await prisma.$connect();
+    repository = new AuditLogRepository(prisma);
   });
 
   afterAll(async () => {
-    await module.close();
-    await disconnect();
-    await mongod.stop();
+    await prisma.$disconnect();
   });
 
   afterEach(async () => {
-    await model.deleteMany({});
+    await prisma.auditEvent.deleteMany({});
   });
 
   // Evidence: Audit events

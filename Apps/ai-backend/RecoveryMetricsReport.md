@@ -1,4 +1,10 @@
 # AI Backend — Recovery Metrics Report
+
+> **HISTORICAL — SUPERSEDED BY WP-DB-01.** This document describes the original MongoDB/Mongoose persistence design.
+> As of WP-DB-01, the canonical persistence platform is **Prisma + PostgreSQL (Supabase)**; MongoDB is no longer a
+> runtime dependency. Kept for historical reference only. See DatabaseMigrationAudit.md, MigrationReport.md, and
+> SupabaseCertification.md for the current state.
+
 **Workstream:** WP-04 — Reliability, Backup & Disaster Recovery
 **Audience:** operators/engineers assessing recovery health over time
 

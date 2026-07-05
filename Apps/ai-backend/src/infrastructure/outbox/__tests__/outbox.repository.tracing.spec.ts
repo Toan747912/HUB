@@ -1,44 +1,28 @@
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { Model, disconnect } from 'mongoose';
+import { PrismaService } from '../../persistence/prisma.service';
 import { TracerService } from '../../observability/tracer.service';
-import { OutboxEventDocument, OutboxEventSchema } from '../outbox-event.schema';
 import { OutboxRepository } from '../outbox.repository';
 
-jest.setTimeout(300_000);
-
 describe('OutboxRepository — observability wiring', () => {
-  let mongod: MongoMemoryReplSet;
-  let module: TestingModule;
-  let model: Model<OutboxEventDocument>;
+  let prisma: PrismaService;
   let tracer: { withSpan: jest.Mock };
   let repository: OutboxRepository;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
-    module = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot(mongod.getUri(), { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }]),
-      ],
-    }).compile();
-    model = module.get<Model<OutboxEventDocument>>(getModelToken('OutboxEvent'));
+    prisma = new PrismaService();
+    await prisma.$connect();
   });
 
   beforeEach(() => {
     tracer = { withSpan: jest.fn(async (_name, _attrs, fn) => fn()) };
-    repository = new OutboxRepository(model, tracer as unknown as TracerService);
+    repository = new OutboxRepository(prisma, tracer as unknown as TracerService);
   });
 
   afterEach(async () => {
-    await model.deleteMany({});
+    await prisma.outboxEvent.deleteMany({});
   });
 
   afterAll(async () => {
-    await module.close();
-    await disconnect();
-    await mongod.stop();
+    await prisma.$disconnect();
   });
 
   it('wraps findPending in a span', async () => {

@@ -18,7 +18,7 @@ export class MetricsController {
   @Get('metrics')
   @Header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
   async getMetrics(): Promise<string> {
-    this.metrics.setDependencyUp('mongodb', this.dbHealth.isReady());
+    this.metrics.setDependencyUp('postgresql', this.dbHealth.isReady());
     this.metrics.setDependencyUp('redis', this.redisHealth.isReady());
     this.metrics.setDependencyUp(
       'bullmq',

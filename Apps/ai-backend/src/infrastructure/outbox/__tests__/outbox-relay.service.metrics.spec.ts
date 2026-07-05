@@ -5,7 +5,7 @@ import { QueueService } from '../../jobs/queue.service';
 import { MetricsService } from '../../observability/metrics.service';
 
 const pendingDoc = (eventId: string): OutboxEventDocument => ({
-  _id: eventId,
+  id: eventId,
   eventId,
   aggregateId: 'goal-1',
   aggregateType: 'Goal',

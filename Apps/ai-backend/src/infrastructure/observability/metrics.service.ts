@@ -205,9 +205,72 @@ export class MetricsService {
   private discoveryPlanConfidenceSampleSum = 0;
   private discoveryPlanConfidenceSampleCount = 0;
 
-  private readonly mongodbLatencyMs = new Histogram({
-    name: 'mongodb_latency_ms',
-    help: 'MongoDB operation latency in milliseconds',
+  private readonly knowledgePlanGeneratedTotal = new Counter({
+    name: 'knowledge_plan_generated_total',
+    help: 'Total knowledge plans generated',
+    registers: [this.registry],
+  });
+
+  private readonly knowledgePlanFallbackTotal = new Counter({
+    name: 'knowledge_plan_fallback_total',
+    help: 'Total knowledge plans generated via deterministic fallback',
+    registers: [this.registry],
+  });
+
+  private readonly knowledgePlanConfidenceAverage = new Gauge({
+    name: 'knowledge_plan_confidence_average',
+    help: 'Running average confidence score across all generated knowledge plans',
+    registers: [this.registry],
+  });
+
+  private knowledgePlanConfidenceSampleSum = 0;
+  private knowledgePlanConfidenceSampleCount = 0;
+
+  private readonly evidencePlanGeneratedTotal = new Counter({
+    name: 'evidence_plan_generated_total',
+    help: 'Total evidence plans generated',
+    registers: [this.registry],
+  });
+
+  private readonly evidencePlanFallbackTotal = new Counter({
+    name: 'evidence_plan_fallback_total',
+    help: 'Total evidence plans generated via deterministic fallback',
+    registers: [this.registry],
+  });
+
+  private readonly evidencePlanConfidenceAverage = new Gauge({
+    name: 'evidence_plan_confidence_average',
+    help: 'Running average confidence score across all generated evidence plans',
+    registers: [this.registry],
+  });
+
+  private evidencePlanConfidenceSampleSum = 0;
+  private evidencePlanConfidenceSampleCount = 0;
+
+  private readonly teachingPlanGeneratedTotal = new Counter({
+    name: 'teaching_plan_generated_total',
+    help: 'Total teaching plans generated',
+    registers: [this.registry],
+  });
+
+  private readonly teachingPlanFallbackTotal = new Counter({
+    name: 'teaching_plan_fallback_total',
+    help: 'Total teaching plans generated via deterministic fallback',
+    registers: [this.registry],
+  });
+
+  private readonly teachingPlanConfidenceAverage = new Gauge({
+    name: 'teaching_plan_confidence_average',
+    help: 'Running average confidence score across all generated teaching plans',
+    registers: [this.registry],
+  });
+
+  private teachingPlanConfidenceSampleSum = 0;
+  private teachingPlanConfidenceSampleCount = 0;
+
+  private readonly dbLatencyMs = new Histogram({
+    name: 'db_latency_ms',
+    help: 'Database operation latency in milliseconds',
     labelNames: ['operation'],
     buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500],
     registers: [this.registry],
@@ -252,6 +315,145 @@ export class MetricsService {
     name: 'service_dependency_up',
     help: 'Whether a dependency is reachable (1) or not (0)',
     labelNames: ['dependency'],
+    registers: [this.registry],
+  });
+
+  private readonly circuitBreakerOpenTotal = new Counter({
+    name: 'circuit_breaker_open_total',
+    help: 'Total number of times a circuit breaker tripped to OPEN',
+    labelNames: ['job'],
+    registers: [this.registry],
+  });
+
+  // WP-AI-02 Phase 3: generic per-planner health metrics, labeled by
+  // capability so a single metric family covers all current and future
+  // planners without one hardcoded field/method set per planner.
+  private readonly plannerExecutionTotal = new Counter({
+    name: 'planner_execution_total',
+    help: 'Total planner executions, labeled by capability and outcome status',
+    labelNames: ['capability', 'status'],
+    registers: [this.registry],
+  });
+
+  private readonly plannerFallbackTotal = new Counter({
+    name: 'planner_fallback_total',
+    help: 'Total planner executions that used the deterministic fallback, labeled by capability',
+    labelNames: ['capability'],
+    registers: [this.registry],
+  });
+
+  private readonly plannerLlmTimeoutTotal = new Counter({
+    name: 'planner_llm_timeout_total',
+    help: 'Total planner executions where the LLM gateway reported unavailability or timeout',
+    labelNames: ['capability'],
+    registers: [this.registry],
+  });
+
+  private readonly plannerLatencyMs = new Histogram({
+    name: 'planner_latency_ms',
+    help: 'Planner execution latency in milliseconds, labeled by capability (source for average and P95)',
+    labelNames: ['capability'],
+    buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000],
+    registers: [this.registry],
+  });
+
+  private readonly plannerConfidenceAverage = new Gauge({
+    name: 'planner_confidence_average',
+    help: 'Running average confidence per planner capability',
+    labelNames: ['capability'],
+    registers: [this.registry],
+  });
+
+  private readonly plannerConfidenceSamples = new Map<string, { sum: number; count: number }>();
+
+  // WP-AI-03G: Multi-Agent Coordinator observability.
+  private readonly coordinationTotal = new Counter({
+    name: 'coordination_total',
+    help: 'Total coordination runs, labeled by outcome status',
+    labelNames: ['status'],
+    registers: [this.registry],
+  });
+
+  private readonly coordinationDurationMs = new Histogram({
+    name: 'coordination_duration_ms',
+    help: 'Coordination run duration in milliseconds',
+    buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000],
+    registers: [this.registry],
+  });
+
+  private readonly coordinationAgents = new Histogram({
+    name: 'coordination_agents',
+    help: 'Number of agents participating in a coordination run',
+    buckets: [1, 2, 3, 5, 8, 13, 21],
+    registers: [this.registry],
+  });
+
+  private readonly coordinationFailures = new Counter({
+    name: 'coordination_failures',
+    help: 'Total coordination runs that ended in failure or partial completion, labeled by reason',
+    labelNames: ['reason'],
+    registers: [this.registry],
+  });
+
+  // WP-AI-03H: Agent Message Bus observability.
+  private readonly messageTotal = new Counter({
+    name: 'message_total',
+    help: 'Total agent message bus messages, labeled by terminal/transitional status',
+    labelNames: ['status'],
+    registers: [this.registry],
+  });
+
+  private readonly messageLatencyMs = new Histogram({
+    name: 'message_latency_ms',
+    help: 'Agent message bus delivery latency in milliseconds',
+    buckets: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000],
+    registers: [this.registry],
+  });
+
+  private readonly messageRetryTotal = new Counter({
+    name: 'message_retry_total',
+    help: 'Total agent message bus delivery retry attempts',
+    registers: [this.registry],
+  });
+
+  private readonly deadLetterTotal = new Counter({
+    name: 'dead_letter_total',
+    help: 'Total agent message bus messages moved to the dead letter state',
+    registers: [this.registry],
+  });
+
+  private readonly queueDepthGauge = new Gauge({
+    name: 'queue_depth',
+    help: 'Number of agent message bus messages currently queued or in flight',
+    registers: [this.registry],
+  });
+
+  // WP-AI-03I: Collaborative Reasoning Engine observability.
+  private readonly collaborationTotal = new Counter({
+    name: 'collaboration_total',
+    help: 'Total collaboration sessions, labeled by outcome status',
+    labelNames: ['status'],
+    registers: [this.registry],
+  });
+
+  private readonly collaborationDurationMs = new Histogram({
+    name: 'collaboration_duration_ms',
+    help: 'Collaboration session duration in milliseconds',
+    buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000],
+    registers: [this.registry],
+  });
+
+  private readonly rolesUsedTotal = new Counter({
+    name: 'roles_used',
+    help: 'Total reasoning steps executed, labeled by semantic role',
+    labelNames: ['role'],
+    registers: [this.registry],
+  });
+
+  private readonly consensusFailuresTotal = new Counter({
+    name: 'consensus_failures',
+    help: 'Total collaboration sessions whose consensus strategy did not resolve, labeled by strategy',
+    labelNames: ['strategy'],
     registers: [this.registry],
   });
 
@@ -385,8 +587,56 @@ export class MetricsService {
     );
   }
 
-  recordMongoLatency(operation: string, latencyMs: number): void {
-    this.mongodbLatencyMs.observe({ operation }, latencyMs);
+  incrementKnowledgePlanGenerated(): void {
+    this.knowledgePlanGeneratedTotal.inc();
+  }
+
+  incrementKnowledgePlanFallbackUsed(): void {
+    this.knowledgePlanFallbackTotal.inc();
+  }
+
+  recordKnowledgePlanConfidence(score: number): void {
+    this.knowledgePlanConfidenceSampleSum += score;
+    this.knowledgePlanConfidenceSampleCount += 1;
+    this.knowledgePlanConfidenceAverage.set(
+      this.knowledgePlanConfidenceSampleSum / this.knowledgePlanConfidenceSampleCount,
+    );
+  }
+
+  incrementEvidencePlanGenerated(): void {
+    this.evidencePlanGeneratedTotal.inc();
+  }
+
+  incrementEvidencePlanFallbackUsed(): void {
+    this.evidencePlanFallbackTotal.inc();
+  }
+
+  recordEvidencePlanConfidence(score: number): void {
+    this.evidencePlanConfidenceSampleSum += score;
+    this.evidencePlanConfidenceSampleCount += 1;
+    this.evidencePlanConfidenceAverage.set(
+      this.evidencePlanConfidenceSampleSum / this.evidencePlanConfidenceSampleCount,
+    );
+  }
+
+  incrementTeachingPlanGenerated(): void {
+    this.teachingPlanGeneratedTotal.inc();
+  }
+
+  incrementTeachingPlanFallbackUsed(): void {
+    this.teachingPlanFallbackTotal.inc();
+  }
+
+  recordTeachingPlanConfidence(score: number): void {
+    this.teachingPlanConfidenceSampleSum += score;
+    this.teachingPlanConfidenceSampleCount += 1;
+    this.teachingPlanConfidenceAverage.set(
+      this.teachingPlanConfidenceSampleSum / this.teachingPlanConfidenceSampleCount,
+    );
+  }
+
+  recordDbLatency(operation: string, latencyMs: number): void {
+    this.dbLatencyMs.observe({ operation }, latencyMs);
   }
 
   recordRedisLatency(operation: string, latencyMs: number): void {
@@ -407,6 +657,109 @@ export class MetricsService {
 
   setCircuitBreakerState(job: string, state: CircuitState): void {
     this.circuitBreakerState.set({ job }, CIRCUIT_STATE_VALUE[state]);
+    if (state === 'OPEN') {
+      this.circuitBreakerOpenTotal.inc({ job });
+    }
+  }
+
+  /**
+   * Records the outcome of a single planner execution (WP-AI-02 Phase 3).
+   * Success/failure/fallback rates and P95 latency are derived from these
+   * raw counters/histograms at query time (standard Prometheus practice)
+   * rather than computed and stored here.
+   */
+  recordPlannerOutcome(entry: {
+    capability: string;
+    status: 'SUCCESS' | 'FAILURE';
+    latencyMs: number;
+    confidence?: number;
+    fallbackUsed: boolean;
+    timedOut: boolean;
+  }): void {
+    const { capability, status, latencyMs, confidence, fallbackUsed, timedOut } = entry;
+
+    this.plannerExecutionTotal.inc({ capability, status });
+    this.plannerLatencyMs.observe({ capability }, latencyMs);
+
+    if (fallbackUsed) {
+      this.plannerFallbackTotal.inc({ capability });
+    }
+    if (timedOut) {
+      this.plannerLlmTimeoutTotal.inc({ capability });
+    }
+    if (typeof confidence === 'number' && !Number.isNaN(confidence)) {
+      const sample = this.plannerConfidenceSamples.get(capability) ?? { sum: 0, count: 0 };
+      sample.sum += confidence;
+      sample.count += 1;
+      this.plannerConfidenceSamples.set(capability, sample);
+      this.plannerConfidenceAverage.set({ capability }, sample.sum / sample.count);
+    }
+  }
+
+  /**
+   * Records the outcome of one coordination run (WP-AI-03G). `reason` is only
+   * meaningful when status is 'failure'/'partial' and defaults to a generic
+   * label so the counter is still incremented without a specific cause.
+   */
+  recordCoordinationOutcome(entry: {
+    status: 'success' | 'failure' | 'partial';
+    durationMs: number;
+    agentCount: number;
+    reason?: string;
+  }): void {
+    const { status, durationMs, agentCount, reason } = entry;
+    this.coordinationTotal.inc({ status });
+    this.coordinationDurationMs.observe(durationMs);
+    this.coordinationAgents.observe(agentCount);
+    if (status !== 'success') {
+      this.coordinationFailures.inc({ reason: reason ?? 'unknown' });
+    }
+  }
+
+  /**
+   * Records one agent message bus delivery outcome (WP-AI-03H). `status`
+   * mirrors MessageStatus ('DELIVERED' | 'FAILED' | 'RETRYING' |
+   * 'DEAD_LETTER' | 'CREATED' | 'QUEUED'); latency is only known once a
+   * delivery attempt actually completes.
+   */
+  recordMessageOutcome(entry: { status: string; latencyMs?: number }): void {
+    this.messageTotal.inc({ status: entry.status });
+    if (typeof entry.latencyMs === 'number') {
+      this.messageLatencyMs.observe(entry.latencyMs);
+    }
+    if (entry.status === 'RETRYING') {
+      this.messageRetryTotal.inc();
+    }
+    if (entry.status === 'DEAD_LETTER') {
+      this.deadLetterTotal.inc();
+    }
+  }
+
+  setQueueDepth(depth: number): void {
+    this.queueDepthGauge.set(depth);
+  }
+
+  /**
+   * Records the outcome of one collaboration session (WP-AI-03I). `rolesUsed`
+   * is the distinct set of semantic roles that ran a reasoning step;
+   * `consensusResolved` is false for both 'unresolved' and 'not_implemented'
+   * consensus outcomes.
+   */
+  recordCollaborationOutcome(entry: {
+    status: 'success' | 'failure';
+    durationMs: number;
+    rolesUsed: string[];
+    consensusResolved: boolean;
+    consensusStrategy: string;
+  }): void {
+    this.collaborationTotal.inc({ status: entry.status });
+    this.collaborationDurationMs.observe(entry.durationMs);
+    for (const role of entry.rolesUsed) {
+      this.rolesUsedTotal.inc({ role });
+    }
+    if (!entry.consensusResolved) {
+      this.consensusFailuresTotal.inc({ strategy: entry.consensusStrategy });
+    }
   }
 
   setDependencyUp(dependency: string, up: boolean): void {

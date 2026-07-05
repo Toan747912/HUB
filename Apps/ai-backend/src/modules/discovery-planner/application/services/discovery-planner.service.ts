@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { AuditLogService } from '../../../../infrastructure/audit/audit-log.service';
+import {
+  AuditEventDescriptor,
+  BasePlannerService,
+} from '../../../../infrastructure/ai-brain/base-planner.service';
 import { BrainContext } from '../../../../infrastructure/ai-brain/brain-context.types';
 import { ContextAssemblyService } from '../../../../infrastructure/ai-brain/context-assembly.service';
 import { ResilientLlmGateway } from '../../../../infrastructure/ai-brain/resilient-llm-gateway.service';
 import { LlmGatewayResult } from '../../../../infrastructure/ai-brain/resilient-llm-gateway.types';
 import { MetricsService } from '../../../../infrastructure/observability/metrics.service';
+import { StructuredLoggerService } from '../../../../infrastructure/observability/structured-logger.service';
 import { ExplainabilityRulesService } from '../../../../shared/services/explainability-rules.service';
 import {
   DISCOVERY_FALLBACK_VERSION,
@@ -14,10 +19,6 @@ import { DiscoverySuggestion } from '../../domain/engine/discovery-planning.type
 import { buildDiscoveryPrompt, DISCOVERY_PROMPT_VERSION } from '../prompts/discovery-prompt';
 import { DiscoveryPlanRequest, DiscoveryPlanResponse } from '../contracts/discovery-planner.contracts';
 
-const CAPABILITY = 'discovery_planner';
-const DEFAULT_PROVIDER = 'mock-llm';
-const DEFAULT_MODEL = 'mock-llm-v1';
-
 /**
  * Discovery capability. Reads context only through ContextAssemblyService,
  * reaches the LLM only through ResilientLlmGateway, and always has a
@@ -26,58 +27,73 @@ const DEFAULT_MODEL = 'mock-llm-v1';
  * untrustworthy output.
  */
 @Injectable()
-export class DiscoveryPlannerService {
+export class DiscoveryPlannerService extends BasePlannerService<
+  DiscoveryPlanRequest,
+  DiscoveryPlanResponse
+> {
+  protected readonly capability = 'discovery_planner';
+  protected readonly operationName = 'GENERATE_DISCOVERY_PLAN';
+  protected readonly promptVersion = DISCOVERY_PROMPT_VERSION;
+
   private readonly fallbackEngine = new DiscoveryPlanningEngine();
 
   constructor(
-    private readonly contextAssembly: ContextAssemblyService,
-    private readonly llmGateway: ResilientLlmGateway,
-    private readonly explainabilityRules: ExplainabilityRulesService,
-    private readonly metrics?: MetricsService,
-    private readonly auditLog?: AuditLogService,
-  ) {}
+    contextAssembly: ContextAssemblyService,
+    llmGateway: ResilientLlmGateway,
+    explainabilityRules: ExplainabilityRulesService,
+    metrics?: MetricsService,
+    auditLog?: AuditLogService,
+    structuredLogger?: StructuredLoggerService,
+  ) {
+    super(contextAssembly, llmGateway, explainabilityRules, metrics, auditLog, structuredLogger);
+  }
 
   async discoverInitialFocus(request: DiscoveryPlanRequest): Promise<DiscoveryPlanResponse> {
-    const start = Date.now();
-    const provider = request.provider ?? DEFAULT_PROVIDER;
-    const model = request.model ?? DEFAULT_MODEL;
+    return this.execute(request);
+  }
 
-    try {
-      const context = await this.contextAssembly.assemble({
-        userId: request.userId,
-        goalId: request.goalId,
-        sessionId: request.sessionId,
-        traceId: request.traceId,
-      });
+  protected buildPrompt(context: BrainContext): string {
+    return buildDiscoveryPrompt(context);
+  }
 
-      const gatewayResult = await this.llmGateway.complete({
-        capability: CAPABILITY,
-        provider,
-        model,
-        prompt: buildDiscoveryPrompt(context),
-        promptVersion: DISCOVERY_PROMPT_VERSION,
-      });
+  protected buildTracedTo(context: BrainContext): string[] {
+    return [
+      `discovery:${context.userId}`,
+      `goal:${context.goalId}`,
+      `recommendation:${context.recommendation.state}`,
+    ];
+  }
 
-      const response = gatewayResult.fallbackUsed
-        ? this.buildFallbackResponse(context, gatewayResult)
-        : this.buildLlmResponse(context, gatewayResult);
-
-      this.explainabilityRules.validate({
-        confidence: response.confidence,
-        reasoning: response.explanation,
-        traced_to: [
-          `discovery:${context.userId}`,
-          `goal:${context.goalId}`,
-          `recommendation:${context.recommendation.state}`,
-        ],
-      });
-
-      await this.emitObservability(request, response, start, 'SUCCESS');
-      return response;
-    } catch (error) {
-      await this.emitObservability(request, null, start, 'FAILURE', error);
-      throw error;
+  protected emitMetrics(response: DiscoveryPlanResponse): void {
+    this.metrics?.incrementDiscoveryPlanGenerated();
+    this.metrics?.recordDiscoveryPlanConfidence(response.confidence);
+    if (response.fallbackUsed) {
+      this.metrics?.incrementDiscoveryPlanFallbackUsed();
     }
+  }
+
+  protected buildAuditEvent(
+    _request: DiscoveryPlanRequest,
+    response: DiscoveryPlanResponse,
+  ): AuditEventDescriptor {
+    return {
+      operation: 'DISCOVERY_PLAN_GENERATED',
+      resource: `Discovery:${response.discoveryId}`,
+      after: {
+        fallbackUsed: response.fallbackUsed,
+        provider: response.provider,
+        model: response.model,
+        promptVersion: response.promptVersion,
+        confidence: response.confidence,
+        suggestionCount: response.suggestions.length,
+      },
+    };
+  }
+
+  protected buildResponse(context: BrainContext, gatewayResult: LlmGatewayResult): DiscoveryPlanResponse {
+    return gatewayResult.fallbackUsed
+      ? this.buildFallbackResponse(context, gatewayResult)
+      : this.buildLlmResponse(context, gatewayResult);
   }
 
   private buildFallbackResponse(
@@ -147,61 +163,5 @@ export class DiscoveryPlannerService {
         rationale: typeof s.rationale === 'string' ? s.rationale : '',
       };
     });
-  }
-
-  private normalizeConfidence(value: unknown): number {
-    if (typeof value !== 'number' || Number.isNaN(value)) return 0;
-    if (value < 0) return 0;
-    if (value > 1) return 1;
-    return value;
-  }
-
-  private async emitObservability(
-    request: DiscoveryPlanRequest,
-    response: DiscoveryPlanResponse | null,
-    startMs: number,
-    status: 'SUCCESS' | 'FAILURE',
-    error?: unknown,
-  ): Promise<void> {
-    console.log(
-      JSON.stringify({
-        traceId: request.traceId,
-        operation: 'GENERATE_DISCOVERY_PLAN',
-        capability: CAPABILITY,
-        userId: request.userId,
-        goalId: request.goalId,
-        latencyMs: Date.now() - startMs,
-        status,
-        fallbackUsed: response?.fallbackUsed,
-        confidence: response?.confidence,
-        errorType: error instanceof Error ? error.constructor.name : undefined,
-        timestamp: new Date().toISOString(),
-      }),
-    );
-
-    if (status !== 'SUCCESS' || !response) return;
-
-    this.metrics?.incrementDiscoveryPlanGenerated();
-    this.metrics?.recordDiscoveryPlanConfidence(response.confidence);
-    if (response.fallbackUsed) {
-      this.metrics?.incrementDiscoveryPlanFallbackUsed();
-    }
-
-    await this.auditLog
-      ?.recordSecurityEvent({
-        traceId: request.traceId,
-        userId: request.userId,
-        operation: 'DISCOVERY_PLAN_GENERATED',
-        resource: `Discovery:${response.discoveryId}`,
-        after: {
-          fallbackUsed: response.fallbackUsed,
-          provider: response.provider,
-          model: response.model,
-          promptVersion: response.promptVersion,
-          confidence: response.confidence,
-          suggestionCount: response.suggestions.length,
-        },
-      })
-      .catch(() => undefined);
   }
 }

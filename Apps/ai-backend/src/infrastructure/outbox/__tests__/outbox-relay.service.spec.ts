@@ -7,7 +7,7 @@ const pendingDoc = (
   eventId: string,
   overrides: Partial<OutboxEventDocument> = {},
 ): OutboxEventDocument => ({
-  _id: eventId,
+  id: eventId,
   eventId,
   aggregateId: 'goal-1',
   aggregateType: 'Goal',

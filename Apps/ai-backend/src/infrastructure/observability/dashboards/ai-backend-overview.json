@@ -30,24 +30,24 @@
     },
     {
       "id": 4,
-      "title": "MongoDB",
+      "title": "PostgreSQL",
       "type": "row",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
       "panels": []
     },
     {
       "id": 5,
-      "title": "Mongo Dependency Up",
+      "title": "Postgres Dependency Up",
       "type": "stat",
       "gridPos": { "h": 6, "w": 6, "x": 0, "y": 10 },
-      "targets": [{ "expr": "service_dependency_up{dependency=\"mongodb\"}" }]
+      "targets": [{ "expr": "service_dependency_up{dependency=\"postgresql\"}" }]
     },
     {
       "id": 6,
-      "title": "Mongo Latency (ms) by Operation",
+      "title": "Postgres Latency (ms) by Operation",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 18, "x": 6, "y": 10 },
-      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(mongodb_latency_ms_bucket[5m])) by (le, operation))", "legendFormat": "{{operation}}" }]
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(db_latency_ms_bucket[5m])) by (le, operation))", "legendFormat": "{{operation}}" }]
     },
     {
       "id": 7,

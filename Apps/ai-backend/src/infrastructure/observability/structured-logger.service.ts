@@ -22,6 +22,30 @@ export interface StructuredLogLine {
   errorCode?: string;
 }
 
+/**
+ * Fields every AI Brain planner execution must report (WP-AI-02 Phase 1).
+ */
+export interface PlannerExecutionLogEntry {
+  traceId: string;
+  userId: string;
+  goalId: string;
+  sessionId: string;
+  capability: string;
+  operation: string;
+  provider?: string;
+  model?: string;
+  promptVersion?: string;
+  fallbackUsed?: boolean;
+  latencyMs: number;
+  confidence?: number;
+  status: 'SUCCESS' | 'FAILURE';
+  errorType?: string;
+}
+
+export interface PlannerExecutionLogLine extends PlannerExecutionLogEntry {
+  timestamp: string;
+}
+
 @Injectable()
 export class StructuredLoggerService {
   constructor(
@@ -31,6 +55,25 @@ export class StructuredLoggerService {
 
   log(entry: StructuredLogEntry): void {
     const line = this.buildLine(entry);
+    const serialized = JSON.stringify(line);
+    if (entry.status === 'FAILURE') {
+      // eslint-disable-next-line no-console
+      console.error(serialized);
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(serialized);
+    }
+  }
+
+  /**
+   * Single sink for planner execution logs, replacing ad-hoc console.log
+   * calls in the AI Brain pipeline (BasePlannerService).
+   */
+  logPlannerExecution(entry: PlannerExecutionLogEntry): void {
+    const line: PlannerExecutionLogLine = {
+      ...entry,
+      timestamp: new Date().toISOString(),
+    };
     const serialized = JSON.stringify(line);
     if (entry.status === 'FAILURE') {
       // eslint-disable-next-line no-console

@@ -1,14 +1,8 @@
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { Model, createConnection, disconnect } from 'mongoose';
+import { PrismaService } from '../../persistence/prisma.service';
 import { GoalDomainEvent } from '../../../modules/goal/domain/events/goal-event-metadata';
 import { GoalId } from '../../../shared/domain/identifiers';
 import { DomainEvent } from '../domain-event.contract';
-import { OutboxEventDocument, OutboxEventSchema } from '../outbox-event.schema';
 import { OutboxRepository } from '../outbox.repository';
-
-jest.setTimeout(300_000);
 
 const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent => ({
   type: 'GoalCreated',
@@ -27,42 +21,21 @@ const makeEvent = (overrides: Partial<GoalDomainEvent> = {}): GoalDomainEvent =>
 });
 
 describe('OutboxRepository — integration', () => {
-  let mongod: MongoMemoryReplSet;
-  let module: TestingModule;
+  let prisma: PrismaService;
   let repository: OutboxRepository;
-  let model: Model<OutboxEventDocument>;
-  let uri: string;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
-    uri = mongod.getUri();
-
-    module = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot(uri, { dbName: 'test-db' }),
-        MongooseModule.forFeature([{ name: 'OutboxEvent', schema: OutboxEventSchema }]),
-      ],
-      providers: [
-        {
-          provide: OutboxRepository,
-          useFactory: (m: Model<OutboxEventDocument>) => new OutboxRepository(m),
-          inject: [getModelToken('OutboxEvent')],
-        },
-      ],
-    }).compile();
-
-    repository = module.get(OutboxRepository);
-    model = module.get<Model<OutboxEventDocument>>(getModelToken('OutboxEvent'));
+    prisma = new PrismaService();
+    await prisma.$connect();
+    repository = new OutboxRepository(prisma);
   });
 
   afterAll(async () => {
-    await module.close();
-    await disconnect();
-    await mongod.stop();
+    await prisma.$disconnect();
   });
 
   afterEach(async () => {
-    await model.deleteMany({});
+    await prisma.outboxEvent.deleteMany({});
   });
 
   // Evidence #6: Outbox persistence
@@ -158,13 +131,11 @@ describe('OutboxRepository — integration', () => {
     ]);
 
     // Simulate a process restart with a fresh, independent connection to the same
-    // MongoDB instance, without disturbing the test module's own connection.
-    const freshConnection = await createConnection(uri, { dbName: 'test-db' }).asPromise();
-    const survivedDoc = await freshConnection
-      .model<OutboxEventDocument>('OutboxEvent', OutboxEventSchema)
-      .findById('evt-restart')
-      .lean();
-    await freshConnection.close();
+    // Postgres instance, without disturbing the test module's own connection.
+    const freshPrisma = new PrismaService();
+    await freshPrisma.$connect();
+    const survivedDoc = await freshPrisma.outboxEvent.findUnique({ where: { id: 'evt-restart' } });
+    await freshPrisma.$disconnect();
 
     expect(survivedDoc).not.toBeNull();
     expect(survivedDoc!.status).toBe('PENDING');

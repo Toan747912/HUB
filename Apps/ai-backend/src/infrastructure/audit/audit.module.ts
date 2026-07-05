@@ -1,6 +1,4 @@
 import { Global, Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AuditEventSchema } from './audit-event.schema';
 import { AuditLogRepository } from './audit-log.repository';
 import { AuditLogService } from './audit-log.service';
 
@@ -8,7 +6,6 @@ import { AuditLogService } from './audit-log.service';
 // (domain event auditing) and PermissionGuard/AuthService (security event auditing).
 @Global()
 @Module({
-  imports: [MongooseModule.forFeature([{ name: 'AuditEvent', schema: AuditEventSchema }])],
   providers: [AuditLogRepository, AuditLogService],
   exports: [AuditLogRepository, AuditLogService],
 })

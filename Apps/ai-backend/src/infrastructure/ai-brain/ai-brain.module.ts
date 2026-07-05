@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AssessmentModule } from '../../modules/assessment/assessment.module';
 import { DiscoveryModule } from '../../modules/discovery/discovery.module';
 import { GoalModule } from '../../modules/goal/goal.module';
 import { LearningSessionModule } from '../../modules/learning-session/learning-session.module';
@@ -18,6 +19,7 @@ import { ResilientLlmGateway } from './resilient-llm-gateway.service';
     LearningSessionModule,
     RecommendationModule,
     DiscoveryModule,
+    AssessmentModule,
   ],
   providers: [ContextAssemblyService, ResilientLlmGateway],
   exports: [ContextAssemblyService, ResilientLlmGateway],

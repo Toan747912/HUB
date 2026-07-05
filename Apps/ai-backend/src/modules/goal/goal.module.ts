@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { GoalService } from './goal.service';
 import { GoalController } from './interface/controllers/goal.controller';
 import { GoalResponseMapper } from './interface/mappers/goal-response.mapper';
@@ -12,8 +12,7 @@ import { GoalCommandService } from './application/services/goal-command.service'
 import { GoalQueryService } from './application/services/goal-query.service';
 import { GOAL_REPOSITORY } from './application/contracts/goal-repository.contract';
 import { EVENT_PUBLISHER } from './application/contracts/event-publisher.contract';
-import { GoalSchema } from './infrastructure/persistence/schemas/goal.schema';
-import { MongoGoalRepository } from './infrastructure/persistence/repositories/mongo-goal.repository';
+import { PrismaGoalRepository } from './infrastructure/persistence/repositories/prisma-goal.repository';
 import { OutboxModule } from '../../infrastructure/outbox/outbox.module';
 import { OutboxPublisherService } from '../../infrastructure/outbox/outbox-publisher.service';
 import { LocksModule } from '../../infrastructure/locks/locks.module';
@@ -22,11 +21,7 @@ import { GoalLockService } from '../../infrastructure/locks/goal-lock.service';
 const GOAL_LOCK_SERVICE = Symbol('GoalLockService');
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: 'Goal', schema: GoalSchema }]),
-    OutboxModule,
-    LocksModule,
-  ],
+  imports: [OutboxModule, LocksModule],
   controllers: [GoalController],
   providers: [
     GoalService,
@@ -37,7 +32,7 @@ const GOAL_LOCK_SERVICE = Symbol('GoalLockService');
     HttpExceptionFilter,
     {
       provide: GOAL_REPOSITORY,
-      useClass: MongoGoalRepository,
+      useClass: PrismaGoalRepository,
     },
     {
       provide: EVENT_PUBLISHER,
@@ -49,9 +44,9 @@ const GOAL_LOCK_SERVICE = Symbol('GoalLockService');
     },
     {
       provide: GoalCommandService,
-      useFactory: (repository: any, eventPublisher: any, connection: any, goalLock: any) =>
-        new GoalCommandService(repository, eventPublisher, connection, goalLock),
-      inject: [GOAL_REPOSITORY, EVENT_PUBLISHER, getConnectionToken(), GOAL_LOCK_SERVICE],
+      useFactory: (repository: any, eventPublisher: any, prisma: PrismaService, goalLock: any) =>
+        new GoalCommandService(repository, eventPublisher, prisma, goalLock),
+      inject: [GOAL_REPOSITORY, EVENT_PUBLISHER, PrismaService, GOAL_LOCK_SERVICE],
     },
     {
       provide: GoalQueryService,

@@ -1,0 +1,364 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Domain aggregates (goal -> roadmap -> assessment -> recommendation -> session)
+// Deeply nested embedded arrays/sub-documents from the former Mongoose schemas
+// are preserved as-is via Json columns (see WP-DB-01 Phase 1 decision record).
+// ---------------------------------------------------------------------------
+
+model Goal {
+  id               String   @id
+  learnerId        String
+  status           String
+  aggregateVersion Int      @default(0)
+  versions         Json     @default("[]")
+  constraints      Json     @default("[]")
+  milestones       Json     @default("[]")
+  progress         Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([learnerId, status])
+  @@map("goals")
+}
+
+model Roadmap {
+  id                    String    @id
+  goalId                String
+  learnerId             String
+  status                String
+  aggregateVersion      Int       @default(0)
+  phases                Json      @default("[]")
+  revisions             Json      @default("[]")
+  progress              Json
+  estimatedDurationDays Int       @default(0)
+  complexity            String
+  plannerVersion        String
+  goalSnapshot          Json
+  invalidatedAt         DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([learnerId, status])
+  @@index([goalId])
+  @@map("roadmaps")
+}
+
+model Assessment {
+  id               String    @id
+  goalId           String
+  roadmapId        String
+  learnerId        String
+  status           String
+  aggregateVersion Int       @default(0)
+  latestResult     Json?
+  history          Json      @default("[]")
+  invalidatedAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([learnerId, status])
+  @@index([roadmapId])
+  @@map("assessments")
+}
+
+model Recommendation {
+  id                 String    @id
+  goalId             String
+  roadmapId          String
+  assessmentId       String
+  learnerId          String
+  status             String
+  aggregateVersion   Int       @default(0)
+  engineVersion      String
+  items              Json      @default("[]")
+  learningStrategies Json      @default("[]")
+  reviewSchedules    Json      @default("[]")
+  priorityDecisions  Json      @default("[]")
+  history            Json      @default("[]")
+  invalidatedAt      DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([learnerId, status])
+  @@index([roadmapId])
+  @@map("recommendations")
+}
+
+model LearningSession {
+  id               String   @id
+  goalId           String
+  roadmapId        String
+  assessmentId     String?
+  learnerId        String
+  status           String
+  aggregateVersion Int      @default(0)
+  activities       Json     @default("[]")
+  tasks            Json     @default("[]")
+  evidence         Json     @default("[]")
+  progress         Json
+  timers           Json     @default("[]")
+  history          Json     @default("[]")
+  reflection       Json?
+  notes            Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([goalId])
+  @@index([roadmapId])
+  @@index([learnerId, status])
+  @@map("learning_sessions")
+}
+
+model Skill {
+  id             String   @id
+  skillId        String   @unique
+  name           String
+  normalizedName String   @unique
+  category       String
+  parentSkillId  String?
+  aliases        Json     @default("[]")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("skills")
+}
+
+// ---------------------------------------------------------------------------
+// Security / infra
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id
+  username     String   @unique
+  passwordHash String
+  roles        Json     @default("[\"STUDENT\"]")
+  createdAt    DateTime @default(now())
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id                String    @id
+  userId            String
+  familyId          String
+  issuedAt          DateTime
+  expiresAt         DateTime
+  consumedAt        DateTime?
+  revokedAt         DateTime?
+  replacedByTokenId String?
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+model ApiKey {
+  id          String    @id
+  keyHash     String    @unique
+  label       String
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  permissions Json      @default("[]")
+
+  @@map("api_keys")
+}
+
+model AuditEvent {
+  id        String   @id
+  traceId   String
+  userId    String?
+  operation String
+  resource  String
+  before    Json?
+  after     Json?
+  timestamp DateTime
+
+  @@index([traceId])
+  @@index([operation])
+  @@index([resource, timestamp(sort: Desc)])
+  @@map("audit_events")
+}
+
+// ---------------------------------------------------------------------------
+// Outbox
+// ---------------------------------------------------------------------------
+
+model OutboxEvent {
+  id               String    @id
+  eventId          String    @unique
+  aggregateId      String
+  aggregateType    String
+  aggregateVersion Int
+  eventType        String
+  payload          Json
+  occurredAt       DateTime
+  publishedAt      DateTime?
+  status           String    @default("PENDING")
+  traceId          String
+  correlationId    String
+  causationId      String
+  metadata         Json      @default("{}")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([aggregateId])
+  @@index([status, occurredAt])
+  @@map("outbox_events")
+}
+
+// ---------------------------------------------------------------------------
+// Agent layer (memory, lifecycle, message bus, coordinator, learning)
+// ---------------------------------------------------------------------------
+
+model MemoryRecord {
+  id        String    @id
+  scope     String
+  scopeId   String
+  key       String
+  value     Json?
+  expiresAt DateTime?
+  version   Int       @default(1)
+  tags      Json      @default("[]")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([scope, scopeId, key])
+  @@index([scope])
+  @@index([expiresAt])
+  @@map("agent_memory_records")
+}
+
+model AgentInstance {
+  id             String    @id
+  agentId        String
+  workflowId     String
+  status         String
+  startedAt      DateTime?
+  endedAt        DateTime?
+  currentStep    String?
+  completedSteps Json      @default("[]")
+  failedSteps    Json      @default("[]")
+  traceId        String
+  userId         String?
+  sessionId      String?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status])
+  @@index([agentId])
+  @@index([traceId])
+  @@map("agent_instances")
+}
+
+model AgentMessage {
+  id              String   @id
+  traceId         String
+  workflowId      String?
+  senderAgentId   String
+  receiverAgentId String
+  messageType     String
+  priority        String
+  payload         Json     @default("{}")
+  metadata        Json     @default("{}")
+  status          String
+  retryCount      Int      @default(0)
+  lastError       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([traceId])
+  @@index([receiverAgentId])
+  @@index([workflowId])
+  @@map("agent_messages")
+}
+
+model CoordinationPlan {
+  id                 String   @id
+  agents             Json     @default("[]")
+  executionOrder     Json     @default("[]")
+  sharedMemoryScopes Json     @default("[]")
+  executionPolicy    String
+  dependencies       Json     @default("{}")
+  expectedOutputs    Json     @default("[]")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@map("coordination_plans")
+}
+
+model LearningRecord {
+  id                String   @id
+  experience        Json
+  patternIds        Json     @default("[]")
+  knowledgeItemIds  Json     @default("[]")
+  recommendationIds Json     @default("[]")
+  feedback          Json
+  workflowId        String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([workflowId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("learning_records")
+}
+
+model ExecutionPattern {
+  id          String   @id
+  category    String
+  subject     String
+  description String
+  confidence  Float
+  evidence    Json     @default("{}")
+  detectedAt  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([detectedAt(sort: Desc)])
+  @@map("execution_patterns")
+}
+
+model KnowledgeItem {
+  id          String   @id
+  type        String
+  subject     String
+  description String
+  confidence  Float
+  evidence    Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([confidence(sort: Desc)])
+  @@map("knowledge_items")
+}
+
+// Distinct from the learner-facing `Recommendation` model above; the former
+// Mongoose schemas both used collection name "recommendations" (a collision),
+// so this is split out under its own table per WP-DB-01 Phase 1.
+model AgentLearningRecommendation {
+  id                      String   @id
+  category                String
+  subject                 String
+  description             String
+  confidence              Float
+  basedOnKnowledgeItemIds Json     @default("[]")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([category])
+  @@index([confidence(sort: Desc)])
+  @@map("agent_learning_recommendations")
+}

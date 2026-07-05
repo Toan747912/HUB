@@ -1,25 +1,17 @@
-import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { disconnect } from 'mongoose';
 import { AuditLogRepository } from '../../../infrastructure/audit/audit-log.repository';
 import { MISSION_FALLBACK_VERSION } from '../domain/engine/mission-planning.engine';
 import { MissionPlannerModule } from '../mission-planner.module';
 import { MissionPlannerService } from '../application/services/mission-planner.service';
 
-jest.setTimeout(300_000);
-
 describe('MissionPlannerModule — integration', () => {
-  let mongod: MongoMemoryServer;
   let module: TestingModule;
   let service: MissionPlannerService;
   let auditRepository: AuditLogRepository;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
     module = await Test.createTestingModule({
       imports: [
-        MongooseModule.forRoot(mongod.getUri(), { dbName: 'mission-planner-test' }),
         MissionPlannerModule,
       ],
     }).compile();
@@ -30,8 +22,6 @@ describe('MissionPlannerModule — integration', () => {
 
   afterAll(async () => {
     await module.close();
-    await disconnect();
-    await mongod.stop();
   });
 
   it('resolves through the real module graph without reaching a repository directly', () => {

@@ -12,7 +12,7 @@ describe('MetricsService', () => {
     metrics.recordHttpRequest('GET', '/goal', 200, 0.05);
     metrics.incrementGoalCreated();
     metrics.incrementGoalCompleted();
-    metrics.recordMongoLatency('save', 12);
+    metrics.recordDbLatency('save', 12);
     metrics.recordRedisLatency('ping', 3);
     metrics.incrementBullmqJob('enqueued');
     metrics.setOutboxPending(2);
@@ -25,7 +25,7 @@ describe('MetricsService', () => {
       'http_request_duration_seconds',
       'goal_created_total',
       'goal_completed_total',
-      'mongodb_latency_ms',
+      'db_latency_ms',
       'redis_latency_ms',
       'bullmq_jobs_total',
       'outbox_pending_total',
@@ -58,11 +58,11 @@ describe('MetricsService', () => {
 
   it('sets service_dependency_up gauges', async () => {
     metrics.setDependencyUp('redis', true);
-    metrics.setDependencyUp('mongodb', false);
+    metrics.setDependencyUp('postgresql', false);
 
     const text = await metrics.getMetricsText();
     expect(text).toMatch(/service_dependency_up\{dependency="redis"\} 1/);
-    expect(text).toMatch(/service_dependency_up\{dependency="mongodb"\} 0/);
+    expect(text).toMatch(/service_dependency_up\{dependency="postgresql"\} 0/);
   });
 
   it('each MetricsService instance has an isolated registry (no cross-instance leakage)', async () => {

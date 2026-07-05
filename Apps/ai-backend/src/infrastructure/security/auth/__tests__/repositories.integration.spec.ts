@@ -1,74 +1,30 @@
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Model, disconnect } from 'mongoose';
-import { ApiKeyDocument, ApiKeySchema } from '../../api-keys/api-key.schema';
+import { PrismaService } from '../../../persistence/prisma.service';
 import { ApiKeyRepository } from '../../api-keys/api-key.repository';
-import { RefreshTokenDocument, RefreshTokenSchema } from '../refresh-token.schema';
 import { RefreshTokenRepository } from '../refresh-token.repository';
-import { UserDocument, UserSchema } from '../user.schema';
 import { UserRepository } from '../user.repository';
 
-jest.setTimeout(300_000);
-
 describe('Security repositories — integration', () => {
-  let mongod: MongoMemoryServer;
-  let module: TestingModule;
+  let prisma: PrismaService;
   let userRepo: UserRepository;
   let refreshRepo: RefreshTokenRepository;
   let apiKeyRepo: ApiKeyRepository;
-  let userModel: Model<UserDocument>;
-  let refreshModel: Model<RefreshTokenDocument>;
-  let apiKeyModel: Model<ApiKeyDocument>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    module = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot(mongod.getUri(), { dbName: 'test-db' }),
-        MongooseModule.forFeature([
-          { name: 'User', schema: UserSchema },
-          { name: 'RefreshToken', schema: RefreshTokenSchema },
-          { name: 'ApiKey', schema: ApiKeySchema },
-        ]),
-      ],
-      providers: [
-        {
-          provide: UserRepository,
-          useFactory: (m: Model<UserDocument>) => new UserRepository(m),
-          inject: [getModelToken('User')],
-        },
-        {
-          provide: RefreshTokenRepository,
-          useFactory: (m: Model<RefreshTokenDocument>) => new RefreshTokenRepository(m),
-          inject: [getModelToken('RefreshToken')],
-        },
-        {
-          provide: ApiKeyRepository,
-          useFactory: (m: Model<ApiKeyDocument>) => new ApiKeyRepository(m),
-          inject: [getModelToken('ApiKey')],
-        },
-      ],
-    }).compile();
-
-    userRepo = module.get(UserRepository);
-    refreshRepo = module.get(RefreshTokenRepository);
-    apiKeyRepo = module.get(ApiKeyRepository);
-    userModel = module.get(getModelToken('User'));
-    refreshModel = module.get(getModelToken('RefreshToken'));
-    apiKeyModel = module.get(getModelToken('ApiKey'));
+    prisma = new PrismaService();
+    await prisma.$connect();
+    userRepo = new UserRepository(prisma);
+    refreshRepo = new RefreshTokenRepository(prisma);
+    apiKeyRepo = new ApiKeyRepository(prisma);
   });
 
   afterAll(async () => {
-    await module.close();
-    await disconnect();
-    await mongod.stop();
+    await prisma.$disconnect();
   });
 
   afterEach(async () => {
-    await userModel.deleteMany({});
-    await refreshModel.deleteMany({});
-    await apiKeyModel.deleteMany({});
+    await prisma.user.deleteMany({});
+    await prisma.refreshToken.deleteMany({});
+    await prisma.apiKey.deleteMany({});
   });
 
   describe('UserRepository', () => {

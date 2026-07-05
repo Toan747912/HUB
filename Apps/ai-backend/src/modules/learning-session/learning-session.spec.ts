@@ -1,8 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Model, disconnect } from 'mongoose';
 import { randomUUID } from 'crypto';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import {
   SessionId,
   GoalId,
@@ -18,8 +15,7 @@ import { SessionTask } from './domain/entities/session-task.entity';
 import { EvidenceRecord } from './domain/entities/evidence-record.entity';
 import { StudyTimer } from './domain/entities/study-timer.entity';
 import { SessionReflection } from './domain/entities/session-reflection.entity';
-import { LearningSessionSchema } from './infrastructure/persistence/schemas/learning-session.schema';
-import { MongoLearningSessionRepository } from './infrastructure/persistence/repositories/mongo-learning-session.repository';
+import { PrismaLearningSessionRepository } from './infrastructure/persistence/repositories/prisma-learning-session.repository';
 import { LEARNING_SESSION_REPOSITORY } from './application/contracts/learning-session-repository.contract';
 import { EVENT_PUBLISHER } from './application/contracts/event-publisher.contract';
 import { LearningSessionCommandService } from './application/services/learning-session-command.service';
@@ -62,62 +58,29 @@ class MockAssessmentCommandService {
 }
 
 describe('Learning Session Module — Full Test Suite', () => {
-  let mongod: MongoMemoryServer;
-  let module: TestingModule;
-  let repository: MongoLearningSessionRepository;
+  let prisma: PrismaService;
+  let repository: PrismaLearningSessionRepository;
   let commandService: LearningSessionCommandService;
   let queryService: LearningSessionQueryService;
   let eventPublisher: MockEventPublisher;
-  let model: Model<any>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
+    prisma = new PrismaService();
+    await prisma.$connect();
 
     eventPublisher = new MockEventPublisher();
 
-    module = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot(uri, { dbName: 'test-session-db' }),
-        MongooseModule.forFeature([{ name: 'LearningSession', schema: LearningSessionSchema }]),
-      ],
-      providers: [
-        {
-          provide: LEARNING_SESSION_REPOSITORY,
-          useFactory: (m: Model<any>) => new MongoLearningSessionRepository(m),
-          inject: [getModelToken('LearningSession')],
-        },
-        {
-          provide: EVENT_PUBLISHER,
-          useValue: eventPublisher,
-        },
-        {
-          provide: LearningSessionCommandService,
-          useFactory: (r, e) => new LearningSessionCommandService(r, e),
-          inject: [LEARNING_SESSION_REPOSITORY, EVENT_PUBLISHER],
-        },
-        {
-          provide: LearningSessionQueryService,
-          useFactory: (r) => new LearningSessionQueryService(r),
-          inject: [LEARNING_SESSION_REPOSITORY],
-        },
-      ],
-    }).compile();
-
-    repository = module.get<MongoLearningSessionRepository>(LEARNING_SESSION_REPOSITORY);
-    commandService = module.get(LearningSessionCommandService);
-    queryService = module.get(LearningSessionQueryService);
-    model = module.get<Model<any>>(getModelToken('LearningSession'));
+    repository = new PrismaLearningSessionRepository(prisma);
+    commandService = new LearningSessionCommandService(repository, eventPublisher as any);
+    queryService = new LearningSessionQueryService(repository);
   });
 
   afterAll(async () => {
-    await module.close();
-    await disconnect();
-    await mongod.stop();
+    await prisma.$disconnect();
   });
 
   afterEach(async () => {
-    await model.deleteMany({});
+    await prisma.learningSession.deleteMany({});
     eventPublisher.clear();
   });
 

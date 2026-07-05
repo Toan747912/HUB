@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { JwtAuthGuard } from './infrastructure/security/jwt-auth.guard';
-import { MongooseModule } from '@nestjs/mongoose';
+import { PrismaModule } from './infrastructure/persistence/prisma.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './health/health.module';
 import { RedisModule } from './infrastructure/cache/redis.module';
@@ -14,8 +14,19 @@ import { TelemetryModule } from './infrastructure/observability/telemetry.module
 import { AuditModule } from './infrastructure/audit/audit.module';
 import { SecurityModule } from './infrastructure/security/security.module';
 import { AiRuntimeModule } from './modules/ai-runtime/ai-runtime.module';
+import { AgentCoreModule } from './modules/agent-core/agent-core.module';
+import { AgentToolsModule } from './modules/agent-tools/agent-tools.module';
+import { AgentLifecycleModule } from './modules/agent-lifecycle/agent-lifecycle.module';
+import { AgentRuntimeModule } from './modules/agent-runtime/agent-runtime.module';
+import { AgentMessageBusModule } from './modules/agent-message-bus/agent-message-bus.module';
+import { AgentCoordinatorModule } from './modules/agent-coordinator/agent-coordinator.module';
+import { AgentCollaborationModule } from './modules/agent-collaboration/agent-collaboration.module';
+import { AgentLearningModule } from './modules/agent-learning/agent-learning.module';
 import { MissionPlannerModule } from './modules/mission-planner/mission-planner.module';
 import { DiscoveryPlannerModule } from './modules/discovery-planner/discovery-planner.module';
+import { KnowledgePlannerModule } from './modules/knowledge-planner/knowledge-planner.module';
+import { EvidencePlannerModule } from './modules/evidence-planner/evidence-planner.module';
+import { TeachingPlannerModule } from './modules/teaching-planner/teaching-planner.module';
 import { MigrationModule } from './modules/migration/migration.module';
 import { DiscoveryModule } from './modules/discovery/discovery.module';
 import { TeachingModule } from './modules/teaching/teaching.module';
@@ -30,50 +41,10 @@ import { OrchestrationModule } from './modules/orchestration/orchestration.modul
 import { LearningSessionModule } from './modules/learning-session/learning-session.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { SharedModule } from './shared/shared.module';
-import {
-  getDatabaseName,
-  getDatabaseUri,
-} from './modules/goal/infrastructure/persistence/config/database.config';
 
 @Module({
   imports: [
-    MongooseModule.forRootAsync({
-      useFactory: () => ({
-        uri: getDatabaseUri(),
-        dbName: getDatabaseName(),
-        connectionFactory: (connection: any) => {
-          connection.on('connected', () =>
-            console.log(
-              JSON.stringify({
-                event: 'db_connected',
-                database: 'mongodb',
-                timestamp: new Date().toISOString(),
-              }),
-            ),
-          );
-          connection.on('error', (err: Error) =>
-            console.error(
-              JSON.stringify({
-                event: 'db_error',
-                database: 'mongodb',
-                error: err.message,
-                timestamp: new Date().toISOString(),
-              }),
-            ),
-          );
-          connection.on('disconnected', () =>
-            console.warn(
-              JSON.stringify({
-                event: 'db_disconnected',
-                database: 'mongodb',
-                timestamp: new Date().toISOString(),
-              }),
-            ),
-          );
-          return connection;
-        },
-      }),
-    }),
+    PrismaModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,
@@ -104,8 +75,19 @@ import {
     DiscoveryModule,
     TeachingModule,
     AiRuntimeModule,
+    AgentCoreModule,
+    AgentToolsModule,
+    AgentLifecycleModule,
+    AgentRuntimeModule,
+    AgentMessageBusModule,
     MissionPlannerModule,
     DiscoveryPlannerModule,
+    KnowledgePlannerModule,
+    EvidencePlannerModule,
+    TeachingPlannerModule,
+    AgentCoordinatorModule,
+    AgentCollaborationModule,
+    AgentLearningModule,
     MigrationModule,
   ],
   providers: [

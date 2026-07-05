@@ -1,4 +1,4 @@
-import { Connection } from 'mongoose';
+import { PrismaService } from '../../../../infrastructure/persistence/prisma.service';
 import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import { AssessmentId, GoalId, LearnerId, RoadmapId } from '../../../../shared/domain/identifiers';
 import { Assessment } from '../../domain/aggregates/assessment.aggregate';
@@ -34,7 +34,7 @@ export class AssessmentCommandService {
   constructor(
     private readonly repository: IAssessmentRepository,
     private readonly eventPublisher: IEventPublisher,
-    private readonly connection: Connection,
+    private readonly prisma: PrismaService,
     private readonly assessmentLock?: IAssessmentLock,
     private readonly generationMetrics?: IAssessmentGenerationMetrics,
   ) {}
@@ -68,10 +68,10 @@ export class AssessmentCommandService {
         },
       );
 
-      const events = await withTransaction(this.connection, async (session) => {
-        await this.repository.save(assessment, session);
+      const events = await withTransaction(this.prisma, async (tx) => {
+        await this.repository.save(assessment, tx);
         const ev = assessment.pullEvents();
-        await this.eventPublisher.stage(ev, session);
+        await this.eventPublisher.stage(ev, tx);
         return ev;
       });
       await this.eventPublisher.publishMany(events);
@@ -115,10 +115,10 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(a, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(a, tx);
           const ev = a.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -149,10 +149,10 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(a, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(a, tx);
           const ev = a.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -183,10 +183,10 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(a, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(a, tx);
           const ev = a.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -218,10 +218,10 @@ export class AssessmentCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(a, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(a, tx);
           const ev = a.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);

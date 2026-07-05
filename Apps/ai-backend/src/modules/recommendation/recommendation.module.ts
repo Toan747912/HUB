@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { RecommendationService } from './recommendation.service';
 import { RecommendationController } from './interface/controllers/recommendation.controller';
 import { RecommendationResponseMapper } from './interface/mappers/recommendation-response.mapper';
@@ -12,8 +12,7 @@ import { RecommendationCommandService } from './application/services/recommendat
 import { RecommendationQueryService } from './application/services/recommendation-query.service';
 import { RECOMMENDATION_REPOSITORY } from './application/contracts/recommendation-repository.contract';
 import { EVENT_PUBLISHER } from './application/contracts/event-publisher.contract';
-import { RecommendationSchema } from './infrastructure/persistence/schemas/recommendation.schema';
-import { MongoRecommendationRepository } from './infrastructure/persistence/repositories/mongo-recommendation.repository';
+import { PrismaRecommendationRepository } from './infrastructure/persistence/repositories/prisma-recommendation.repository';
 import { RecommendationOutboxPublisherService } from './infrastructure/events/recommendation-outbox-publisher.service';
 import { OutboxModule } from '../../infrastructure/outbox/outbox.module';
 import { OutboxRepository } from '../../infrastructure/outbox/outbox.repository';
@@ -30,14 +29,7 @@ import { RecommendationLockService } from '../../infrastructure/locks/recommenda
 const RECOMMENDATION_LOCK_SERVICE = Symbol('RecommendationLockService');
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: 'Recommendation', schema: RecommendationSchema }]),
-    OutboxModule,
-    QueueModule,
-    AuditModule,
-    TelemetryModule,
-    LocksModule,
-  ],
+  imports: [OutboxModule, QueueModule, AuditModule, TelemetryModule, LocksModule],
   controllers: [RecommendationController],
   providers: [
     RecommendationService,
@@ -48,7 +40,7 @@ const RECOMMENDATION_LOCK_SERVICE = Symbol('RecommendationLockService');
     HttpExceptionFilter,
     {
       provide: RECOMMENDATION_REPOSITORY,
-      useClass: MongoRecommendationRepository,
+      useClass: PrismaRecommendationRepository,
     },
     {
       provide: EVENT_PUBLISHER,
@@ -70,21 +62,21 @@ const RECOMMENDATION_LOCK_SERVICE = Symbol('RecommendationLockService');
       useFactory: (
         repository: any,
         eventPublisher: any,
-        connection: any,
+        prisma: PrismaService,
         recommendationLock: any,
         metrics: MetricsService,
       ) =>
         new RecommendationCommandService(
           repository,
           eventPublisher,
-          connection,
+          prisma,
           recommendationLock,
           metrics,
         ),
       inject: [
         RECOMMENDATION_REPOSITORY,
         EVENT_PUBLISHER,
-        getConnectionToken(),
+        PrismaService,
         RECOMMENDATION_LOCK_SERVICE,
         MetricsService,
       ],

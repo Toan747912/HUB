@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { AssessmentService } from './assessment.service';
 import { AssessmentController } from './interface/controllers/assessment.controller';
 import { AssessmentResponseMapper } from './interface/mappers/assessment-response.mapper';
@@ -12,8 +12,7 @@ import { AssessmentCommandService } from './application/services/assessment-comm
 import { AssessmentQueryService } from './application/services/assessment-query.service';
 import { ASSESSMENT_REPOSITORY } from './application/contracts/assessment-repository.contract';
 import { EVENT_PUBLISHER } from './application/contracts/event-publisher.contract';
-import { AssessmentSchema } from './infrastructure/persistence/schemas/assessment.schema';
-import { MongoAssessmentRepository } from './infrastructure/persistence/repositories/mongo-assessment.repository';
+import { PrismaAssessmentRepository } from './infrastructure/persistence/repositories/prisma-assessment.repository';
 import { AssessmentOutboxPublisherService } from './infrastructure/events/assessment-outbox-publisher.service';
 import { OutboxModule } from '../../infrastructure/outbox/outbox.module';
 import { OutboxRepository } from '../../infrastructure/outbox/outbox.repository';
@@ -30,14 +29,7 @@ import { AssessmentLockService } from '../../infrastructure/locks/assessment-loc
 const ASSESSMENT_LOCK_SERVICE = Symbol('AssessmentLockService');
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: 'Assessment', schema: AssessmentSchema }]),
-    OutboxModule,
-    QueueModule,
-    AuditModule,
-    TelemetryModule,
-    LocksModule,
-  ],
+  imports: [OutboxModule, QueueModule, AuditModule, TelemetryModule, LocksModule],
   controllers: [AssessmentController],
   providers: [
     AssessmentService,
@@ -48,7 +40,7 @@ const ASSESSMENT_LOCK_SERVICE = Symbol('AssessmentLockService');
     HttpExceptionFilter,
     {
       provide: ASSESSMENT_REPOSITORY,
-      useClass: MongoAssessmentRepository,
+      useClass: PrismaAssessmentRepository,
     },
     {
       provide: EVENT_PUBLISHER,
@@ -70,15 +62,15 @@ const ASSESSMENT_LOCK_SERVICE = Symbol('AssessmentLockService');
       useFactory: (
         repository: any,
         eventPublisher: any,
-        connection: any,
+        prisma: PrismaService,
         assessmentLock: any,
         metrics: MetricsService,
       ) =>
-        new AssessmentCommandService(repository, eventPublisher, connection, assessmentLock, metrics),
+        new AssessmentCommandService(repository, eventPublisher, prisma, assessmentLock, metrics),
       inject: [
         ASSESSMENT_REPOSITORY,
         EVENT_PUBLISHER,
-        getConnectionToken(),
+        PrismaService,
         ASSESSMENT_LOCK_SERVICE,
         MetricsService,
       ],

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ClientSession } from 'mongoose';
+import { PrismaTransactionClient } from '../../../../infrastructure/persistence/with-transaction';
 import { RoadmapDomainEvent } from '../../domain/events/roadmap-event-metadata';
 import { IEventPublisher } from '../../application/contracts/event-publisher.contract';
 import { AuditLogService } from '../../../../infrastructure/audit/audit-log.service';
@@ -32,9 +32,9 @@ export class RoadmapOutboxPublisherService implements IEventPublisher {
     await this.publishMany([event]);
   }
 
-  async stage(events: RoadmapDomainEvent[], session: ClientSession): Promise<void> {
+  async stage(events: RoadmapDomainEvent[], tx: PrismaTransactionClient): Promise<void> {
     if (events.length === 0) return;
-    await this.outbox.saveMany(events, session);
+    await this.outbox.saveMany(events, tx);
   }
 
   async publishMany(events: RoadmapDomainEvent[]): Promise<void> {

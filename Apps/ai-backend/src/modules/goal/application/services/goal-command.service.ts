@@ -1,4 +1,4 @@
-import { Connection } from 'mongoose';
+import { PrismaService } from '../../../../infrastructure/persistence/prisma.service';
 import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import { GoalId, LearnerId, MilestoneId } from '../../../../shared/domain/identifiers';
 import { Goal } from '../../domain/aggregates/goal.aggregate';
@@ -32,7 +32,7 @@ export class GoalCommandService {
   constructor(
     private readonly repository: IGoalRepository,
     private readonly eventPublisher: IEventPublisher,
-    private readonly connection: Connection,
+    private readonly prisma: PrismaService,
     private readonly goalLock?: IGoalLock,
   ) {}
 
@@ -69,10 +69,10 @@ export class GoalCommandService {
         },
       );
 
-      const events = await withTransaction(this.connection, async (session) => {
-        await this.repository.save(goal, session);
+      const events = await withTransaction(this.prisma, async (tx) => {
+        await this.repository.save(goal, tx);
         const ev = goal.pullEvents();
-        await this.eventPublisher.stage(ev, session);
+        await this.eventPublisher.stage(ev, tx);
         return ev;
       });
       await this.eventPublisher.publishMany(events);
@@ -107,10 +107,10 @@ export class GoalCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(g, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(g, tx);
           const ev = g.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -142,10 +142,10 @@ export class GoalCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(g, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(g, tx);
           const ev = g.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -177,10 +177,10 @@ export class GoalCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(g, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(g, tx);
           const ev = g.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -208,10 +208,10 @@ export class GoalCommandService {
         );
         g.addMilestone(milestone, command.expectedVersion);
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(g, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(g, tx);
           const ev = g.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);

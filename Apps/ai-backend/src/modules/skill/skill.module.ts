@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
-import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
-import { SkillSchema } from './infrastructure/persistence/schemas/skill.schema';
-import { MongoSkillRepository } from './infrastructure/persistence/repositories/mongo-skill.repository';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
+import { PrismaSkillRepository } from './infrastructure/persistence/repositories/prisma-skill.repository';
 import { SKILL_REPOSITORY } from './application/contracts/skill-repository.contract';
 import { EVENT_PUBLISHER } from './application/contracts/event-publisher.contract';
 import { SkillCatalogService } from './application/services/skill-catalog.service';
@@ -16,17 +15,11 @@ import { TelemetryModule } from '../../infrastructure/observability/telemetry.mo
 import { TracerService } from '../../infrastructure/observability/tracer.service';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: 'Skill', schema: SkillSchema }]),
-    OutboxModule,
-    QueueModule,
-    AuditModule,
-    TelemetryModule,
-  ],
+  imports: [OutboxModule, QueueModule, AuditModule, TelemetryModule],
   providers: [
     {
       provide: SKILL_REPOSITORY,
-      useClass: MongoSkillRepository,
+      useClass: PrismaSkillRepository,
     },
     {
       provide: EVENT_PUBLISHER,
@@ -40,9 +33,9 @@ import { TracerService } from '../../infrastructure/observability/tracer.service
     },
     {
       provide: SkillCatalogService,
-      useFactory: (repository: any, eventPublisher: any, connection: any) =>
-        new SkillCatalogService(repository, eventPublisher, connection),
-      inject: [SKILL_REPOSITORY, EVENT_PUBLISHER, getConnectionToken()],
+      useFactory: (repository: any, eventPublisher: any, prisma: PrismaService) =>
+        new SkillCatalogService(repository, eventPublisher, prisma),
+      inject: [SKILL_REPOSITORY, EVENT_PUBLISHER, PrismaService],
     },
   ],
   exports: [SkillCatalogService],

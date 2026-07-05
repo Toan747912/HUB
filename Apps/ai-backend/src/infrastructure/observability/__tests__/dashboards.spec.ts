@@ -13,14 +13,14 @@ interface Dashboard {
   panels: DashboardPanel[];
 }
 
-const REQUIRED_SECTIONS = ['HTTP', 'MongoDB', 'Redis', 'BullMQ', 'Outbox', 'Goal Module'];
+const REQUIRED_SECTIONS = ['HTTP', 'PostgreSQL', 'Redis', 'BullMQ', 'Outbox', 'Goal Module'];
 
 const KNOWN_METRICS = [
   'http_requests_total',
   'http_request_duration_seconds',
   'goal_created_total',
   'goal_completed_total',
-  'mongodb_latency_ms',
+  'db_latency_ms',
   'redis_latency_ms',
   'bullmq_jobs_total',
   'bullmq_queue_delay_ms',

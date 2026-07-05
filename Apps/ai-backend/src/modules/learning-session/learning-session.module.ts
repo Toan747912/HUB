@@ -1,5 +1,4 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { LearningSessionController } from './interface/controllers/learning-session.controller';
 import { LearningSessionResponseMapper } from './interface/mappers/learning-session-response.mapper';
 import { LearningSessionGuard } from './interface/guards/learning-session.guard';
@@ -8,8 +7,7 @@ import { LearningSessionCommandService } from './application/services/learning-s
 import { LearningSessionQueryService } from './application/services/learning-session-query.service';
 import { LEARNING_SESSION_REPOSITORY } from './application/contracts/learning-session-repository.contract';
 import { EVENT_PUBLISHER } from './application/contracts/event-publisher.contract';
-import { LearningSessionSchema } from './infrastructure/persistence/schemas/learning-session.schema';
-import { MongoLearningSessionRepository } from './infrastructure/persistence/repositories/mongo-learning-session.repository';
+import { PrismaLearningSessionRepository } from './infrastructure/persistence/repositories/prisma-learning-session.repository';
 import { OutboxModule } from '../../infrastructure/outbox/outbox.module';
 import { OutboxPublisherService } from '../../infrastructure/outbox/outbox-publisher.service';
 import { SecurityModule } from '../../infrastructure/security/security.module';
@@ -19,12 +17,7 @@ import { MetricsService } from '../../infrastructure/observability/metrics.servi
 import { LearningSessionService } from './learning-session.service';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: 'LearningSession', schema: LearningSessionSchema }]),
-    OutboxModule,
-    SecurityModule,
-    TelemetryModule,
-  ],
+  imports: [OutboxModule, SecurityModule, TelemetryModule],
   controllers: [LearningSessionController],
   providers: [
     LearningSessionResponseMapper,
@@ -32,7 +25,7 @@ import { LearningSessionService } from './learning-session.service';
     LearningSessionService,
     {
       provide: LEARNING_SESSION_REPOSITORY,
-      useClass: MongoLearningSessionRepository,
+      useClass: PrismaLearningSessionRepository,
     },
     {
       provide: EVENT_PUBLISHER,

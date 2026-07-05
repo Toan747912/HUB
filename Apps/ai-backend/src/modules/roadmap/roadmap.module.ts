@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { RoadmapService } from './roadmap.service';
 import { RoadmapController } from './interface/controllers/roadmap.controller';
 import { RoadmapResponseMapper } from './interface/mappers/roadmap-response.mapper';
@@ -12,8 +12,7 @@ import { RoadmapCommandService } from './application/services/roadmap-command.se
 import { RoadmapQueryService } from './application/services/roadmap-query.service';
 import { ROADMAP_REPOSITORY } from './application/contracts/roadmap-repository.contract';
 import { EVENT_PUBLISHER } from './application/contracts/event-publisher.contract';
-import { RoadmapSchema } from './infrastructure/persistence/schemas/roadmap.schema';
-import { MongoRoadmapRepository } from './infrastructure/persistence/repositories/mongo-roadmap.repository';
+import { PrismaRoadmapRepository } from './infrastructure/persistence/repositories/prisma-roadmap.repository';
 import { RoadmapOutboxPublisherService } from './infrastructure/events/roadmap-outbox-publisher.service';
 import { OutboxModule } from '../../infrastructure/outbox/outbox.module';
 import { OutboxRepository } from '../../infrastructure/outbox/outbox.repository';
@@ -32,15 +31,7 @@ import { SkillCatalogService } from '../skill/application/services/skill-catalog
 const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: 'Roadmap', schema: RoadmapSchema }]),
-    OutboxModule,
-    QueueModule,
-    AuditModule,
-    TelemetryModule,
-    LocksModule,
-    SkillModule,
-  ],
+  imports: [OutboxModule, QueueModule, AuditModule, TelemetryModule, LocksModule, SkillModule],
   controllers: [RoadmapController],
   providers: [
     RoadmapService,
@@ -51,7 +42,7 @@ const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
     HttpExceptionFilter,
     {
       provide: ROADMAP_REPOSITORY,
-      useClass: MongoRoadmapRepository,
+      useClass: PrismaRoadmapRepository,
     },
     {
       provide: EVENT_PUBLISHER,
@@ -74,7 +65,7 @@ const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
         repository: any,
         eventPublisher: any,
         skillCatalog: SkillCatalogService,
-        connection: any,
+        prisma: PrismaService,
         roadmapLock: any,
         metrics: MetricsService,
       ) =>
@@ -82,7 +73,7 @@ const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
           repository,
           eventPublisher,
           skillCatalog,
-          connection,
+          prisma,
           roadmapLock,
           metrics,
         ),
@@ -90,7 +81,7 @@ const ROADMAP_LOCK_SERVICE = Symbol('RoadmapLockService');
         ROADMAP_REPOSITORY,
         EVENT_PUBLISHER,
         SkillCatalogService,
-        getConnectionToken(),
+        PrismaService,
         ROADMAP_LOCK_SERVICE,
         MetricsService,
       ],

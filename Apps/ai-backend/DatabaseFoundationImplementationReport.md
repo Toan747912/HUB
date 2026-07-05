@@ -1,4 +1,10 @@
 # Database Foundation — Implementation Report
+
+> **HISTORICAL — SUPERSEDED BY WP-DB-01.** This document describes the original MongoDB/Mongoose persistence design.
+> As of WP-DB-01, the canonical persistence platform is **Prisma + PostgreSQL (Supabase)**; MongoDB is no longer a
+> runtime dependency. Kept for historical reference only. See DatabaseMigrationAudit.md, MigrationReport.md, and
+> SupabaseCertification.md for the current state.
+
 **Batch:** 6 — Database Foundation (Production Persistence Layer)  
 **Date:** 2026-07-01  
 **Strategy:** MongoDB + Mongoose  

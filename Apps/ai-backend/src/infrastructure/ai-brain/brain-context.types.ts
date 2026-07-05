@@ -15,5 +15,10 @@ export interface BrainContext {
   session: { id: string; phase: string };
   recommendation: { state: string };
   discovery: { profile: string };
+  /**
+   * Optional: not every capability's context needs assessment/learning-history
+   * data, and older capabilities were assembled before this field existed.
+   */
+  assessment?: { refs: string[] };
   assembledAt: string;
 }

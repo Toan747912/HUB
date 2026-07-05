@@ -32,7 +32,7 @@ describe('MetricsController', () => {
   it('returns Prometheus text with dependency gauges refreshed from live health services', async () => {
     const text = await controller.getMetrics();
 
-    expect(text).toMatch(/service_dependency_up\{dependency="mongodb"\} 1/);
+    expect(text).toMatch(/service_dependency_up\{dependency="postgresql"\} 1/);
     expect(text).toMatch(/service_dependency_up\{dependency="redis"\} 0/);
     // bullmq is considered "up" when redis isn't configured at all (dev/no-op mode)
     expect(text).toMatch(/service_dependency_up\{dependency="bullmq"\} 1/);

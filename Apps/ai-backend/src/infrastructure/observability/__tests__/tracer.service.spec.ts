@@ -60,7 +60,7 @@ describe('TracerService', () => {
 
   it('every span carries the operation and aggregateId attributes', async () => {
     await tracer.withSpan(
-      'mongodb.save',
+      'postgres.save',
       { operation: 'save', aggregateId: 'goal-1' },
       async () => undefined,
     );

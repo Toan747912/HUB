@@ -1,8 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { getConnectionToken } from '@nestjs/mongoose';
-import { ClientSession, Connection } from 'mongoose';
+import { PrismaService } from '../../../../infrastructure/persistence/prisma.service';
+import { withTransaction, PrismaTransactionClient } from '../../../../infrastructure/persistence/with-transaction';
 import { SkillId } from '../../../../shared/domain/identifiers';
-import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import { Skill, SkillEventContext } from '../../domain/aggregates/skill.aggregate';
 import { SkillDomainEvent } from '../../domain/events/skill-event-metadata';
 import { ISkillRepository, SKILL_REPOSITORY } from '../contracts/skill-repository.contract';
@@ -19,7 +18,7 @@ export class SkillCatalogService {
   constructor(
     @Inject(SKILL_REPOSITORY) private readonly repository: ISkillRepository,
     @Inject(EVENT_PUBLISHER) private readonly eventPublisher: IEventPublisher,
-    @Inject(getConnectionToken()) private readonly connection: Connection,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -37,7 +36,7 @@ export class SkillCatalogService {
   async findOrCreateByName(
     name: string,
     context?: SkillEventContext,
-    session?: ClientSession,
+    tx?: PrismaTransactionClient,
   ): Promise<FoundOrCreatedSkill> {
     const normalizedName = SkillPersistenceMapper.normalizeName(name);
     const existing = await this.repository.findByNormalizedName(normalizedName);
@@ -45,19 +44,19 @@ export class SkillCatalogService {
       return { skill: existing, events: [] };
     }
 
-    if (session) {
+    if (tx) {
       const skill = Skill.generate({ name }, context);
-      await this.repository.save(skill, session);
+      await this.repository.save(skill, tx);
       const events = skill.pullEvents();
-      await this.eventPublisher.stage(events, session);
+      await this.eventPublisher.stage(events, tx);
       return { skill, events };
     }
 
-    const result = await withTransaction(this.connection, async (s) => {
+    const result = await withTransaction(this.prisma, async (t) => {
       const skill = Skill.generate({ name }, context);
-      await this.repository.save(skill, s);
+      await this.repository.save(skill, t);
       const events = skill.pullEvents();
-      await this.eventPublisher.stage(events, s);
+      await this.eventPublisher.stage(events, t);
       return { skill, events };
     });
     await this.eventPublisher.publishMany(result.events);

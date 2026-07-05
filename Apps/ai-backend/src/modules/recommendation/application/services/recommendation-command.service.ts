@@ -1,4 +1,4 @@
-import { Connection } from 'mongoose';
+import { PrismaService } from '../../../../infrastructure/persistence/prisma.service';
 import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
 import {
   AssessmentId,
@@ -41,7 +41,7 @@ export class RecommendationCommandService {
   constructor(
     private readonly repository: IRecommendationRepository,
     private readonly eventPublisher: IEventPublisher,
-    private readonly connection: Connection,
+    private readonly prisma: PrismaService,
     private readonly recommendationLock?: IRecommendationLock,
     private readonly generationMetrics?: IRecommendationGenerationMetrics,
   ) {}
@@ -102,10 +102,10 @@ export class RecommendationCommandService {
         },
       );
 
-      const events = await withTransaction(this.connection, async (session) => {
-        await this.repository.save(recommendation, session);
+      const events = await withTransaction(this.prisma, async (tx) => {
+        await this.repository.save(recommendation, tx);
         const ev = recommendation.pullEvents();
-        await this.eventPublisher.stage(ev, session);
+        await this.eventPublisher.stage(ev, tx);
         return ev;
       });
       await this.eventPublisher.publishMany(events);
@@ -134,10 +134,10 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -169,10 +169,10 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -203,10 +203,10 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -240,10 +240,10 @@ export class RecommendationCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);

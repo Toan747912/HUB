@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { AuditLogService } from '../../../../infrastructure/audit/audit-log.service';
+import {
+  AuditEventDescriptor,
+  BasePlannerService,
+} from '../../../../infrastructure/ai-brain/base-planner.service';
 import { BrainContext } from '../../../../infrastructure/ai-brain/brain-context.types';
 import { ContextAssemblyService } from '../../../../infrastructure/ai-brain/context-assembly.service';
 import { ResilientLlmGateway } from '../../../../infrastructure/ai-brain/resilient-llm-gateway.service';
 import { LlmGatewayResult } from '../../../../infrastructure/ai-brain/resilient-llm-gateway.types';
 import { MetricsService } from '../../../../infrastructure/observability/metrics.service';
+import { StructuredLoggerService } from '../../../../infrastructure/observability/structured-logger.service';
 import { ExplainabilityRulesService } from '../../../../shared/services/explainability-rules.service';
 import {
   MISSION_FALLBACK_VERSION,
@@ -14,9 +19,6 @@ import { MissionTask } from '../../domain/engine/mission-planning.types';
 import { buildMissionPrompt, MISSION_PROMPT_VERSION } from '../prompts/mission-prompt';
 import { MissionPlanRequest, MissionPlanResponse } from '../contracts/mission-planner.contracts';
 
-const CAPABILITY = 'mission_planner';
-const DEFAULT_PROVIDER = 'mock-llm';
-const DEFAULT_MODEL = 'mock-llm-v1';
 const VALID_TASK_SOURCES = ['roadmap', 'recommendation', 'review'];
 
 /**
@@ -26,58 +28,70 @@ const VALID_TASK_SOURCES = ['roadmap', 'recommendation', 'review'];
  * when the LLM path is unavailable or returns untrustworthy output.
  */
 @Injectable()
-export class MissionPlannerService {
+export class MissionPlannerService extends BasePlannerService<MissionPlanRequest, MissionPlanResponse> {
+  protected readonly capability = 'mission_planner';
+  protected readonly operationName = 'GENERATE_MISSION';
+  protected readonly promptVersion = MISSION_PROMPT_VERSION;
+
   private readonly fallbackEngine = new MissionPlanningEngine();
 
   constructor(
-    private readonly contextAssembly: ContextAssemblyService,
-    private readonly llmGateway: ResilientLlmGateway,
-    private readonly explainabilityRules: ExplainabilityRulesService,
-    private readonly metrics?: MetricsService,
-    private readonly auditLog?: AuditLogService,
-  ) {}
+    contextAssembly: ContextAssemblyService,
+    llmGateway: ResilientLlmGateway,
+    explainabilityRules: ExplainabilityRulesService,
+    metrics?: MetricsService,
+    auditLog?: AuditLogService,
+    structuredLogger?: StructuredLoggerService,
+  ) {
+    super(contextAssembly, llmGateway, explainabilityRules, metrics, auditLog, structuredLogger);
+  }
 
   async generateTodaysMission(request: MissionPlanRequest): Promise<MissionPlanResponse> {
-    const start = Date.now();
-    const provider = request.provider ?? DEFAULT_PROVIDER;
-    const model = request.model ?? DEFAULT_MODEL;
+    return this.execute(request);
+  }
 
-    try {
-      const context = await this.contextAssembly.assemble({
-        userId: request.userId,
-        goalId: request.goalId,
-        sessionId: request.sessionId,
-        traceId: request.traceId,
-      });
+  protected buildPrompt(context: BrainContext): string {
+    return buildMissionPrompt(context);
+  }
 
-      const gatewayResult = await this.llmGateway.complete({
-        capability: CAPABILITY,
-        provider,
-        model,
-        prompt: buildMissionPrompt(context),
-        promptVersion: MISSION_PROMPT_VERSION,
-      });
+  protected buildTracedTo(context: BrainContext): string[] {
+    return [
+      `goal:${context.goalId}`,
+      `roadmap:${context.roadmap.nodeId}`,
+      `session:${context.sessionId}`,
+    ];
+  }
 
-      const response = gatewayResult.fallbackUsed
-        ? this.buildFallbackResponse(context, gatewayResult)
-        : this.buildLlmResponse(context, gatewayResult);
-
-      this.explainabilityRules.validate({
-        confidence: response.confidence,
-        reasoning: response.explanation,
-        traced_to: [
-          `goal:${context.goalId}`,
-          `roadmap:${context.roadmap.nodeId}`,
-          `session:${context.sessionId}`,
-        ],
-      });
-
-      await this.emitObservability(request, response, start, 'SUCCESS');
-      return response;
-    } catch (error) {
-      await this.emitObservability(request, null, start, 'FAILURE', error);
-      throw error;
+  protected emitMetrics(response: MissionPlanResponse): void {
+    this.metrics?.incrementMissionPlanGenerated();
+    this.metrics?.recordMissionPlanConfidence(response.confidence);
+    if (response.fallbackUsed) {
+      this.metrics?.incrementMissionPlanFallbackUsed();
     }
+  }
+
+  protected buildAuditEvent(
+    _request: MissionPlanRequest,
+    response: MissionPlanResponse,
+  ): AuditEventDescriptor {
+    return {
+      operation: 'MISSION_PLAN_GENERATED',
+      resource: `Mission:${response.missionId}`,
+      after: {
+        fallbackUsed: response.fallbackUsed,
+        provider: response.provider,
+        model: response.model,
+        promptVersion: response.promptVersion,
+        confidence: response.confidence,
+        taskCount: response.tasks.length,
+      },
+    };
+  }
+
+  protected buildResponse(context: BrainContext, gatewayResult: LlmGatewayResult): MissionPlanResponse {
+    return gatewayResult.fallbackUsed
+      ? this.buildFallbackResponse(context, gatewayResult)
+      : this.buildLlmResponse(context, gatewayResult);
   }
 
   private buildFallbackResponse(
@@ -148,61 +162,5 @@ export class MissionPlannerService {
           : 'review',
       };
     });
-  }
-
-  private normalizeConfidence(value: unknown): number {
-    if (typeof value !== 'number' || Number.isNaN(value)) return 0;
-    if (value < 0) return 0;
-    if (value > 1) return 1;
-    return value;
-  }
-
-  private async emitObservability(
-    request: MissionPlanRequest,
-    response: MissionPlanResponse | null,
-    startMs: number,
-    status: 'SUCCESS' | 'FAILURE',
-    error?: unknown,
-  ): Promise<void> {
-    console.log(
-      JSON.stringify({
-        traceId: request.traceId,
-        operation: 'GENERATE_MISSION',
-        capability: CAPABILITY,
-        goalId: request.goalId,
-        sessionId: request.sessionId,
-        latencyMs: Date.now() - startMs,
-        status,
-        fallbackUsed: response?.fallbackUsed,
-        confidence: response?.confidence,
-        errorType: error instanceof Error ? error.constructor.name : undefined,
-        timestamp: new Date().toISOString(),
-      }),
-    );
-
-    if (status !== 'SUCCESS' || !response) return;
-
-    this.metrics?.incrementMissionPlanGenerated();
-    this.metrics?.recordMissionPlanConfidence(response.confidence);
-    if (response.fallbackUsed) {
-      this.metrics?.incrementMissionPlanFallbackUsed();
-    }
-
-    await this.auditLog
-      ?.recordSecurityEvent({
-        traceId: request.traceId,
-        userId: request.userId,
-        operation: 'MISSION_PLAN_GENERATED',
-        resource: `Mission:${response.missionId}`,
-        after: {
-          fallbackUsed: response.fallbackUsed,
-          provider: response.provider,
-          model: response.model,
-          promptVersion: response.promptVersion,
-          confidence: response.confidence,
-          taskCount: response.tasks.length,
-        },
-      })
-      .catch(() => undefined);
   }
 }

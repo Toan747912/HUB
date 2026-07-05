@@ -1,17 +1,11 @@
-import { ClientSession, Connection } from 'mongoose';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from './prisma.service';
+
+export type PrismaTransactionClient = Prisma.TransactionClient;
 
 export async function withTransaction<T>(
-  connection: Connection,
-  work: (session: ClientSession) => Promise<T>,
+  prisma: PrismaService,
+  work: (tx: PrismaTransactionClient) => Promise<T>,
 ): Promise<T> {
-  const session = await connection.startSession();
-  try {
-    let result!: T;
-    await session.withTransaction(async () => {
-      result = await work(session);
-    });
-    return result;
-  } finally {
-    await session.endSession();
-  }
+  return prisma.$transaction((tx) => work(tx));
 }

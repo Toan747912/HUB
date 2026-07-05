@@ -1,5 +1,8 @@
-import { ClientSession, Connection } from 'mongoose';
-import { withTransaction } from '../../../../infrastructure/persistence/with-transaction';
+import { PrismaService } from '../../../../infrastructure/persistence/prisma.service';
+import {
+  withTransaction,
+  PrismaTransactionClient,
+} from '../../../../infrastructure/persistence/with-transaction';
 import { GoalId, LearnerId, RoadmapId, TaskId } from '../../../../shared/domain/identifiers';
 import { Roadmap } from '../../domain/aggregates/roadmap.aggregate';
 import { RoadmapPlanningEngine } from '../../domain/engine/roadmap-planning.engine';
@@ -43,18 +46,18 @@ export class RoadmapCommandService {
     private readonly repository: IRoadmapRepository,
     private readonly eventPublisher: IEventPublisher,
     private readonly skillCatalog: SkillCatalogService,
-    private readonly connection: Connection,
+    private readonly prisma: PrismaService,
     private readonly roadmapLock?: IRoadmapLock,
     private readonly generationMetrics?: IRoadmapGenerationMetrics,
   ) {}
 
   private async generatePlan(
     input: PlanningInput,
-    session: ClientSession,
+    tx: PrismaTransactionClient,
   ): Promise<{ plan: ResolvedPlanningResult; skillEvents: SkillDomainEvent[] }> {
     const start = Date.now();
     const plan = this.planningEngine.generate(input);
-    const resolved = await this.resolveSkills(plan, session);
+    const resolved = await this.resolveSkills(plan, tx);
     this.generationMetrics?.recordRoadmapGenerationDuration((Date.now() - start) / 1000);
     return resolved;
   }
@@ -62,23 +65,19 @@ export class RoadmapCommandService {
   // Resolves each task's deterministic skillLabel (e.g. "Foundations") to a
   // real SkillCatalogService entry, caching per-label within one plan so a
   // phase's skill is only looked up/created once instead of once per task.
-  // The active Mongo session is threaded through so Skill's write (if a new
-  // catalog entry is created) joins the same transaction as this Roadmap
+  // The active Prisma transaction is threaded through so Skill's write (if a
+  // new catalog entry is created) joins the same transaction as this Roadmap
   // write instead of committing independently.
   private async resolveSkills(
     plan: PlanningResult,
-    session: ClientSession,
+    tx: PrismaTransactionClient,
   ): Promise<{ plan: ResolvedPlanningResult; skillEvents: SkillDomainEvent[] }> {
     const cache = new Map<string, string>();
     const skillEvents: SkillDomainEvent[] = [];
     const skillIdFor = async (label: string): Promise<string> => {
       const cached = cache.get(label);
       if (cached) return cached;
-      const { skill, events } = await this.skillCatalog.findOrCreateByName(
-        label,
-        undefined,
-        session,
-      );
+      const { skill, events } = await this.skillCatalog.findOrCreateByName(label, undefined, tx);
       skillEvents.push(...events);
       const id = skill.getId().toString();
       cache.set(label, id);
@@ -130,9 +129,9 @@ export class RoadmapCommandService {
       };
 
       const { roadmap, roadmapEvents, skillEvents } = await withTransaction(
-        this.connection,
-        async (session) => {
-          const { plan, skillEvents } = await this.generatePlan(goalSnapshot, session);
+        this.prisma,
+        async (tx) => {
+          const { plan, skillEvents } = await this.generatePlan(goalSnapshot, tx);
 
           const roadmap = Roadmap.create(
             {
@@ -149,9 +148,9 @@ export class RoadmapCommandService {
             },
           );
 
-          await this.repository.save(roadmap, session);
+          await this.repository.save(roadmap, tx);
           const roadmapEvents = roadmap.pullEvents();
-          await this.eventPublisher.stage(roadmapEvents, session);
+          await this.eventPublisher.stage(roadmapEvents, tx);
           return { roadmap, roadmapEvents, skillEvents };
         },
       );
@@ -183,10 +182,10 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -217,10 +216,10 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -251,10 +250,10 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -277,9 +276,9 @@ export class RoadmapCommandService {
         if (!r) throw new RoadmapNotFoundError(command.roadmapId);
 
         const { roadmapEvents, skillEvents } = await withTransaction(
-          this.connection,
-          async (session) => {
-            const { plan, skillEvents } = await this.generatePlan(r.getGoalSnapshot(), session);
+          this.prisma,
+          async (tx) => {
+            const { plan, skillEvents } = await this.generatePlan(r.getGoalSnapshot(), tx);
             r.regenerate(
               plan,
               {
@@ -290,9 +289,9 @@ export class RoadmapCommandService {
               command.expectedVersion,
             );
 
-            await this.repository.save(r, session);
+            await this.repository.save(r, tx);
             const roadmapEvents = r.pullEvents();
-            await this.eventPublisher.stage(roadmapEvents, session);
+            await this.eventPublisher.stage(roadmapEvents, tx);
             return { roadmapEvents, skillEvents };
           },
         );
@@ -326,10 +325,10 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);
@@ -361,10 +360,10 @@ export class RoadmapCommandService {
           command.expectedVersion,
         );
 
-        const events = await withTransaction(this.connection, async (session) => {
-          await this.repository.save(r, session);
+        const events = await withTransaction(this.prisma, async (tx) => {
+          await this.repository.save(r, tx);
           const ev = r.pullEvents();
-          await this.eventPublisher.stage(ev, session);
+          await this.eventPublisher.stage(ev, tx);
           return ev;
         });
         await this.eventPublisher.publishMany(events);

@@ -7,7 +7,19 @@ export type DomainRoute =
   | 'assessment'
   | 'recommendation'
   | 'discovery'
-  | 'teaching';
+  | 'teaching'
+  | 'mission_planner'
+  | 'discovery_planner'
+  | 'knowledge_planner'
+  | 'evidence_planner'
+  | 'teaching_planner';
+
+export type PlannerCapability =
+  | 'mission_planner'
+  | 'discovery_planner'
+  | 'knowledge_planner'
+  | 'evidence_planner'
+  | 'teaching_planner';
 
 export interface AiExecuteInput {
   userId: string;

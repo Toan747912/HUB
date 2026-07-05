@@ -1,18 +1,51 @@
+import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
-import { ExplainableAiOutput } from '../../domain/ai.types';
+import { ExplainableAiOutput, PlannerCapability } from '../../domain/ai.types';
 import { MockLlmClientService } from '../../infrastructure/llm/mock-llm-client.service';
 import { DomainBoundaryGuardService } from '../../shared/services/domain-boundary-guard.service';
 import { ExplainabilityRulesService } from '../../shared/services/explainability-rules.service';
 import { AssessmentService } from '../assessment/assessment.service';
 import { DiscoveryService } from '../discovery/discovery.service';
+import { DiscoveryPlanResponse } from '../discovery-planner/application/contracts/discovery-planner.contracts';
+import { DiscoveryPlannerService } from '../discovery-planner/application/services/discovery-planner.service';
 import { EvidenceService } from '../evidence/evidence.service';
+import { EvidencePlanResponse } from '../evidence-planner/application/contracts/evidence-planner.contracts';
+import { EvidencePlannerService } from '../evidence-planner/application/services/evidence-planner.service';
 import { GoalService } from '../goal/goal.service';
 import { KnowledgeService } from '../knowledge/knowledge.service';
+import { KnowledgePlanResponse } from '../knowledge-planner/application/contracts/knowledge-planner.contracts';
+import { KnowledgePlannerService } from '../knowledge-planner/application/services/knowledge-planner.service';
 import { LearningSessionService } from '../learning-session/learning-session.service';
+import { MissionPlanResponse } from '../mission-planner/application/contracts/mission-planner.contracts';
+import { MissionPlannerService } from '../mission-planner/application/services/mission-planner.service';
 import { RecommendationService } from '../recommendation/recommendation.service';
 import { RoadmapService } from '../roadmap/roadmap.service';
 import { TeachingService } from '../teaching/teaching.service';
+import { TeachingPlanResponse } from '../teaching-planner/application/contracts/teaching-planner.contracts';
+import { TeachingPlannerService } from '../teaching-planner/application/services/teaching-planner.service';
 import { AiExecuteDto } from './dto/ai-execute.dto';
+
+type PlannerResponse =
+  | MissionPlanResponse
+  | DiscoveryPlanResponse
+  | KnowledgePlanResponse
+  | EvidencePlanResponse
+  | TeachingPlanResponse;
+
+interface PlannerRequest {
+  userId: string;
+  goalId: string;
+  sessionId: string;
+  traceId: string;
+}
+
+const PLANNER_CAPABILITIES: readonly PlannerCapability[] = [
+  'mission_planner',
+  'discovery_planner',
+  'knowledge_planner',
+  'evidence_planner',
+  'teaching_planner',
+];
 
 @Injectable()
 export class AiRuntimeService {
@@ -21,6 +54,8 @@ export class AiRuntimeService {
   private readonly circuitFailureThreshold = 3;
   private readonly circuitCooldownMs = 15_000;
   private readonly llmTimeoutMs = 8_000;
+  private readonly plannerTracedTo = ['goal', 'roadmap', 'session', 'recommendation', 'discovery'];
+
   constructor(
     private readonly llm: MockLlmClientService,
     private readonly boundaryGuard: DomainBoundaryGuardService,
@@ -34,12 +69,21 @@ export class AiRuntimeService {
     private readonly recommendationService: RecommendationService,
     private readonly discoveryService: DiscoveryService,
     private readonly teachingService: TeachingService,
+    private readonly missionPlannerService: MissionPlannerService,
+    private readonly discoveryPlannerService: DiscoveryPlannerService,
+    private readonly knowledgePlannerService: KnowledgePlannerService,
+    private readonly evidencePlannerService: EvidencePlannerService,
+    private readonly teachingPlannerService: TeachingPlannerService,
   ) {}
 
   async execute(
     dto: AiExecuteDto,
   ): Promise<{ route: string; output: ExplainableAiOutput; context: Record<string, unknown> }> {
     this.boundaryGuard.enforceNoCrossDomainWrite(dto.route, dto.attempted_writes ?? []);
+
+    if (this.isPlannerCapability(dto.route)) {
+      return this.executePlanner(dto, dto.route);
+    }
 
     const domainContext = await this.buildDomainContext(dto);
     const promptText = dto?.input?.prompt ?? '';
@@ -99,6 +143,79 @@ export class AiRuntimeService {
       default:
         return {};
     }
+  }
+
+  private isPlannerCapability(route: string): route is PlannerCapability {
+    return (PLANNER_CAPABILITIES as readonly string[]).includes(route);
+  }
+
+  private async executePlanner(
+    dto: AiExecuteDto,
+    route: PlannerCapability,
+  ): Promise<{ route: string; output: ExplainableAiOutput; context: Record<string, unknown> }> {
+    const prompt = dto?.input?.prompt ?? '';
+    const request: PlannerRequest = {
+      userId: this.extractToken(prompt, 'user:') ?? 'u-default',
+      goalId: this.extractToken(prompt, 'goal:') ?? 'g-default',
+      sessionId: this.extractToken(prompt, 'session:') ?? 's-default',
+      traceId: this.extractToken(prompt, 'trace:') ?? randomUUID(),
+    };
+
+    const plannerResponse = await this.dispatchToPlanner(route, request);
+    const output = this.normalizePlannerResponse(route, plannerResponse);
+
+    return {
+      route,
+      output,
+      context: { [route]: plannerResponse },
+    };
+  }
+
+  private async dispatchToPlanner(
+    route: PlannerCapability,
+    request: PlannerRequest,
+  ): Promise<PlannerResponse> {
+    switch (route) {
+      case 'mission_planner':
+        return this.missionPlannerService.generateTodaysMission(request);
+      case 'discovery_planner':
+        return this.discoveryPlannerService.discoverInitialFocus(request);
+      case 'knowledge_planner':
+        return this.knowledgePlannerService.recommendKnowledge(request);
+      case 'evidence_planner':
+        return this.evidencePlannerService.planEvidence(request);
+      case 'teaching_planner':
+        return this.teachingPlannerService.planTeaching(request);
+    }
+  }
+
+  private extractPlannerAction(route: PlannerCapability, response: PlannerResponse): string {
+    switch (route) {
+      case 'mission_planner':
+        return (response as MissionPlanResponse).focusSummary;
+      case 'discovery_planner':
+        return (response as DiscoveryPlanResponse).primaryFocus;
+      case 'knowledge_planner':
+        return (response as KnowledgePlanResponse).primaryTopic;
+      case 'evidence_planner':
+        return (response as EvidencePlanResponse).primaryRequirement;
+      case 'teaching_planner':
+        return (response as TeachingPlanResponse).primaryAction;
+    }
+  }
+
+  private normalizePlannerResponse(
+    route: PlannerCapability,
+    response: PlannerResponse,
+  ): ExplainableAiOutput {
+    return {
+      action: this.extractPlannerAction(route, response),
+      response: response.explanation,
+      confidence: response.confidence,
+      reasoning: response.explanation,
+      traced_to: this.plannerTracedTo,
+      route,
+    };
   }
 
   private async callLlmWithResilience(

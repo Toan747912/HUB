@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ClientSession } from 'mongoose';
+import { PrismaTransactionClient } from '../../../../infrastructure/persistence/with-transaction';
 import { AssessmentDomainEvent } from '../../domain/events/assessment-event-metadata';
 import { IEventPublisher } from '../../application/contracts/event-publisher.contract';
 import { AuditLogService } from '../../../../infrastructure/audit/audit-log.service';
@@ -32,9 +32,9 @@ export class AssessmentOutboxPublisherService implements IEventPublisher {
     await this.publishMany([event]);
   }
 
-  async stage(events: AssessmentDomainEvent[], session: ClientSession): Promise<void> {
+  async stage(events: AssessmentDomainEvent[], tx: PrismaTransactionClient): Promise<void> {
     if (events.length === 0) return;
-    await this.outbox.saveMany(events, session);
+    await this.outbox.saveMany(events, tx);
   }
 
   async publishMany(events: AssessmentDomainEvent[]): Promise<void> {

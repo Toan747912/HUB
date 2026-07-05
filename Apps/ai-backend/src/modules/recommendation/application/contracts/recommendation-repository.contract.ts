@@ -1,8 +1,8 @@
-import { ClientSession } from 'mongoose';
+import { PrismaTransactionClient } from '../../../../infrastructure/persistence/with-transaction';
 import { Recommendation } from '../../domain/aggregates/recommendation.aggregate';
 
 export interface IRecommendationRepository {
-  save(recommendation: Recommendation, session?: ClientSession): Promise<void>;
+  save(recommendation: Recommendation, tx?: PrismaTransactionClient): Promise<void>;
   findById(id: string): Promise<Recommendation | null>;
   findAll(learnerId?: string): Promise<Recommendation[]>;
   findByAssessmentId(assessmentId: string): Promise<Recommendation[]>;

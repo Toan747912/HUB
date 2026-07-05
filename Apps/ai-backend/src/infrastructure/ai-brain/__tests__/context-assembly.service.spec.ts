@@ -1,3 +1,4 @@
+import { AssessmentService } from '../../../modules/assessment/assessment.service';
 import { DiscoveryService } from '../../../modules/discovery/discovery.service';
 import { GoalService } from '../../../modules/goal/goal.service';
 import { LearningSessionService } from '../../../modules/learning-session/learning-session.service';
@@ -20,6 +21,9 @@ describe('ContextAssemblyService', () => {
     const discoveryService = {
       getDiscoveryContext: jest.fn().mockResolvedValue({ profile: 'discovery-context-user-1' }),
     };
+    const assessmentService = {
+      getAssessmentHistory: jest.fn().mockResolvedValue({ refs: ['assessment-session-1-1'] }),
+    };
 
     const service = new ContextAssemblyService(
       goalService as unknown as GoalService,
@@ -27,6 +31,7 @@ describe('ContextAssemblyService', () => {
       learningSessionService as unknown as LearningSessionService,
       recommendationService as unknown as RecommendationService,
       discoveryService as unknown as DiscoveryService,
+      assessmentService as unknown as AssessmentService,
     );
 
     const context = await service.assemble({
@@ -41,6 +46,7 @@ describe('ContextAssemblyService', () => {
     expect(learningSessionService.getSession).toHaveBeenCalledWith('session-1');
     expect(recommendationService.getRecommendationState).toHaveBeenCalledWith('user-1');
     expect(discoveryService.getDiscoveryContext).toHaveBeenCalledWith('user-1');
+    expect(assessmentService.getAssessmentHistory).toHaveBeenCalledWith('session-1');
 
     expect(context).toMatchObject({
       userId: 'user-1',
@@ -52,6 +58,7 @@ describe('ContextAssemblyService', () => {
       session: { id: 'session-1', phase: 'ACTIVE' },
       recommendation: { state: 'priority-for-user-1' },
       discovery: { profile: 'discovery-context-user-1' },
+      assessment: { refs: ['assessment-session-1-1'] },
     });
     expect(typeof context.assembledAt).toBe('string');
     expect(new Date(context.assembledAt).toString()).not.toBe('Invalid Date');
